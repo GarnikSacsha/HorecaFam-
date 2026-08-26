@@ -27,3 +27,21 @@ class AuditActorType(StrEnum):
 class AuditOutcome(StrEnum):
     SUCCESS = "success"
     FAILED = "failed"
+
+
+class AdminScope(StrEnum):
+    ORGANIZATION_ADMIN = "organization_admin"
+    PLATFORM_OPERATOR = "platform_operator"
+
+
+class AccessStatus(StrEnum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+
+
+class MfaCredentialType(StrEnum):
+    TOTP = "totp"
+
+
+class AuthRateLimitAction(StrEnum):
+    LOGIN = "login"

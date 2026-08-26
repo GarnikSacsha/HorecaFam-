@@ -15,6 +15,11 @@ from app.db.session import create_engine, create_session_factory
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
+    "auth_rate_limit_buckets",
+    "mfa_challenges",
+    "mfa_credentials",
+    "sessions",
+    "admin_access",
     "audit_events",
     "employee_profiles",
     "organization_memberships",

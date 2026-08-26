@@ -22,6 +22,7 @@ from app.models.enums import LifecycleStatus, Locale, MembershipStatus
 
 if TYPE_CHECKING:
     from app.models.audit import AuditEvent
+    from app.models.auth import AdminAccess, MfaChallenge, MfaCredential, Session
 
 
 class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -146,6 +147,13 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     memberships: Mapped[list["OrganizationMembership"]] = relationship(back_populates="user")
     audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="actor_user")
+    admin_accesses: Mapped[list["AdminAccess"]] = relationship(
+        back_populates="user",
+        foreign_keys="AdminAccess.user_id",
+    )
+    sessions: Mapped[list["Session"]] = relationship(back_populates="user")
+    mfa_credentials: Mapped[list["MfaCredential"]] = relationship(back_populates="user")
+    mfa_challenges: Mapped[list["MfaChallenge"]] = relationship(back_populates="user")
 
     @validates("email_normalized")
     def _normalize_email(self, _: str, value: str) -> str:

@@ -45,21 +45,26 @@ def test_application_runtime_does_not_use_create_all() -> None:
     assert "create_all" not in application_source
 
 
-def test_identity_metadata_contains_only_stage_1_tables() -> None:
+def test_metadata_contains_stage_2_auth_tables() -> None:
     assert set(Base.metadata.tables) == {
+        "admin_access",
         "audit_events",
+        "auth_rate_limit_buckets",
         "employee_profiles",
         "locations",
+        "mfa_challenges",
+        "mfa_credentials",
         "operational_roles",
         "organization_memberships",
         "organizations",
+        "sessions",
         "users",
     }
 
 
 @pytest.mark.integration
 @pytest.mark.migration
-async def test_database_contains_stage_1_tables(
+async def test_database_contains_current_tables(
     migrated_test_database: Settings,
 ) -> None:
     engine = create_engine(migrated_test_database)

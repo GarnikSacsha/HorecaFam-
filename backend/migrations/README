@@ -1,2 +1,3 @@
 Stage 0 establishes the Alembic base. Stage 1 adds the bounded identity persistence schema in
 revision 0002_identity_persistence; Alembic remains the only schema-management path.
+0003_auth_security adds the bounded Stage 2 authentication and access-control persistence.
