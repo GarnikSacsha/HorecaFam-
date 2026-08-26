@@ -21,6 +21,29 @@ def test_database_url_must_use_async_postgresql() -> None:
         Settings(app_env="test", database_url="sqlite+aiosqlite:///horeca_test.db")
 
 
+def test_auth_security_settings_fail_closed_without_keys() -> None:
+    settings = Settings(
+        app_env="test",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+    )
+
+    with pytest.raises(ValueError, match="MFA_ENCRYPTION_KEYS"):
+        settings.validate_auth_security()
+
+
+def test_auth_security_settings_reject_insecure_test_cookie() -> None:
+    settings = Settings(
+        app_env="test",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+        mfa_encryption_keys=["obvious-test-placeholder"],
+        auth_throttle_hmac_key="x" * 32,
+        session_cookie_secure=False,
+    )
+
+    with pytest.raises(ValueError, match="Secure Session cookies"):
+        settings.validate_auth_security()
+
+
 def test_test_database_guard_accepts_explicit_test_database() -> None:
     settings = Settings(
         app_env="test",
