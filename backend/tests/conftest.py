@@ -6,12 +6,16 @@ import pytest
 import pytest_asyncio
 from alembic import command
 from alembic.config import Config
+from cryptography.fernet import Fernet
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.core.config import Settings
 from app.db.safety import assert_safe_test_database
 from app.db.session import create_engine, create_session_factory
+from app.main import create_app
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
@@ -71,3 +75,31 @@ async def db_session(migrated_test_database: Settings) -> AsyncIterator[AsyncSes
         await _truncate_identity_tables(engine)
     finally:
         await engine.dispose()
+
+
+@pytest.fixture
+def auth_settings(migrated_test_database: Settings) -> Settings:
+    return Settings(
+        app_env="test",
+        database_url=migrated_test_database.database_url,
+        mfa_encryption_keys=[Fernet.generate_key().decode("ascii")],
+        auth_throttle_hmac_key="test-only-auth-throttle-key-value",
+        cors_allowed_origins=["https://frontend.test"],
+        session_cookie_secure=True,
+    )
+
+
+@pytest_asyncio.fixture
+async def auth_app(auth_settings: Settings) -> AsyncIterator[FastAPI]:
+    application = create_app(auth_settings)
+    yield application
+    await application.state.engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def auth_client(auth_app: FastAPI) -> AsyncIterator[AsyncClient]:
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app),
+        base_url="https://api.test",
+    ) as client:
+        yield client

@@ -7,6 +7,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.request_id import get_request_id
 
 
+class APIError(Exception):
+    def __init__(self, *, status_code: int, code: str, message: str) -> None:
+        super().__init__(code)
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+
+
 class FieldError(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -50,6 +58,14 @@ def _field_message(error_code: str) -> str:
     return messages.get(error_code, "Некоректне значення.")
 
 
+async def api_error_handler(_request: Request, exception: APIError) -> JSONResponse:
+    return error_response(
+        status_code=exception.status_code,
+        code=exception.code,
+        message=exception.message,
+    )
+
+
 async def http_exception_handler(
     _request: Request, exception: StarletteHTTPException
 ) -> JSONResponse:
@@ -69,14 +85,19 @@ async def http_exception_handler(
 async def validation_exception_handler(
     _request: Request, exception: RequestValidationError
 ) -> JSONResponse:
-    field_errors = [
-        FieldError(
-            field=_field_path(tuple(error["loc"])),
-            code=str(error["type"]),
-            message=_field_message(str(error["type"])),
+    field_errors = []
+    for error in exception.errors():
+        field = _field_path(tuple(error["loc"]))
+        error_code = str(error["type"])
+        if field == "email" and error_code == "value_error":
+            error_code = "INVALID_EMAIL"
+        field_errors.append(
+            FieldError(
+                field=field,
+                code=error_code,
+                message=_field_message(error_code),
+            )
         )
-        for error in exception.errors()
-    ]
     return error_response(
         status_code=422,
         code="VALIDATION_ERROR",
@@ -86,5 +107,6 @@ async def validation_exception_handler(
 
 
 def register_exception_handlers(application: FastAPI) -> None:
+    application.add_exception_handler(APIError, api_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
     application.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
