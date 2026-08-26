@@ -12,6 +12,8 @@ or authorize the current task.
 - CRA-21 repository baseline and agent context is accepted and Done.
 - CRA-22 atomic commit workflow is accepted and Done.
 - CRA-23 retrospective selective first-baseline commit map is accepted and Done.
+- CRA-24 repository-context synchronization is accepted and Done.
+- CRA-25 selective five-commit baseline execution is accepted and Done.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -26,9 +28,12 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 ## Repository and runtime state
 
 - Branch: `main`.
-- Baseline history: five local atomic checkpoint commits implementing the accepted CRA-23 map.
+- Baseline history: five accepted atomic checkpoints implementing the CRA-23 map, followed by the
+  documentation-only repository-state synchronization checkpoint.
 - The tracked baseline contains the 43 intended Stage 0 and repository-context paths.
-- Local Git remote: not configured.
+- Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
+- Published branch: local `main` tracks `origin/main`; the initial baseline was published without
+  force-push or history rewriting.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
@@ -50,9 +55,11 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
-  authorization. Further staging or commits require a new bounded map and explicit authorization.
-- Remote configuration and push remain separate approval gates, as do PR, merge, history rewrite,
-  Railway, and deployment.
+  authorization and accepted by Denys. Its initial publication and repository-state synchronization
+  are recorded in CRA-26. Further staging or commits require a new bounded map and explicit
+  authorization.
+- Every later push remains a separate approval gate, as do PR, merge, history rewrite, Railway,
+  and deployment.
 - Stage 1 has not started and is not automatically authorized by completion of any baseline step.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep

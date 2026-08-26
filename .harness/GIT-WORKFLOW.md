@@ -2,9 +2,15 @@
 
 ## Current baseline state
 
-The local repository is on `main`, has no commits, and has no configured remote. The accepted
-Stage 0 implementation, CRA-21 documentation, CRA-22 process changes, and `Photos/` all appear as
-untracked content. This makes the first selective baseline especially sensitive.
+The repository is on `main`. Its accepted Stage 0 and repository-context baseline is preserved as
+five atomic checkpoints, followed by one documentation-only repository-state synchronization
+checkpoint. `origin` points to the approved HoReCa GitHub repository, and local `main` is
+published there with upstream tracking.
+
+HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
+the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
+pushed from this repository. `Photos/` remains deferred CRA-19 project material: it is untracked,
+unstaged, and outside the published backend/docs baseline.
 
 ## Mandatory rules
 
@@ -83,18 +89,17 @@ corrective commit so the earlier state remains reachable and auditable.
 An unaccepted local checkpoint may still be corrected only within the current explicit authority;
 never infer history-rewrite permission from permission to commit.
 
-## Intended future baseline boundary
+## Published baseline boundary
 
-After CRA-22 acceptance, the next permitted action is only a read-only inspection and proposal of
-a retrospective selective first-baseline commit map. That map must enumerate every intended path,
-define a verifiable coherent checkpoint for each proposed commit, and prove that excluded material
-remains unstaged. It must distinguish:
+The initial published backend/docs baseline contains the 43 paths accepted in the five-commit
+CRA-23 map, plus the later documentation-only repository-state synchronization checkpoint. The
+baseline intentionally excludes:
 
-1. accepted Stage 0 implementation and project documentation intended for the baseline;
-2. `Photos/`, which contains CRA-19 homepage project assets and remains untouched, unignored, and
+1. `Photos/`, which contains CRA-19 homepage project assets and remains untouched, unignored, and
    unstaged unless a separate approved map explicitly includes those assets;
-3. local artifacts such as `.venv`, `.pydeps`, `.env*`, caches, coverage files, installers, and
+2. local artifacts such as `.venv`, `.pydeps`, `.env*`, caches, coverage files, installers, and
    acceptance helpers, which are never baseline content.
 
-CRA-22 does not authorize staging or committing this retrospective baseline. Stage 1 is not
-authorized by CRA-22, by the proposed baseline map, or by a later baseline commit.
+Publication of the baseline does not authorize the next implementation stage. Every subsequent
+change still requires an active bounded Linear issue, an agreed commit map, and the applicable
+local-commit and remote-action approvals. Stage 1 has not started.
