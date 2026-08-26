@@ -1,0 +1,1 @@
+"""HoReCa backend package."""
