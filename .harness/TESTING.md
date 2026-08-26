@@ -1,0 +1,92 @@
+# HoReCa Testing and Quality Commands
+
+## Supported baseline
+
+- Python: 3.12 only, as constrained by `backend/pyproject.toml`.
+- Database: real PostgreSQL 16 for integration and migration tests.
+- Local boundaries: `compose.test.yml` or native PostgreSQL 16.
+- SQLite fallback: prohibited.
+- Test environment: `APP_ENV=test` and a dedicated database named `horeca_test` or an approved
+  worker-scoped derivative.
+
+## Environment setup
+
+Run from the repository root:
+
+```powershell
+rtk py -3.12 -m venv .venv
+rtk .\.venv\Scripts\python.exe -m pip install -e ".\backend[test]"
+```
+
+Docker Compose remains a supported boundary when Docker is available:
+
+```powershell
+rtk docker compose -f compose.test.yml up -d --wait
+```
+
+The accepted local fallback is native PostgreSQL 16. Store native or Compose test values only in
+the ignored `backend/.env.test`; never paste its values into documentation, Linear, logs, or Git.
+The file uses these keys with local values:
+
+```dotenv
+APP_ENV=test
+TEST_DATABASE_URL=<local-test-postgresql-async-url>
+DATABASE_URL=<same-local-test-postgresql-async-url>
+```
+
+Before a PostgreSQL gate, load the ignored file into the current PowerShell process without
+printing it:
+
+```powershell
+$testEnvPath = Resolve-Path .env.test
+foreach ($line in [IO.File]::ReadAllLines($testEnvPath)) {
+    if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith("#")) { continue }
+    $parts = $line.Split(@("="), 2, [StringSplitOptions]::None)
+    if ($parts.Count -ne 2) { throw "Invalid .env.test entry." }
+    [Environment]::SetEnvironmentVariable($parts[0], $parts[1], "Process")
+}
+if ($env:APP_ENV -ne "test") { throw "APP_ENV=test is required." }
+if ($env:TEST_DATABASE_URL -notmatch "/horeca_test(?:_[a-z0-9]+)*$") {
+    throw "A dedicated horeca_test database is required."
+}
+```
+
+Run this snippet from `backend/`. Do not echo the resulting variables.
+
+## Exact project commands
+
+Run from `backend/`:
+
+```powershell
+rtk ..\.venv\Scripts\python.exe -m ruff format --check .
+rtk ..\.venv\Scripts\python.exe -m ruff check .
+rtk ..\.venv\Scripts\python.exe -m mypy app tests
+rtk ..\.venv\Scripts\python.exe -m pytest -vv -p no:cacheprovider --cov=app --cov-branch --cov-report=term-missing
+rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini upgrade head
+rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini current --check-heads
+```
+
+Example targeted commands:
+
+```powershell
+rtk ..\.venv\Scripts\python.exe -m pytest tests/api/test_health.py -vv -p no:cacheprovider
+rtk ..\.venv\Scripts\python.exe -m pytest tests/integration/test_database.py -vv -p no:cacheprovider
+rtk ..\.venv\Scripts\python.exe -m pytest tests/migration/test_migrations.py -vv -p no:cacheprovider
+```
+
+The full gate is not green when required PostgreSQL tests are skipped. Report passed, failed, and
+skipped counts explicitly.
+
+## Accepted Stage 0 evidence
+
+CRA-20 was accepted on 2026-08-26 with Python 3.12.10 and native PostgreSQL 16.15:
+
+- 22 passed, 0 failed, 0 skipped;
+- 95% Stage 0 statement/branch coverage;
+- live async SQLAlchemy/asyncpg round-trip;
+- fresh database upgraded to Alembic head `0001_stage0`;
+- Ruff format, Ruff check, and mypy passed.
+
+This is historical accepted evidence, not a substitute for rerunning checks after behavior changes.
+See [`../docs/testing/README.md`](../docs/testing/README.md) and the canonical CRA-20 evidence in
+Linear.
