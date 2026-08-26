@@ -1,0 +1,1 @@
+Stage 0 establishes an Alembic-managed empty schema. Domain tables begin only in Stage 1.
