@@ -17,6 +17,7 @@ or authorize the current task.
 - CRA-26 initial baseline publication and state synchronization is accepted and Done.
 - CRA-27 Stage 1 identity-persistence implementation plan is accepted and Done.
 - CRA-28 Stage 1 identity-persistence implementation is accepted and Done.
+- CRA-29 Stage 2 auth/session/CSRF/MFA/RBAC plan is accepted and Done.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -35,15 +36,18 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   statement/branch coverage, Alembic head `0002_identity_persistence`, and no metadata drift.
 - The candidate adds only Organization, Location, OperationalRole, User,
   OrganizationMembership, EmployeeProfile, and AuditEvent persistence.
-- Stage 2 authentication/session/CSRF/MFA/RBAC work has not started.
+- CRA-30 implements the locally verified Stage 2 authentication/session/CSRF/MFA/RBAC candidate.
+- Current local gate: Python 3.12.10, PostgreSQL 16.15, `91 passed / 0 failed / 0 skipped`, 94%
+  overall statement/branch coverage, 92% critical auth coverage, Alembic head
+  `0003_auth_security`, and no metadata drift.
+- CRA-30 remains In Progress until Denys's final acceptance; its local commits are not yet
+  published.
 
 ## Repository and runtime state
 
 - Branch: `main`.
-- Baseline history: five accepted atomic checkpoints implementing the CRA-23 map, followed by the
-  documentation-only repository-state synchronization checkpoint.
-- The tracked baseline contains 56 intended Stage 0–1 and repository-context paths after the
-  accepted CRA-28 checkpoint.
+- Published history includes the accepted repository baseline and CRA-28 Stage 1 checkpoint;
+  CRA-30 adds five local Stage 2 checkpoints pending acceptance/publication.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: local `main` tracks `origin/main`; the initial baseline was published without
   force-push or history rewriting.
@@ -75,6 +79,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   and deployment.
 - CRA-28 local commit and initial publication were separately authorized by Denys; their exact Git
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
+- CRA-30 authorizes its mapped local commits only. Push, Stage 3, PR, merge, deploy, Railway, and
+  history rewriting remain separate approval gates.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

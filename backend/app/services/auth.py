@@ -5,8 +5,10 @@ from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
+from cryptography.fernet import InvalidToken
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import Settings
 from app.core.email import normalize_email
@@ -19,6 +21,7 @@ from app.models import (
     MfaCredential,
     User,
 )
+from app.security.mfa import MfaSecretCipher, TotpVerifier
 from app.security.passwords import PasswordManager
 from app.security.tokens import generate_opaque_token, hash_secret
 from app.services.sessions import IssuedSession, create_session
@@ -36,6 +39,12 @@ class LoginOutcome:
     session: IssuedSession | None = None
     challenge_token: str | None = None
     challenge_expires_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class MfaOutcome:
+    user: User
+    session: IssuedSession
 
 
 def _rate_subject(email: str, settings: Settings) -> str:
@@ -208,3 +217,101 @@ async def login(
     )
     await db.commit()
     return LoginOutcome(kind="session", user=user, session=issued)
+
+
+def _mfa_challenge_error() -> APIError:
+    return APIError(
+        status_code=401,
+        code="MFA_CHALLENGE_INVALID",
+        message="MFA-виклик недійсний або завершився.",
+    )
+
+
+async def verify_mfa(
+    db: AsyncSession,
+    *,
+    raw_challenge: str | None,
+    code: str,
+    settings: Settings,
+    now: datetime,
+    request_id: UUID,
+    user_agent: str | None,
+) -> MfaOutcome:
+    settings.validate_auth_security()
+    if raw_challenge is None:
+        raise _mfa_challenge_error()
+    challenge = await db.scalar(
+        select(MfaChallenge)
+        .where(MfaChallenge.token_hash == hash_secret(raw_challenge))
+        .options(selectinload(MfaChallenge.user))
+        .with_for_update()
+    )
+    if (
+        challenge is None
+        or challenge.used_at is not None
+        or challenge.expires_at <= now
+        or challenge.failed_attempts >= 5
+    ):
+        raise _mfa_challenge_error()
+
+    credential = await db.scalar(
+        select(MfaCredential)
+        .where(
+            MfaCredential.user_id == challenge.user_id,
+            MfaCredential.confirmed_at.is_not(None),
+            MfaCredential.disabled_at.is_(None),
+        )
+        .with_for_update()
+    )
+    if credential is None:
+        raise _mfa_challenge_error()
+
+    cipher = MfaSecretCipher([key.get_secret_value() for key in settings.mfa_encryption_keys])
+    try:
+        secret = cipher.decrypt(credential.secret_encrypted)
+    except InvalidToken as exception:
+        challenge.used_at = now
+        await db.commit()
+        raise _mfa_challenge_error() from exception
+    counter = TotpVerifier().verify(
+        secret,
+        code,
+        now,
+        last_used_counter=credential.last_used_counter,
+    )
+    if counter is None:
+        challenge.failed_attempts += 1
+        await db.commit()
+        raise APIError(
+            status_code=401,
+            code="MFA_CODE_INVALID",
+            message="Неправильний код MFA.",
+        )
+
+    challenge.used_at = now
+    credential.last_used_counter = counter
+    hmac_key = settings.auth_throttle_hmac_key
+    if hmac_key is None:
+        raise RuntimeError("Auth security settings were not validated")
+    issued = await create_session(
+        db,
+        user=challenge.user,
+        now=now,
+        hmac_key=hmac_key,
+        elevated=True,
+        request_id=request_id,
+        user_agent=user_agent,
+    )
+    db.add(
+        AuditEvent(
+            actor_user_id=challenge.user_id,
+            actor_type="user",
+            action="mfa_completed",
+            target_type="session",
+            target_id=issued.record.id,
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    await db.commit()
+    return MfaOutcome(user=challenge.user, session=issued)

@@ -3,8 +3,9 @@
 ## Purpose
 
 HoReCaFam is the repository for the HoReCa Training Platform. The accepted baseline contains the
-Stage 0 backend foundation and Stage 1 identity persistence. Authentication, invitation, training,
-and frontend work require later bounded issues.
+Stage 0 backend foundation, Stage 1 identity persistence, and a locally verified Stage 2
+authentication/security candidate. Invitation, training, production administration, and frontend
+work require later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -51,13 +52,19 @@ is accepted and adds the Stage 1 persistence checkpoint:
 - Alembic revision `0002_identity_persistence`;
 - real-PostgreSQL identity and migration tests.
 
-No authentication/session, invitation flow, RBAC enforcement, training workflow, provider
-integration, or frontend application has been implemented.
+[CRA-30](https://linear.app/craftspacee/issue/CRA-30/implement-backend-mvp-vertical-slice-1-stage-2-auth-session-csrf-mfa)
+adds the local Stage 2 candidate: Argon2id credentials, non-enumerating login, opaque server-side
+sessions, secure cookies, synchronizer CSRF, current-session logout, encrypted TOTP completion,
+PostgreSQL abuse throttling, and deny-by-default RBAC dependencies. Its final acceptance and
+publication are still separate gates.
+
+Invitation flows, password recovery, MFA enrollment/recovery, real Organization/Employee admin
+endpoints, training workflows, providers, and the frontend application are not implemented.
 
 ## Repository map
 
-- [`backend/app`](backend/app): Stage 0 runtime plus Stage 1 persistence models.
-- [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–1 revisions.
+- [`backend/app`](backend/app): Stage 0 runtime, Stage 1 identity persistence, and Stage 2 auth candidate.
+- [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–2 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
 - [`frontend`](frontend): reserved boundary only.

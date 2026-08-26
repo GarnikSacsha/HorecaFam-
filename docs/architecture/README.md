@@ -38,15 +38,31 @@ required environment configuration
 - `backend/app/db/safety.py` fails closed unless destructive test work targets `APP_ENV=test` and
   an explicitly test-scoped database.
 - `backend/app/db/base.py` owns the shared SQLAlchemy metadata and deterministic naming convention.
-- `backend/app/models` defines only the seven CRA-28 Stage 1 persistence entities.
+- `backend/app/models` defines the seven CRA-28 identity entities plus CRA-30 authentication,
+  Session, MFA, access, and abuse-control state.
 - `backend/migrations/env.py` wires that metadata into Alembic.
 - `backend/migrations/versions/0001_stage0_empty_schema.py` establishes the base history;
-  `0002_identity_persistence.py` creates the Stage 1 schema.
+  `0002_identity_persistence.py` creates the Stage 1 schema; `0003_auth_security.py` creates the
+  Stage 2 authentication/security schema.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
 The current data design, future models, migration order, and RBAC remain canonical in
 [CRA-10](https://linear.app/craftspacee/issue/CRA-10/design-database-schema-and-entity-relationships).
+
+## Stage 2 authentication boundary
+
+```text
+password login → ordinary Session or one-time MFA challenge
+MFA challenge + TOTP → elevated Session
+Session cookie + synchronizer token → protected mutation
+Session + scoped access state → deny-by-default RBAC dependency
+```
+
+Only `/api/v1/auth/login`, `/api/v1/auth/mfa/verify`, `/api/v1/auth/session`, and
+`/api/v1/auth/logout` are production Stage 2 auth routes. Organization/Admin behavior is exposed
+only as reusable dependencies and tested through test-only probes; no later-stage product route is
+pulled forward.
 
 ## Test boundary
 
@@ -56,6 +72,7 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is no auth/session/CSRF/MFA implementation, invitation workflow, RBAC enforcement,
-menu/training workflow, provider integration, production resource, or frontend application.
-Adding any of these requires a new bounded Linear issue and approval.
+There is no invitation/password-recovery/MFA-enrollment workflow, production Organization or
+Employee administration endpoint, menu/training workflow, provider integration, production
+resource, or frontend application. Adding any of these requires a new bounded Linear issue and
+approval.

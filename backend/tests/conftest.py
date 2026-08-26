@@ -1,3 +1,4 @@
+import logging
 import os
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -54,6 +55,8 @@ def migrated_test_database(test_database_settings: Settings) -> Settings:
     config.set_main_option("sqlalchemy.url", test_database_settings.database_url)
     command.upgrade(config, "head")
     command.current(config, check_heads=True)
+    # Alembic fileConfig вимикає вже створені логери в процесі pytest.
+    logging.getLogger("app.errors").disabled = False
     return test_database_settings
 
 

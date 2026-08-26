@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, SecretStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
 
 
 class LoginRequest(BaseModel):
@@ -52,3 +52,9 @@ class MfaRequiredResponse(BaseModel):
 
     status: Literal["mfa_required"] = "mfa_required"
     expires_at: datetime
+
+
+class MfaVerifyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(pattern=r"^\d{6}$")

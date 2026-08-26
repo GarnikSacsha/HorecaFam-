@@ -7,8 +7,8 @@ maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
 ## Current test layout
 
-- `backend/tests/api`: application factory, health contract, request ID, validation, and safe error
-  behavior through the ASGI path.
+- `backend/tests/api`: application factory, health/errors, and real-PostgreSQL auth/session/CSRF/
+  logout/MFA/RBAC behavior through the ASGI path.
 - `backend/tests/unit`: required configuration, fail-closed test database rules, and canonical
   email normalization.
 - `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip and Stage 1 persistence
@@ -53,3 +53,10 @@ The accepted Stage 1 checkpoint reports:
 - focused tenant-ownership, lifecycle, email uniqueness, audit, and migration proof.
 
 Canonical RED/GREEN evidence and limitations are recorded in CRA-28.
+
+## CRA-30 Stage 2 candidate
+
+The current local candidate reports Python 3.12.10, PostgreSQL 16.15, 91 passed, 0 failed,
+0 skipped, 94% overall statement/branch coverage, and 92% critical auth coverage. A dedicated
+`horeca_test` base→`0003_auth_security` cycle passes and Alembic reports no metadata drift.
+CRA-30 remains the canonical evidence source and stays In Progress until Denys accepts it.

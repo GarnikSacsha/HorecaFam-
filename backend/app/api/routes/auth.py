@@ -14,9 +14,14 @@ from app.core.config import Settings
 from app.core.cookies import set_mfa_challenge_cookie, set_session_cookie
 from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
-from app.schemas.auth import LoginRequest, MfaRequiredResponse, SessionResponse
+from app.schemas.auth import (
+    LoginRequest,
+    MfaRequiredResponse,
+    MfaVerifyRequest,
+    SessionResponse,
+)
 from app.security.passwords import PasswordManager
-from app.services.auth import login
+from app.services.auth import login, verify_mfa
 from app.services.sessions import build_session_response, revoke_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -98,6 +103,51 @@ async def logout_route(
         secure=settings.session_cookie_secure,
         httponly=True,
         samesite=settings.session_cookie_samesite,
+    )
+
+
+@router.post("/mfa/verify", response_model=SessionResponse)
+async def verify_mfa_route(
+    payload: MfaVerifyRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> SessionResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    now = clock()
+    outcome = await verify_mfa(
+        db,
+        raw_challenge=request.cookies.get(settings.mfa_challenge_cookie_name),
+        code=payload.code,
+        settings=settings,
+        now=now,
+        request_id=UUID(get_request_id()),
+        user_agent=request.headers.get("user-agent"),
+    )
+    set_session_cookie(
+        response,
+        settings,
+        outcome.session.raw_token,
+        outcome.session.record.absolute_expires_at,
+        now,
+    )
+    response.delete_cookie(
+        key=settings.mfa_challenge_cookie_name,
+        path="/api/v1",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite=settings.session_cookie_samesite,
+    )
+    hmac_key = settings.auth_throttle_hmac_key
+    if hmac_key is None:
+        raise RuntimeError("Auth security settings were not validated")
+    return await build_session_response(
+        db,
+        issued_session=outcome.session.record,
+        user=outcome.user,
+        raw_token=outcome.session.raw_token,
+        hmac_key=hmac_key,
     )
 
 

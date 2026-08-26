@@ -43,6 +43,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
+concurrency = ["greenlet"]
 source = ["app"]
 
 [tool.coverage.report]
