@@ -4,7 +4,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.session import AuthenticatedSession, get_current_session
+from app.api.dependencies.session import (
+    AuthenticatedSession,
+    get_csrf_protected_session,
+    get_current_session,
+)
 from app.core.clock import Clock
 from app.core.config import Settings
 from app.core.cookies import set_mfa_challenge_cookie, set_session_cookie
@@ -13,7 +17,7 @@ from app.db.dependencies import get_db
 from app.schemas.auth import LoginRequest, MfaRequiredResponse, SessionResponse
 from app.security.passwords import PasswordManager
 from app.services.auth import login
-from app.services.sessions import build_session_response
+from app.services.sessions import build_session_response, revoke_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -73,6 +77,30 @@ async def login_route(
     )
 
 
+@router.post("/logout", status_code=204)
+async def logout_route(
+    request: Request,
+    response: Response,
+    current: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    clock = cast(Clock, request.app.state.clock)
+    await revoke_session(
+        db,
+        session=current.record,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+    settings = cast(Settings, request.app.state.settings)
+    response.delete_cookie(
+        key=settings.session_cookie_name,
+        path="/api/v1",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite=settings.session_cookie_samesite,
+    )
+
+
 @router.get("/session", response_model=SessionResponse)
 async def session_context(
     request: Request,
@@ -83,10 +111,12 @@ async def session_context(
     hmac_key = settings.auth_throttle_hmac_key
     if hmac_key is None:
         raise RuntimeError("Auth security settings were not validated")
-    return await build_session_response(
+    response = await build_session_response(
         db,
         issued_session=current.record,
         user=current.user,
         raw_token=current.raw_token,
         hmac_key=hmac_key,
     )
+    await db.commit()
+    return response

@@ -1,3 +1,4 @@
+import secrets
 from dataclasses import dataclass
 from typing import Annotated, cast
 
@@ -53,5 +54,29 @@ async def get_current_session(
             message="Потрібна автентифікація.",
         )
     record.last_seen_at = now
-    await db.commit()
     return AuthenticatedSession(record=record, user=record.user, raw_token=raw_token)
+
+
+def _csrf_error() -> APIError:
+    return APIError(
+        status_code=403,
+        code="CSRF_INVALID",
+        message="CSRF-перевірка не пройдена.",
+    )
+
+
+async def get_csrf_protected_session(
+    request: Request,
+    current: Annotated[AuthenticatedSession, Depends(get_current_session)],
+) -> AuthenticatedSession:
+    settings = cast(Settings, request.app.state.settings)
+    origin = request.headers.get("origin")
+    if origin is not None and origin not in settings.cors_allowed_origins:
+        raise _csrf_error()
+
+    csrf_token = request.headers.get("x-csrf-token")
+    if csrf_token is None or not secrets.compare_digest(
+        hash_secret(csrf_token), current.record.csrf_token_hash
+    ):
+        raise _csrf_error()
+    return current

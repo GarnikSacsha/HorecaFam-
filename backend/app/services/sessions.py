@@ -26,6 +26,29 @@ class IssuedSession:
     csrf_token: str
 
 
+async def revoke_session(
+    db: AsyncSession,
+    *,
+    session: Session,
+    now: datetime,
+    request_id: UUID,
+) -> None:
+    session.revoked_at = now
+    session.revoke_reason = "logout"
+    db.add(
+        AuditEvent(
+            actor_user_id=session.user_id,
+            actor_type="user",
+            action="session_revoked",
+            target_type="session",
+            target_id=session.id,
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    await db.commit()
+
+
 def derive_csrf_token(raw_session_token: str, hmac_key: SecretStr) -> str:
     return hmac.new(
         hmac_key.get_secret_value().encode("utf-8"),
@@ -104,7 +127,7 @@ async def build_session_response(
     for membership in memberships:
         access_by_organization[membership.organization_id] = OrganizationAccess(
             organization_id=membership.organization_id,
-            membership_status=cast(Literal["invited", "active", "suspended"], membership.status),
+            membership_status=cast(Literal["pending", "active", "disabled"], membership.status),
             is_employee=membership.employee_profile is not None,
             is_organization_admin=False,
         )

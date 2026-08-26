@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.clock import utc_now
@@ -17,6 +18,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.password_manager = PasswordManager()
     application.state.engine = create_engine(resolved_settings)
     application.state.session_factory = create_session_factory(application.state.engine)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=resolved_settings.cors_allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "X-CSRF-Token", "X-Request-ID"],
+    )
     application.add_middleware(RequestIDMiddleware)
     register_exception_handlers(application)
     application.include_router(api_router)
