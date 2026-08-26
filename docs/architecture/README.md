@@ -37,10 +37,13 @@ required environment configuration
 - `backend/app/db/session.py` creates the SQLAlchemy async engine/session boundary.
 - `backend/app/db/safety.py` fails closed unless destructive test work targets `APP_ENV=test` and
   an explicitly test-scoped database.
-- `backend/migrations/env.py` uses the runtime database URL when supplied and otherwise retains an
-  invalid fail-closed placeholder.
-- `backend/migrations/versions/0001_stage0_empty_schema.py` establishes Alembic history without
-  domain tables.
+- `backend/app/db/base.py` owns the shared SQLAlchemy metadata and deterministic naming convention.
+- `backend/app/models` defines only the seven CRA-28 Stage 1 persistence entities.
+- `backend/migrations/env.py` wires that metadata into Alembic.
+- `backend/migrations/versions/0001_stage0_empty_schema.py` establishes the base history;
+  `0002_identity_persistence.py` creates the Stage 1 schema.
+- Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
+  organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
 The current data design, future models, migration order, and RBAC remain canonical in
 [CRA-10](https://linear.app/craftspacee/issue/CRA-10/design-database-schema-and-entity-relationships).
@@ -53,6 +56,6 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There are no domain tables, identity models, auth/session/CSRF/MFA implementation, invitations,
-employee lifecycle, menu/training workflows, provider integrations, production resources, or
-frontend application. Adding any of these requires a new bounded Linear issue and approval.
+There is no auth/session/CSRF/MFA implementation, invitation workflow, RBAC enforcement,
+menu/training workflow, provider integration, production resource, or frontend application.
+Adding any of these requires a new bounded Linear issue and approval.

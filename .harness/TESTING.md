@@ -64,6 +64,7 @@ rtk ..\.venv\Scripts\python.exe -m mypy app tests
 rtk ..\.venv\Scripts\python.exe -m pytest -vv -p no:cacheprovider --cov=app --cov-branch --cov-report=term-missing
 rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini upgrade head
 rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini current --check-heads
+rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini check
 ```
 
 Example targeted commands:
@@ -71,6 +72,7 @@ Example targeted commands:
 ```powershell
 rtk ..\.venv\Scripts\python.exe -m pytest tests/api/test_health.py -vv -p no:cacheprovider
 rtk ..\.venv\Scripts\python.exe -m pytest tests/integration/test_database.py -vv -p no:cacheprovider
+rtk ..\.venv\Scripts\python.exe -m pytest tests/integration/test_identity_models.py -vv -p no:cacheprovider
 rtk ..\.venv\Scripts\python.exe -m pytest tests/migration/test_migrations.py -vv -p no:cacheprovider
 ```
 
@@ -90,3 +92,10 @@ CRA-20 was accepted on 2026-08-26 with Python 3.12.10 and native PostgreSQL 16.1
 This is historical accepted evidence, not a substitute for rerunning checks after behavior changes.
 See [`../docs/testing/README.md`](../docs/testing/README.md) and the canonical CRA-20 evidence in
 Linear.
+
+## Accepted Stage 1 evidence
+
+CRA-28 was accepted with a local Python 3.12.10/PostgreSQL 16.15 gate reporting 47 passed,
+0 failed, 0 skipped, 97% coverage, Alembic head
+`0002_identity_persistence`, and no metadata drift. Rerun the complete gate before relying on this
+snapshot or preparing any authorized commit.

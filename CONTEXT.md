@@ -2,9 +2,9 @@
 
 ## Purpose
 
-HoReCaFam is the repository for the HoReCa Training Platform. The accepted implementation is
-currently a minimal backend foundation; later identity, authentication, invitation, training,
-and frontend work must be delivered through separate bounded Linear issues.
+HoReCaFam is the repository for the HoReCa Training Platform. The accepted baseline contains the
+Stage 0 backend foundation and Stage 1 identity persistence. Authentication, invitation, training,
+and frontend work require later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -29,25 +29,35 @@ canonical until it is recorded in the applicable Linear source.
 ## Verified implementation boundary
 
 [CRA-20](https://linear.app/craftspacee/issue/CRA-20/backend-mvp-vertical-slice-1-stage-0-api-foundation)
-Stage 0 is accepted and Done. The repository contains:
+Stage 0 is accepted and Done. Its repository foundation contains:
 
 - a Python 3.12 FastAPI application factory;
 - the versioned `/api/v1` boundary and health route;
 - request ID correlation and unified API errors;
 - typed configuration;
 - async SQLAlchemy 2 and asyncpg session infrastructure;
-- Alembic with the empty-schema `0001_stage0` revision;
+- Alembic with the base `0001_stage0` revision;
 - fail-closed test database safety checks;
 - API, unit, real-PostgreSQL integration, and migration tests;
 - a reserved, empty frontend boundary.
 
-No domain tables, identity persistence, authentication, invitation, employee lifecycle,
-training workflow, or frontend application has been implemented.
+[CRA-28](https://linear.app/craftspacee/issue/CRA-28/implement-backend-mvp-vertical-slice-1-stage-1-identity-persistence)
+is accepted and adds the Stage 1 persistence checkpoint:
+
+- Organization, Location, OperationalRole, User, OrganizationMembership, EmployeeProfile, and
+  AuditEvent SQLAlchemy models;
+- canonical normalized email storage;
+- PostgreSQL tenant-ownership, lifecycle, uniqueness, and audit constraints;
+- Alembic revision `0002_identity_persistence`;
+- real-PostgreSQL identity and migration tests.
+
+No authentication/session, invitation flow, RBAC enforcement, training workflow, provider
+integration, or frontend application has been implemented.
 
 ## Repository map
 
-- [`backend/app`](backend/app): accepted Stage 0 runtime foundation.
-- [`backend/migrations`](backend/migrations): Alembic environment and Stage 0 base revision.
+- [`backend/app`](backend/app): Stage 0 runtime plus Stage 1 persistence models.
+- [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–1 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
 - [`frontend`](frontend): reserved boundary only.

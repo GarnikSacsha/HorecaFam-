@@ -9,9 +9,14 @@ maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
 - `backend/tests/api`: application factory, health contract, request ID, validation, and safe error
   behavior through the ASGI path.
-- `backend/tests/unit`: required configuration and fail-closed test database rules.
-- `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip against PostgreSQL 16.
-- `backend/tests/migration`: Alembic head smoke and the prohibition on runtime `create_all`.
+- `backend/tests/unit`: required configuration, fail-closed test database rules, and canonical
+  email normalization.
+- `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip and Stage 1 persistence
+  constraints against PostgreSQL 16.
+- `backend/tests/migration`: Alembic head/schema/drift checks and the prohibition on runtime
+  `create_all`.
+- `backend/tests/factories` and `backend/tests/conftest.py`: deterministic identity objects and
+  guarded real-PostgreSQL cleanup fixtures.
 
 ## Isolation rules
 
@@ -36,3 +41,15 @@ was accepted on 2026-08-26 with:
 
 These are historical accepted results. Any future behavior change must produce new task-specific
 RED/GREEN evidence and rerun the checks proportionate to its risk.
+
+## Accepted CRA-28 checkpoint
+
+The accepted Stage 1 checkpoint reports:
+
+- Python 3.12.10 and native PostgreSQL 16.15;
+- 47 passed, 0 failed, 0 skipped;
+- 97% statement/branch coverage;
+- Alembic head `0002_identity_persistence` and no metadata drift;
+- focused tenant-ownership, lifecycle, email uniqueness, audit, and migration proof.
+
+Canonical RED/GREEN evidence and limitations are recorded in CRA-28.

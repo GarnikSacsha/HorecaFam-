@@ -4,9 +4,12 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from sqlalchemy import inspect
 
 from app.core.config import Settings
+from app.db.base import Base
 from app.db.safety import assert_safe_test_database
+from app.db.session import create_engine
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
@@ -31,6 +34,7 @@ def test_empty_database_reaches_alembic_head() -> None:
     command.upgrade(config, "head")
 
     command.current(config, check_heads=True)
+    command.check(config)
 
 
 def test_application_runtime_does_not_use_create_all() -> None:
@@ -39,3 +43,32 @@ def test_application_runtime_does_not_use_create_all() -> None:
     )
 
     assert "create_all" not in application_source
+
+
+def test_identity_metadata_contains_only_stage_1_tables() -> None:
+    assert set(Base.metadata.tables) == {
+        "audit_events",
+        "employee_profiles",
+        "locations",
+        "operational_roles",
+        "organization_memberships",
+        "organizations",
+        "users",
+    }
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+async def test_database_contains_stage_1_tables(
+    migrated_test_database: Settings,
+) -> None:
+    engine = create_engine(migrated_test_database)
+    try:
+        async with engine.connect() as connection:
+            table_names = await connection.run_sync(
+                lambda sync_connection: set(inspect(sync_connection).get_table_names())
+            )
+    finally:
+        await engine.dispose()
+
+    assert set(Base.metadata.tables) <= table_names

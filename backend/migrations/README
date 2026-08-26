@@ -1,1 +1,2 @@
-Stage 0 establishes an Alembic-managed empty schema. Domain tables begin only in Stage 1.
+Stage 0 establishes the Alembic base. Stage 1 adds the bounded identity persistence schema in
+revision 0002_identity_persistence; Alembic remains the only schema-management path.

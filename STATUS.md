@@ -14,6 +14,9 @@ or authorize the current task.
 - CRA-23 retrospective selective first-baseline commit map is accepted and Done.
 - CRA-24 repository-context synchronization is accepted and Done.
 - CRA-25 selective five-commit baseline execution is accepted and Done.
+- CRA-26 initial baseline publication and state synchronization is accepted and Done.
+- CRA-27 Stage 1 identity-persistence implementation plan is accepted and Done.
+- CRA-28 Stage 1 identity-persistence implementation is accepted and Done.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -25,12 +28,22 @@ or authorize the current task.
 The Stage 0 gate was rerun successfully during the selective baseline execution recorded in
 CRA-25; the canonical acceptance history remains in CRA-20.
 
+## Accepted Stage 1 checkpoint
+
+- CRA-28 implements the accepted Stage 1 identity persistence boundary.
+- Accepted gate: Python 3.12.10, PostgreSQL 16.15, `47 passed / 0 failed / 0 skipped`, 97%
+  statement/branch coverage, Alembic head `0002_identity_persistence`, and no metadata drift.
+- The candidate adds only Organization, Location, OperationalRole, User,
+  OrganizationMembership, EmployeeProfile, and AuditEvent persistence.
+- Stage 2 authentication/session/CSRF/MFA/RBAC work has not started.
+
 ## Repository and runtime state
 
 - Branch: `main`.
 - Baseline history: five accepted atomic checkpoints implementing the CRA-23 map, followed by the
   documentation-only repository-state synchronization checkpoint.
-- The tracked baseline contains the 43 intended Stage 0 and repository-context paths.
+- The tracked baseline contains 56 intended Stage 0–1 and repository-context paths after the
+  accepted CRA-28 checkpoint.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: local `main` tracks `origin/main`; the initial baseline was published without
   force-push or history rewriting.
@@ -60,7 +73,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   authorization.
 - Every later push remains a separate approval gate, as do PR, merge, history rewrite, Railway,
   and deployment.
-- Stage 1 has not started and is not automatically authorized by completion of any baseline step.
+- CRA-28 local commit and initial publication were separately authorized by Denys; their exact Git
+  evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

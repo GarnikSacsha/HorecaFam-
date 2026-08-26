@@ -1,7 +1,7 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. The accepted implementation currently contains the
-CRA-20 Stage 0 FastAPI foundation; Stage 1 has not started.
+Repository for the HoReCa Training Platform. The accepted implementation contains the CRA-20
+Stage 0 FastAPI foundation and the CRA-28 Stage 1 identity persistence checkpoint.
 
 ## Start here
 
@@ -16,7 +16,8 @@ Repository documentation summarizes verified local state and routes agents to th
 
 ## Repository map
 
-- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic Stage 0.
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–1
+  backend foundations.
 - [`frontend/`](frontend): reserved boundary for a separately approved frontend stage.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
@@ -39,5 +40,6 @@ Read [`backend/AGENTS.md`](backend/AGENTS.md) before backend work and use the ex
 commands in [`.harness/TESTING.md`](.harness/TESTING.md). Real PostgreSQL 16 is required for
 integration and migration acceptance; there is no SQLite fallback.
 
-No identity persistence, authentication, invitation, employee lifecycle, training workflow, or
-frontend application is included yet.
+Stage 1 persists organization, location, operational-role, user, membership, employee-profile,
+and audit-event records. Authentication, invitations, RBAC behavior, training workflows, and the
+frontend application remain outside the implemented boundary.
