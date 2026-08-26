@@ -1,9 +1,11 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
+from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AdminAccess, MfaCredential
+from app.models import AdminAccess, AuthRateLimitBucket, MfaCredential
 from app.security.passwords import PasswordManager
 from tests.factories.identity import make_membership, make_organization, make_user
 
@@ -147,3 +149,31 @@ async def test_login_throttles_known_and_unknown_accounts_equally(
     assert response.status_code == 429
     assert response.json()["code"] == "AUTH_RATE_LIMITED"
     assert "unknown@example.com" not in response.text
+
+
+async def test_login_starts_new_rate_limit_window_after_expiry(
+    auth_app: FastAPI,
+    auth_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    now = datetime(2026, 8, 26, 12, tzinfo=UTC)
+    auth_app.state.clock = lambda: now
+
+    first = await auth_client.post(
+        "/api/v1/auth/login",
+        json={"email": "unknown@example.com", "password": "wrong-password"},
+    )
+    assert first.status_code == 401
+
+    now += timedelta(minutes=16)
+    second = await auth_client.post(
+        "/api/v1/auth/login",
+        json={"email": "unknown@example.com", "password": "wrong-password"},
+    )
+
+    assert second.status_code == 401
+    assert second.json()["code"] == "INVALID_CREDENTIALS"
+    bucket = await db_session.scalar(select(AuthRateLimitBucket))
+    assert bucket is not None
+    assert bucket.window_started_at == now
+    assert bucket.failure_count == 1

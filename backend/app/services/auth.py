@@ -80,7 +80,7 @@ async def _register_failure(
     subject_hash: str,
     now: datetime,
 ) -> bool:
-    if bucket is None or now - bucket.window_started_at >= LOGIN_WINDOW:
+    if bucket is None:
         bucket = AuthRateLimitBucket(
             action="login",
             subject_hash=subject_hash,
@@ -88,6 +88,10 @@ async def _register_failure(
             failure_count=1,
         )
         db.add(bucket)
+    elif now - bucket.window_started_at >= LOGIN_WINDOW:
+        bucket.window_started_at = now
+        bucket.failure_count = 1
+        bucket.blocked_until = None
     else:
         bucket.failure_count += 1
     if bucket.failure_count >= LOGIN_FAILURE_LIMIT:
