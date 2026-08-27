@@ -3,10 +3,9 @@
 ## Current baseline state
 
 The repository is on `main`. The published history contains the accepted Stage 0 repository
-baseline, Stage 1 identity-persistence checkpoint, and Stage 2 auth/security checkpoint. CRA-32
-adds the approved six-part local Stage 3 invitation sequence; its acceptance and publication
-remain separate gates. `origin` points to the approved HoReCa GitHub repository, and local `main`
-has upstream tracking.
+baseline and Stage 1–4 checkpoints through `9fd2130`. CRA-32's six Stage 3 commits and CRA-34's four
+Stage 4 commits were fast-forward published without rewriting history. `origin` points to the
+approved HoReCa GitHub repository, and local `main` has upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -103,5 +102,6 @@ baseline intentionally excludes:
 
 Publication of any checkpoint does not authorize the next implementation stage. Every subsequent
 change still requires an active bounded Linear issue, an agreed commit map, and the applicable
-local-commit and remote-action approvals. Stages 1 and 2 are accepted; the current Stage 3 state
-must be resolved through Linear START HERE and CRA-32 evidence rather than this workflow summary.
+local-commit and remote-action approvals. Stages 1–4 are accepted and published. CRA-36 is the
+active Stage 5 implementation issue; production implementation is authorized, while staging,
+local commits, and remote actions remain separately gated.

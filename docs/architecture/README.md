@@ -91,7 +91,7 @@ public invitation token + discriminated account mode
 → Secure HttpOnly cookie after commit
 ```
 
-The local CRA-34 candidate adds only `POST /api/v1/invitations/accept`. Invitation email and
+Accepted CRA-34 adds only `POST /api/v1/invitations/accept`. Invitation email and
 Organization remain authoritative; the request cannot redirect identity or tenant ownership.
 Concurrent reuse has one winner, all failures roll back, and the issued Session grants only the
 existing Pending boundary. Acceptance never activates Membership, assigns Role/Location, or marks

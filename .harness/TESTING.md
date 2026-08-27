@@ -116,13 +116,14 @@ complete gate reports 156 passed, 0 failed, 0 skipped, 94% overall statement/bra
 aggregate critical invitation coverage, Alembic head `0005_invitation_email_outbox`, and no
 metadata drift. Canonical evidence remains in Linear.
 
-## CRA-34 Stage 4 local candidate evidence
+## Accepted CRA-34 Stage 4 evidence
 
-The local invitation-acceptance candidate uses the same Python 3.12.10 and native PostgreSQL 16.15
+The accepted invitation-acceptance checkpoint uses the same Python 3.12.10 and native PostgreSQL 16.15
 boundary. Its final gate reports 180 passed, 0 failed, 0 skipped, 94% overall statement/branch
 coverage, 93% aggregate critical acceptance coverage, Alembic head
 `0005_invitation_email_outbox`, and no metadata drift. Focused API acceptance reports 12 passed.
-CRA-34 remains In Progress until Denys accepts the candidate; push is a separate approval gate.
+CRA-34 is Done and its four commits are published through `9fd2130`. Canonical evidence remains in
+Linear.
 
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.

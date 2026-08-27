@@ -1,10 +1,10 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. Published history contains the CRA-20 Stage 0 FastAPI
-foundation, CRA-28 Stage 1 identity persistence, and CRA-30 Stage 2 authentication/security
-boundary. Local history also contains accepted CRA-32 Stage 3 invitation administration and a
-verified CRA-34 Stage 4 invitation-acceptance candidate pending acceptance. The Stage 3 and Stage 4
-local commits are not yet published.
+Repository for the HoReCa Training Platform. Published history contains the accepted backend
+foundation through CRA-32 Stage 3 invitation administration and CRA-34 Stage 4 invitation
+acceptance. Their published baseline ends at `9fd2130`. CRA-36 is the active bounded Stage 5
+Pending/Admin Profile Setup implementation; its production work is authorized, while local
+commits and publication remain separate approval gates.
 
 ## Start here
 
@@ -46,8 +46,8 @@ integration and migration acceptance; there is no SQLite fallback.
 Stage 1 persists identity and organization records. Accepted CRA-30 adds non-enumerating
 login, server-side sessions, CSRF-protected logout, TOTP completion, and Organization-scoped RBAC
 dependencies. Accepted CRA-32 adds create, public validate, resend, and revoke invitation flows
-backed by persistent idempotency/rate limits and a transactional email outbox. The local CRA-34
-candidate adds atomic new/existing-account invitation acceptance, Pending access, an opaque
-Session, and safe cookie/audit integration. Provider/worker execution, invitation list/detail
+backed by persistent idempotency/rate limits and a transactional email outbox. Accepted CRA-34
+adds atomic new/existing-account invitation acceptance, Pending access, an opaque Session, and
+safe cookie/audit integration. Provider/worker execution, invitation list/detail
 endpoints, MFA enrollment/recovery, training workflows, broader production administration, and
 the frontend remain outside the implemented boundary.

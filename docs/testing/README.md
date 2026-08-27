@@ -73,12 +73,11 @@ The accepted local invitation checkpoint reports:
   metadata drift;
 - a live async HTTP create → validate → resend → old-token rejection → revoke lifecycle.
 
-CRA-32 remains the canonical evidence source and is accepted and Done in Linear. Its six local
-commits are not yet published.
+CRA-32 remains the canonical evidence source and is accepted, Done, and published.
 
-## CRA-34 Stage 4 local candidate
+## Accepted CRA-34 Stage 4 checkpoint
 
-The invitation-acceptance candidate reports:
+The accepted invitation-acceptance checkpoint reports:
 
 - Python 3.12.10 and native PostgreSQL 16.15;
 - 180 passed, 0 failed, 0 skipped;
@@ -88,5 +87,5 @@ The invitation-acceptance candidate reports:
 - focused API, service, concurrency, rollback, throttle, and tenant-isolation proof.
 
 The first full gate found only a stale deterministic test clock; after moving that test-only clock
-forward, the focused API suite reported 12 passed and the full gate above was green. CRA-34 remains
-In Progress until Denys accepts the local candidate.
+forward, the focused API suite reported 12 passed and the full gate above was green. CRA-34 is Done,
+and its four commits are published through `9fd2130`.
