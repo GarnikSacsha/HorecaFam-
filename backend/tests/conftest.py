@@ -92,6 +92,7 @@ def auth_settings(migrated_test_database: Settings) -> Settings:
         database_url=migrated_test_database.database_url,
         mfa_encryption_keys=[Fernet.generate_key().decode("ascii")],
         auth_throttle_hmac_key="test-only-auth-throttle-key-value",
+        invitation_token_hmac_keys=["test-only-invitation-token-key-value"],
         cors_allowed_origins=["https://frontend.test"],
         session_cookie_secure=True,
     )

@@ -23,7 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=resolved_settings.cors_allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "X-CSRF-Token", "X-Request-ID"],
+        allow_headers=["Content-Type", "Idempotency-Key", "X-CSRF-Token", "X-Request-ID"],
     )
     application.add_middleware(RequestIDMiddleware)
     register_exception_handlers(application)
