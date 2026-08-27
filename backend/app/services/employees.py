@@ -18,6 +18,7 @@ from app.models import (
 )
 from app.schemas.employees import (
     EmployeeDetail,
+    EmployeeLifecycleActionResponse,
     EmployeeListResponse,
     EmployeeSummary,
     EmployeeUpdate,
@@ -518,6 +519,128 @@ async def update_pending_employee_profile(
             employee_id=employee_id,
             actor_user_id=actor_user_id,
             payload=payload,
+            request_id=request_id,
+        )
+    except Exception:
+        await db.rollback()
+        raise
+
+
+def _employee_profile_incomplete() -> APIError:
+    return APIError(
+        status_code=409,
+        code="EMPLOYEE_PROFILE_INCOMPLETE",
+        message="Профіль працівника потребує заповнення перед активацією.",
+    )
+
+
+def _employee_activation_not_allowed() -> APIError:
+    return APIError(
+        status_code=409,
+        code="EMPLOYEE_ACTIVATION_NOT_ALLOWED",
+        message="Працівника не можна активувати з поточного стану.",
+    )
+
+
+async def _activate_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleActionResponse:
+    locked = (
+        (
+            await db.execute(
+                select(EmployeeProfile, OrganizationMembership)
+                .join(
+                    OrganizationMembership,
+                    and_(
+                        OrganizationMembership.id == EmployeeProfile.membership_id,
+                        OrganizationMembership.organization_id == EmployeeProfile.organization_id,
+                    ),
+                )
+                .where(
+                    EmployeeProfile.id == employee_id,
+                    EmployeeProfile.organization_id == organization_id,
+                )
+                .with_for_update()
+            )
+        )
+        .tuples()
+        .one_or_none()
+    )
+    if locked is None:
+        raise _resource_not_found()
+    profile, membership = locked
+    if membership.status != "pending":
+        raise _employee_activation_not_allowed()
+    if not (
+        profile.first_name
+        and profile.first_name.strip()
+        and profile.last_name
+        and profile.last_name.strip()
+        and profile.operational_role_id is not None
+        and profile.location_id is not None
+    ):
+        raise _employee_profile_incomplete()
+
+    await _validated_role(
+        db,
+        organization_id=organization_id,
+        role_id=profile.operational_role_id,
+    )
+    await _validated_location(
+        db,
+        organization_id=organization_id,
+        location_id=profile.location_id,
+    )
+
+    membership.status = "active"
+    membership.activated_at = now
+    membership.disabled_at = None
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="employee_activated",
+            target_type="employee_profile",
+            target_id=employee_id,
+            old_values={"membership_status": "pending"},
+            new_values={"membership_status": "active"},
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    await db.commit()
+    return EmployeeLifecycleActionResponse(
+        employee_id=employee_id,
+        organization_id=organization_id,
+        membership_status="active",
+        training_participation_status="active",
+        activated_at=now,
+    )
+
+
+async def activate_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleActionResponse:
+    try:
+        return await _activate_employee(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            actor_user_id=actor_user_id,
+            now=now,
             request_id=request_id,
         )
     except Exception:

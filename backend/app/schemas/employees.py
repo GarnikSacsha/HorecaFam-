@@ -63,6 +63,14 @@ class EmployeeDetail(EmployeeSummary):
     disabled_at: datetime | None
 
 
+class EmployeeLifecycleActionResponse(StrictSchema):
+    employee_id: UUID
+    organization_id: UUID
+    membership_status: Literal["active"]
+    training_participation_status: Literal["active"]
+    activated_at: datetime
+
+
 class EmployeeListResponse(StrictSchema):
     items: list[EmployeeSummary]
     next_cursor: str | None

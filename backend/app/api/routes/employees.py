@@ -1,7 +1,7 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
@@ -10,10 +10,12 @@ from app.api.dependencies.session import (
     get_csrf_protected_session,
     get_current_session,
 )
+from app.core.clock import Clock
 from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.schemas.employees import (
     EmployeeDetail,
+    EmployeeLifecycleActionResponse,
     EmployeeListResponse,
     EmployeeUpdate,
     LocationSummary,
@@ -22,6 +24,7 @@ from app.schemas.employees import (
     OwnEmployeeProfilesResponse,
 )
 from app.services.employees import (
+    activate_employee,
     get_employee_detail,
     get_organization_summary,
     get_own_employee_profiles,
@@ -136,6 +139,33 @@ async def employee_update_route(
         employee_id=employee_id,
         actor_user_id=authorization.user.id,
         payload=payload,
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}/activate",
+    response_model=EmployeeLifecycleActionResponse,
+)
+async def employee_activate_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    request: Request,
+    _idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeLifecycleActionResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await activate_employee(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        now=clock(),
         request_id=UUID(get_request_id()),
     )
 
