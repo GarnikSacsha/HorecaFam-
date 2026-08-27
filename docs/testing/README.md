@@ -104,7 +104,7 @@ The Pending/Admin Profile Setup checkpoint reports:
 
 CRA-36 is accepted. Its exact commit and publication evidence remains canonical in Linear and Git.
 
-## Current CRA-38 Stage 6 candidate
+## Accepted CRA-38 Stage 6 checkpoint
 
 The Explicit Activation candidate reports:
 
@@ -117,5 +117,24 @@ The Explicit Activation candidate reports:
 - Alembic head `0005_invitation_email_outbox`, empty-database migration coverage, current head,
   and no metadata drift.
 
-The five local CRA-38 checkpoints are complete but unpushed. CRA-38 remains In Progress until Denys
-explicitly accepts the candidate.
+The five local CRA-38 checkpoints through `bd2f98e` are accepted and Done but remain unpushed.
+
+## Current CRA-40 Stage 7 candidate
+
+The full Vertical Slice 1 regression and acceptance candidate reports:
+
+- Python 3.12.10 and native PostgreSQL 16;
+- 213 passed, 0 failed, 0 skipped;
+- 94.05% exact overall statement/branch coverage;
+- 91.80% aggregate coverage across the declared 17-file critical first-slice set;
+- 2 focused Stage 7 acceptance tests and 85 adjacent auth/invitation/employee tests passing;
+- Ruff format/check and strict mypy passing;
+- Alembic head `0005_invitation_email_outbox`, current head, empty-database migration coverage,
+  and no metadata drift;
+- 17 OpenAPI paths, all eight required first-slice paths present, and zero forbidden internal
+  secret-field hits.
+
+The complete requirement matrix, exact commands, coverage formula, security review, limitations,
+and staging exclusion are recorded in
+[`vertical-slice-1-acceptance.md`](vertical-slice-1-acceptance.md). CRA-40 remains In Progress until
+Denys accepts the three-checkpoint local candidate. Push is not authorized.

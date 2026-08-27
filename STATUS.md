@@ -135,11 +135,35 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - The accepted local CRA-38 series is `0291208`, `e53e614`, `b0cd89b`, `c55545a`, and `bd2f98e`.
   The five-checkpoint series is not pushed.
 
+## Current CRA-40 Stage 7 candidate
+
+- Adds one test-only complete backend acceptance chain: real Admin password login and MFA,
+  Invitation create, persisted outbox and fake delivery capture, new-User acceptance, Pending
+  restriction, Admin profile setup, explicit idempotent Activation, and Active access through the
+  same employee Session.
+- Adds a separate deny-by-default assertion for a Disabled Membership at the existing Active
+  employee authorization guard.
+- No production code, API contract, schema, migration, dependency, provider, worker, frontend, or
+  `Photos/` change was required.
+- Focused Stage 7 evidence: `2 passed / 0 failed / 0 skipped`. Adjacent auth, invitation, employee,
+  security, delivery, and applicability evidence: `85 passed / 0 failed / 0 skipped`.
+- Full candidate gate: Python 3.12.10, PostgreSQL 16, `213 passed / 0 failed / 0 skipped`, 94.05%
+  exact overall statement/branch coverage, and 91.80% aggregate coverage across the declared
+  17-file critical first-slice set. Ruff format/check and strict mypy pass.
+- Alembic remains at `0005_invitation_email_outbox`; empty-database migration coverage,
+  `current --check-heads`, and metadata no-drift checks pass.
+- OpenAPI exposes 17 paths; all eight required first-slice paths are present and the forbidden
+  `password_hash`, `token_hash`, `csrf_token_hash`, `secret_encrypted`, and `raw_token` fields are
+  absent.
+- The first two CRA-40 checkpoints are `a7c73df` and `2fd8254`. The final evidence checkpoint is
+  authorized but remains unpushed; CRA-40 awaits Denys's acceptance after its third local commit.
+
 ## Repository and runtime state
 
 - Branch: `main`.
 - Repository history includes the accepted published Stage 0–5 baseline through `de6dd84`, plus
-  the unpushed five-checkpoint CRA-38 Stage 6 local candidate on `main`.
+  the accepted unpushed five-checkpoint CRA-38 Stage 6 series and the local CRA-40 Stage 7
+  checkpoints on `main`.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: local `main` tracks `origin/main`; Stages 3–5 were fast-forward published
   without force-push or history rewriting.
@@ -176,9 +200,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - CRA-37 and CRA-38 are accepted and Done; the accepted Stage 6 local series remains unpushed.
   CRA-39 is accepted and Done. CRA-40 is the active Stage 7 implementation issue, and its three
   local commits are authorized. Acceptance and every remote action remain separate gates. Push,
-  PR, merge, deploy,
-  providers, non-test mutations, dependencies, architecture changes, migration, and history
-  rewrite are not authorized by CRA-40.
+  PR, merge, deploy, providers, non-test mutations, dependencies, architecture changes, migration,
+  and history rewrite are not authorized by CRA-40.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

@@ -124,12 +124,17 @@ Admin Session + MFA + CSRF + Idempotency-Key
 → existing employee Session gains Active access without replacement
 ```
 
-The CRA-38 local candidate exposes only
+Accepted CRA-38 exposes only
 `POST /api/v1/organizations/{organization_id}/employees/{employee_id}/activate`. Employee identity
 remains `EmployeeProfile.id`. Same-key replay is side-effect free, key reuse for another target is
 rejected, and row locks serialize different-key races. Training participation is derived from the
 Active Membership; no Assignment/content/notification record, provider call, job, schema object,
 migration, or new Session is created.
+
+CRA-40 adds no runtime architecture. Its Stage 7 boundary is test and evidence only: one complete
+real-HTTP/PostgreSQL chain now proves Admin login/MFA through invitation delivery, acceptance,
+Pending profile setup, explicit Activation, and Active employee authorization without introducing
+another application path.
 
 ## Test boundary
 
