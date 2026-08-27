@@ -97,6 +97,22 @@ Concurrent reuse has one winner, all failures roll back, and the issued Session 
 existing Pending boundary. Acceptance never activates Membership, assigns Role/Location, or marks
 MFA verified. No schema or migration was added.
 
+## Stage 5 Pending/Admin Profile Setup boundary
+
+```text
+Admin Session + MFA + Organization scope → safe references and Employee reads
+Admin Session + MFA + CSRF + Pending EmployeeProfile → normalized profile replacement
+active same-Organization Role/Location + locked transaction → profile + safe audit commit
+Employee Session → own read-only operational profiles
+```
+
+Accepted CRA-36 exposes Organization summary, Location/OperationalRole references,
+cursor-paginated Employee list/detail, own `/me/profile`, and Pending-only Employee PATCH.
+EmployeeProfile ID is the public Employee identifier. Tenant filters precede object filters,
+cross-Organization probes do not enumerate resources, and completeness is derived from nonblank
+names plus active same-Organization Role/Location. No schema/migration, Activation, Assignment,
+Training, notification, provider, worker, or frontend behavior is added.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -105,7 +121,7 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is no invitation list/detail workflow, password recovery, MFA enrollment, production
-Organization or Employee administration endpoint, menu/training workflow, provider integration,
-deployed worker/resource, or frontend application. Adding any of these requires a new bounded
-Linear issue and approval.
+There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
+reference CRUD, Employee Activation/lifecycle administration, menu/training workflow, provider
+integration, deployed worker/resource, or frontend application. Adding any of these requires a
+new bounded Linear issue and approval.

@@ -1,10 +1,9 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. Published history contains the accepted backend
-foundation through CRA-32 Stage 3 invitation administration and CRA-34 Stage 4 invitation
-acceptance. Their published baseline ends at `9fd2130`. CRA-36 is the active bounded Stage 5
-Pending/Admin Profile Setup implementation; its production work is authorized, while local
-commits and publication remain separate approval gates.
+Repository for the HoReCa Training Platform. Repository history contains the accepted backend
+foundation through CRA-32 Stage 3 invitation administration, CRA-34 Stage 4 invitation acceptance,
+and CRA-36 Stage 5 Pending/Admin Profile Setup. Remote publication evidence is recorded in Linear
+and Git; PR, merge, deployment, providers, and later stages remain separately gated.
 
 ## Start here
 
@@ -50,4 +49,6 @@ backed by persistent idempotency/rate limits and a transactional email outbox. A
 adds atomic new/existing-account invitation acceptance, Pending access, an opaque Session, and
 safe cookie/audit integration. Provider/worker execution, invitation list/detail
 endpoints, MFA enrollment/recovery, training workflows, broader production administration, and
-the frontend remain outside the implemented boundary.
+the frontend remain outside the implemented boundary. Accepted CRA-36 adds MFA-scoped Organization
+references and Employee list/detail reads, own read-only operational profiles, and CSRF-protected
+Pending profile setup without Activation.

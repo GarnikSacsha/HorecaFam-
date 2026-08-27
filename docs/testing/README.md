@@ -89,3 +89,17 @@ The accepted invitation-acceptance checkpoint reports:
 The first full gate found only a stale deterministic test clock; after moving that test-only clock
 forward, the focused API suite reported 12 passed and the full gate above was green. CRA-34 is Done,
 and its four commits are published through `9fd2130`.
+
+## Accepted CRA-36 Stage 5 checkpoint
+
+The Pending/Admin Profile Setup checkpoint reports:
+
+- Python 3.12.10 and native PostgreSQL 16;
+- 195 passed, 0 failed, 0 skipped;
+- 94% overall branch coverage and 92% aggregate critical Stage 5 coverage;
+- 15 focused Stage 5 API/integration tests covering reads, cursor/filter behavior, Pending PATCH,
+  CSRF/MFA/RBAC, tenant isolation, rollback, OpenAPI, and the Stage 4→5 live chain;
+- Alembic head `0005_invitation_email_outbox`, empty-database migration coverage, current head,
+  and no metadata drift.
+
+CRA-36 is accepted. Its exact commit and publication evidence remains canonical in Linear and Git.

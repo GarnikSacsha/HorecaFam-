@@ -25,8 +25,8 @@ This document records durable checkpoints; it does not expand CRA-36 beyond its 
 - CRA-33 Stage 4 invitation-acceptance plan is accepted and Done.
 - CRA-34 Stage 4 invitation-acceptance implementation is accepted, Done, and published.
 - CRA-35 Stage 5 Pending/Admin Profile Setup plan is accepted and Done.
-- CRA-36 Stage 5 Pending/Admin Profile Setup implementation is In Progress. Production
-  implementation is authorized; staging, local commits, and publication are not.
+- CRA-36 Stage 5 Pending/Admin Profile Setup implementation is accepted. Its five selective local
+  commits and fast-forward push were explicitly authorized on 2026-08-27.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -80,11 +80,31 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   `12 passed` and the full gate was green.
 - Denys accepted CRA-34 on 2026-08-27. Linear records it as Done, and its four commits are published.
 
+## Accepted Stage 5 checkpoint
+
+- CRA-36 adds MFA-verified Admin Organization/Location/OperationalRole reads, cursor-paginated
+  Employee list/detail, authenticated own read-only operational profiles, and CSRF-protected
+  Pending-only profile setup.
+- Employee identity is `EmployeeProfile.id`; every Admin query remains Organization-scoped.
+  Foreign Employee/reference probes are non-enumerating, archived references remain explainable
+  but are not selectable, and profile completeness is derived.
+- Successful profile update appends a safe `employee_profile_updated` audit in the same transaction.
+  Name/email values are not copied into audit. Forced commit failure rolls back domain and audit.
+- Membership remains Pending. Stage 6 Activation, applicability, Assignments, notifications,
+  Active/Disabled lifecycle changes, providers, frontend, and deployment remain excluded.
+- Accepted gate: Python 3.12.10, PostgreSQL 16, `195 passed / 0 failed / 0 skipped`, 94% overall
+  branch coverage, and 92% aggregate critical Stage 5 coverage.
+- Alembic remains at `0005_invitation_email_outbox`; empty-database migration coverage passes,
+  `current --check-heads` passes, and autogenerate reports no metadata drift.
+- The five CRA-36 checkpoints are committed on `main`. Push evidence and remote SHA remain
+  canonical in Linear/Git rather than being predicted in this snapshot.
+
 ## Repository and runtime state
 
 - Branch: `main`.
-- Published history includes the accepted repository baseline and Stage 1–4 checkpoints through
-  `9fd2130`. Local `main` is synchronized with `origin/main` before CRA-36 work.
+- Repository history includes the accepted repository baseline and Stage 1–5 checkpoints. The
+  pre-CRA-36 published base is `9fd2130`; current remote synchronization is verified through Git
+  and recorded in Linear after each approved push.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: local `main` tracks `origin/main`; Stage 3 and Stage 4 were fast-forward
   published without force-push or history rewriting.
@@ -118,10 +138,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
 - CRA-32 and CRA-34 are accepted, Done, and published; their canonical implementation and Git
   evidence remains in Linear.
-- CRA-35 accepted the Stage 5 contract and five-checkpoint map. CRA-36 is the single bounded
-  implementation issue. Denys authorized production implementation on 2026-08-27, but has not
-  authorized staging, local commits, or push. PR, merge, deploy, providers, non-test mutations,
-  dependencies, architecture changes, migration, and history rewrite remain separate gates.
+- CRA-35 accepted the Stage 5 contract and five-checkpoint map. Denys accepted CRA-36 and authorized
+  its five selective local commits plus a fast-forward push on 2026-08-27. PR, merge, deploy,
+  providers, non-test mutations, dependencies, architecture changes, migration, and history
+  rewrite remain separate gates.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

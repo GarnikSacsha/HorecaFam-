@@ -69,6 +69,11 @@ Membership and placeholder EmployeeProfile creation, an opaque Session, and safe
 integration. Provider delivery, worker deployment, invitation list/detail routes, password
 recovery, MFA enrollment/recovery, training, and the frontend are not implemented.
 
+[CRA-36](https://linear.app/craftspacee/issue/CRA-36/implement-backend-mvp-vertical-slice-1-stage-5-pendingadmin-profile)
+is accepted and adds Stage 5: scoped Organization/Location/OperationalRole reads, Admin Employee
+list/detail, own read-only operational profiles, and Pending-only profile PATCH with atomic safe
+audit. It deliberately does not activate Membership or create Assignments.
+
 ## Repository map
 
 - [`backend/app`](backend/app): accepted Stage 0–4 runtime plus work inside the active bounded issue.

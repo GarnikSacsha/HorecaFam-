@@ -125,5 +125,13 @@ coverage, 93% aggregate critical acceptance coverage, Alembic head
 CRA-34 is Done and its four commits are published through `9fd2130`. Canonical evidence remains in
 Linear.
 
+## Accepted CRA-36 Stage 5 evidence
+
+The accepted Pending/Admin Profile Setup checkpoint uses Python 3.12.10 and native PostgreSQL 16.
+Its complete gate reports 195 passed, 0 failed, 0 skipped, 94% overall branch coverage, and 92%
+aggregate critical Stage 5 coverage. Focused Stage 5 API/integration reports 15 passed. Alembic
+remains at `0005_invitation_email_outbox`; the empty-database migration test, current head check,
+and metadata no-drift check pass. Canonical acceptance and publication evidence remains in Linear.
+
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.
