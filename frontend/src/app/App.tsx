@@ -5,6 +5,7 @@ import { AdminEmployeesPage } from "../admin/AdminEmployeesPage";
 import { LoginPage } from "../auth/LoginPage";
 import { MfaPage } from "../auth/MfaPage";
 import { PendingPage } from "../employee/PendingPage";
+import { ActiveHomePage } from "../employee/ActiveHomePage";
 import { InvitationAcceptPage } from "../invitations/InvitationAcceptPage";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
@@ -64,7 +65,7 @@ export function App() {
             element={
               <ProtectedRoute audience="active-employee">
                 <EmployeeShell>
-                  <Placeholder eyebrow="Головна" title="Вітаємо в Bacara Academy" />
+                  <ActiveHomePage />
                 </EmployeeShell>
               </ProtectedRoute>
             }
