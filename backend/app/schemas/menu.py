@@ -278,6 +278,58 @@ class MenuVersionCollection(StrictMenuSchema):
     archived: list[MenuVersionSummary]
 
 
+class MenuReadinessIssue(StrictMenuSchema):
+    code: str
+    message: str
+    entity_type: str
+    entity_id: UUID | None
+
+
+class MenuReadinessResponse(StrictMenuSchema):
+    menu_id: UUID
+    menu_version_id: UUID
+    organization_id: UUID
+    location_id: UUID
+    revision: int = Field(ge=0)
+    can_publish: bool
+    blocking_errors: list[MenuReadinessIssue]
+    warnings: list[MenuReadinessIssue]
+    required_training_asset_count: int = Field(ge=0)
+    ready_training_asset_count: int = Field(ge=0)
+    applicable_training_content_count: int = Field(ge=0)
+
+
+class MenuPublishRequest(StrictMenuSchema):
+    expected_revision: int = Field(ge=0)
+
+
+class MenuDiffCounts(StrictMenuSchema):
+    added: int = Field(ge=0)
+    changed: int = Field(ge=0)
+    removed: int = Field(ge=0)
+    unchanged: int = Field(ge=0)
+
+
+class MenuTrainingImpactCounts(StrictMenuSchema):
+    none: int = Field(ge=0)
+    review: int = Field(ge=0)
+    required: int = Field(ge=0)
+
+
+class MenuApplicabilityCounts(StrictMenuSchema):
+    published_content_count: int = Field(ge=0)
+    assignment_count: int = Field(ge=0)
+    notification_count: int = Field(ge=0)
+
+
+class MenuPublishResponse(StrictMenuSchema):
+    published: MenuVersionSummary
+    previous_published_version_id: UUID | None
+    diff_counts: MenuDiffCounts
+    training_impact_counts: MenuTrainingImpactCounts
+    applicability: MenuApplicabilityCounts
+
+
 class MenuSectionCreate(StrictMenuSchema):
     name_uk: str = Field(min_length=1, max_length=200)
     stable_code: str | None = Field(default=None, min_length=1, max_length=100)

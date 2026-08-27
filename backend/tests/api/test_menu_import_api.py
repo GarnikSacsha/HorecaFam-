@@ -143,9 +143,9 @@ async def test_import_blocker_cannot_be_resolved_or_confirmed(
     assert finding["severity"] == "blocker"
     assert finding["allowed_actions"] == []
     assert resolved.status_code == 422
-    assert resolved.json()["code"] == "FINDING_ACTION_NOT_ALLOWED"
+    assert resolved.json()["code"] == "IMPORT_FINDING_RESOLUTION_INVALID"
     assert confirmed.status_code == 409
-    assert confirmed.json()["code"] == "MENU_IMPORT_BLOCKED"
+    assert confirmed.json()["code"] == "IMPORT_NOT_READY"
     assert await db_session.scalar(select(func.count()).select_from(MenuVersion)) == 0
 
 

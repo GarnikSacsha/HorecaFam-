@@ -27,6 +27,9 @@ from app.schemas.menu import (
     MenuItemPatch,
     MenuItemResponse,
     MenuItemWrite,
+    MenuPublishRequest,
+    MenuPublishResponse,
+    MenuReadinessResponse,
     MenuReorderRequest,
     MenuReorderResponse,
     MenuRevisionResponse,
@@ -56,6 +59,7 @@ from app.services.menu_imports import (
     get_menu_import,
     resolve_menu_import_finding,
 )
+from app.services.menu_publication import get_menu_readiness, publish_menu_version
 from app.services.menus import (
     create_menu_item,
     delete_menu_item,
@@ -67,6 +71,57 @@ from app.services.menus import (
 )
 
 router = APIRouter(tags=["menus"])
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/menu-versions/{version_id}/readiness",
+    response_model=MenuReadinessResponse,
+)
+async def menu_version_readiness_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MenuReadinessResponse:
+    return await get_menu_readiness(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/menu-versions/{version_id}/publish",
+    response_model=MenuPublishResponse,
+)
+async def menu_version_publish_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: MenuPublishRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MenuPublishResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await publish_menu_version(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
 
 
 @router.post(

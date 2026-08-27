@@ -83,7 +83,11 @@ def _canonical_payload(payload: MenuImportCreate) -> tuple[dict[str, object], st
         len(category.items) for section in payload.sections for category in section.categories
     )
     if item_count > MAX_ITEMS:
-        raise _error(422, "MENU_IMPORT_ITEM_LIMIT", "JSON-імпорт містить понад 1000 позицій.")
+        raise _error(
+            422,
+            "MENU_IMPORT_ITEM_LIMIT_EXCEEDED",
+            "JSON-імпорт містить понад 1000 позицій.",
+        )
     return value, hashlib.sha256(encoded).hexdigest()
 
 
@@ -473,7 +477,7 @@ async def create_menu_import(
                 organization_id=organization_id,
                 actor_user_id=actor_user_id,
                 actor_type="user",
-                action="menu_import_review_created",
+                action="menu_import_created",
                 target_type="menu_import",
                 target_id=menu_import.id,
                 old_values=None,
@@ -541,11 +545,15 @@ async def resolve_menu_import_finding(
                 review_revision=menu_import.review_revision,
             )
         if menu_import.status != "ready_for_review":
-            raise _error(409, "MENU_IMPORT_NOT_REVIEWABLE", "Імпорт уже не можна редагувати.")
+            raise _error(409, "IMPORT_NOT_READY", "Імпорт уже не можна редагувати.")
         if menu_import.review_revision != payload.expected_revision:
             raise _revision_conflict()
         if finding.severity == "blocker" or payload.action not in finding.allowed_actions:
-            raise _error(422, "FINDING_ACTION_NOT_ALLOWED", "Цю знахідку не можна вирішити так.")
+            raise _error(
+                422,
+                "IMPORT_FINDING_RESOLUTION_INVALID",
+                "Цю знахідку не можна вирішити так.",
+            )
         finding.resolution_status = "resolved"
         finding.resolution_action = payload.action
         finding.target_entity_id = payload.target_entity_id
@@ -878,7 +886,7 @@ async def confirm_menu_import(
                 import_=await _import_detail(db, menu_import), draft=detail
             )
         if menu_import.status != "ready_for_review":
-            raise _error(409, "MENU_IMPORT_NOT_REVIEWABLE", "Імпорт уже не можна підтвердити.")
+            raise _error(409, "IMPORT_NOT_READY", "Імпорт уже не можна підтвердити.")
         if menu_import.review_revision != expected_revision:
             raise _revision_conflict()
         findings = list(
@@ -891,14 +899,14 @@ async def confirm_menu_import(
             ).all()
         )
         if any(finding.severity == "blocker" for finding in findings):
-            raise _error(409, "MENU_IMPORT_BLOCKED", "Імпорт містить блокувальні знахідки.")
+            raise _error(409, "IMPORT_NOT_READY", "Імпорт містить блокувальні знахідки.")
         if any(
             finding.severity == "requires_review" and finding.resolution_status != "resolved"
             for finding in findings
         ):
-            raise _error(409, "MENU_IMPORT_REVIEW_REQUIRED", "Спершу вирішіть усі знахідки.")
+            raise _error(409, "IMPORT_NOT_READY", "Спершу вирішіть усі знахідки.")
         if menu_import.warning_count and not acknowledge_warnings:
-            raise _error(409, "MENU_IMPORT_WARNING_ACK_REQUIRED", "Підтвердьте попередження.")
+            raise _error(409, "IMPORT_NOT_READY", "Підтвердьте попередження.")
         current_base = await db.scalar(
             select(MenuVersion)
             .where(MenuVersion.menu_id == menu_import.menu_id, MenuVersion.status == "published")
@@ -909,7 +917,11 @@ async def confirm_menu_import(
             menu_import.status = "stale"
             menu_import.completed_at = now
             await db.commit()
-            raise _error(409, "MENU_IMPORT_STALE", "Опубліковане меню змінилося; повторіть імпорт.")
+            raise _error(
+                409,
+                "STALE_IMPORT_PREVIEW",
+                "Опубліковане меню змінилося; повторіть імпорт.",
+            )
         draft = await _materialize_draft(
             db,
             menu_import=menu_import,
@@ -958,7 +970,7 @@ async def confirm_menu_import(
             ),
         )
     except APIError as exc:
-        if exc.code != "MENU_IMPORT_STALE":
+        if exc.code != "STALE_IMPORT_PREVIEW":
             await db.rollback()
         raise
     except Exception:
