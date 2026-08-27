@@ -5,14 +5,14 @@
 MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward published on `origin/main`
 with the CRA-43 implementation series ending at `fa30a1f`. CRA-46 is Done, and its accepted
 documentation publication advances the published `origin/main` baseline to `586f8c5`. CRA-47 Menu
-Slice 2 planning is accepted and Done. The active bounded repository-maintenance issue is
+Slice 2 planning is accepted and Done. The completed bounded repository-maintenance issue is
 [CRA-48 — Finalize published baseline documentation after CRA-46](https://linear.app/craftspacee/issue/CRA-48/finalize-published-baseline-documentation-after-cra-46),
 routed through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-This snapshot is part of the one authorized local CRA-48 documentation checkpoint; its push is not
-authorized. CRA-49 exists but is not authorized for implementation. Every later product slice, PR,
-merge, deployment, provider, and production-configuration action remains separately gated. CRA-42
-is unrelated Backlog work.
+The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
+CRA-48 is Done and has no pending push. CRA-49 exists but is not authorized for implementation.
+Every later product slice, PR, merge, deployment, provider, and production-configuration action
+remains separately gated. CRA-42 is unrelated Backlog work.
 
 ## Accepted implementation and planning checkpoints
 
@@ -46,8 +46,9 @@ is unrelated Backlog work.
   through `586f8c5`.
 - CRA-47 Menu Source of Truth planning and its ten-checkpoint implementation map are accepted and
   Done.
-- CRA-48 published-baseline documentation synchronization is the active bounded task; its one local
-  selective documentation checkpoint is represented by this snapshot, and push is a separate gate.
+- CRA-48 published-baseline documentation synchronization is accepted, Done, and published. Its
+  primary checkpoint is `3b95b3c`; the corrective publication record removes temporary pre-push
+  wording, and no CRA-48 push remains pending.
 - CRA-49 Menu Source of Truth implementation exists in Backlog but is not authorized to start.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
@@ -188,11 +189,11 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Branch: `main`.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, followed by the accepted CRA-46 documentation
-  checkpoint at `586f8c5` and the current local CRA-48 documentation checkpoint.
+  checkpoint at `586f8c5`, the CRA-48 checkpoint at `3b95b3c`, and its corrective publication record.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
-- Published branch: `origin/main` remains at `586f8c5`; local `main` contains the one authorized
-  CRA-48 documentation commit on top. Its push is not authorized. The published backend, frontend,
-  and CRA-46 documentation checkpoints used no force-push or history rewriting.
+- Published branch: local `main` and `origin/main` are synchronized after the CRA-48 corrective
+  publication. Resolve the exact current tip through Git rather than treating an older checkpoint
+  SHA as the tracking tip. Publication used no force-push or history rewriting.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
@@ -224,12 +225,11 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
 - CRA-32, CRA-34, and CRA-36 are accepted, Done, and published; their canonical implementation and
   Git evidence remains in Linear.
-- CRA-37 through CRA-47 are accepted and Done. The CRA-43 implementation series ends at `fa30a1f`,
+- CRA-37 through CRA-48 are accepted and Done. The CRA-43 implementation series ends at `fa30a1f`,
   and the published repository baseline includes the CRA-46 documentation checkpoint at `586f8c5`.
-  No product implementation issue is active. CRA-48 is limited to the current local documentation
-  synchronization commit; CRA-49 is not authorized to start. Push and every PR, merge, deploy,
-  provider, non-test mutation, architecture change, migration, history rewrite, or later product
-  slice remain separate gates.
+  CRA-48 is published with no pending push. No product implementation issue is active, and CRA-49
+  is not authorized to start. Every later push, PR, merge, deploy, provider, non-test mutation,
+  architecture change, migration, history rewrite, or product slice remains separately gated.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.
