@@ -233,3 +233,90 @@ export interface MenuItemListResponse {
   next_cursor: string | null;
   revision: number;
 }
+
+export type MenuFindingResolutionAction =
+  | "confirm_legitimate"
+  | "map_existing"
+  | "confirm_removal"
+  | "confirm_critical_change"
+  | "exclude_source_record";
+
+export interface MenuImportFinding {
+  id: string;
+  severity: "blocker" | "requires_review" | "warning";
+  code: string;
+  entity_type: string;
+  source_key: string | null;
+  message: string;
+  resolution_status: "unresolved" | "resolved";
+  allowed_actions: MenuFindingResolutionAction[];
+  resolution_action: MenuFindingResolutionAction | null;
+  target_entity_id: string | null;
+  resolution_comment: string | null;
+  resolved_at: string | null;
+}
+
+export interface MenuImportDetail {
+  id: string;
+  organization_id: string;
+  location_id: string;
+  menu_id: string;
+  base_menu_version_id: string | null;
+  status: "uploaded" | "processing" | "ready_for_review" | "confirmed" | "failed" | "stale";
+  review_revision: number;
+  source_filename: string;
+  source_reference: string | null;
+  source_checksum: string;
+  section_count: number;
+  category_count: number;
+  item_count: number;
+  added_count: number;
+  changed_count: number;
+  removed_count: number;
+  unchanged_count: number;
+  blocker_count: number;
+  review_count: number;
+  warning_count: number;
+  findings: MenuImportFinding[];
+  created_at: string;
+  confirmed_at: string | null;
+  failure_code: string | null;
+}
+
+export interface MenuImportConfirmResponse {
+  import: MenuImportDetail;
+  draft: MenuVersionDetail;
+}
+
+export interface MenuReadinessIssue {
+  code: string;
+  message: string;
+  entity_type: string;
+  entity_id: string | null;
+}
+
+export interface MenuReadinessResponse {
+  menu_id: string;
+  menu_version_id: string;
+  organization_id: string;
+  location_id: string;
+  revision: number;
+  can_publish: boolean;
+  blocking_errors: MenuReadinessIssue[];
+  warnings: MenuReadinessIssue[];
+  required_training_asset_count: number;
+  ready_training_asset_count: number;
+  applicable_training_content_count: number;
+}
+
+export interface MenuPublishResponse {
+  published: MenuVersionSummary;
+  previous_published_version_id: string | null;
+  diff_counts: Record<"added" | "changed" | "removed" | "unchanged", number>;
+  training_impact_counts: Record<"none" | "review" | "required", number>;
+  applicability: {
+    published_content_count: number;
+    assignment_count: number;
+    notification_count: number;
+  };
+}

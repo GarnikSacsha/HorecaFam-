@@ -11,6 +11,7 @@ import type {
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
+import { AdminMenuLifecyclePanel } from "./AdminMenuLifecyclePanel";
 
 function formatPrice(value: number | null): string {
   return value === null ? "—" : `${(value / 100).toFixed(2)} ₴`;
@@ -283,292 +284,306 @@ export function AdminMenuPage() {
           </button>
         </div>
       ) : (
-        <div className="menu-editor-grid">
-          <aside className="menu-outline" aria-label="Структура меню">
-            <p className="eyebrow">Структура</p>
-            <ol>
-              {draft.sections.map((section) => (
-                <li key={section.id}>
-                  <a href={`#section-${section.id}`}>{section.name_uk}</a>
-                  <span>{section.category_count}</span>
-                </li>
-              ))}
-            </ol>
-          </aside>
-          <div className="menu-editor">
-            <div className="menu-editor-heading">
-              <div>
-                <p className="eyebrow">Чернетка · ревізія {draft.revision}</p>
-                <h2>Розділи та позиції</h2>
-              </div>
-              <details className="menu-add-panel">
-                <summary className="button button-primary">Додати</summary>
-                <div className="menu-add-forms">
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (!session) return;
-                      void mutate(() =>
-                        client.request(`${basePath}/sections`, {
-                          method: "POST",
-                          csrfToken: session.csrf_token,
-                          body: {
-                            name_uk: sectionName,
-                            stable_code: null,
-                            position: draft.sections.length,
-                            expected_revision: draft.revision,
-                          },
-                        }),
-                      ).then(() => setSectionName(""));
-                    }}
-                  >
-                    <div className="field-group">
-                      <label htmlFor="new-section">Новий розділ</label>
-                      <input
-                        id="new-section"
-                        value={sectionName}
-                        onChange={(event) => setSectionName(event.target.value)}
-                        required
-                      />
-                    </div>
-                    <button className="button button-quiet" type="submit" disabled={busy}>
-                      Додати розділ
-                    </button>
-                  </form>
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (!session) return;
-                      const section = draft.sections.find(({ id }) => id === categorySectionId);
-                      if (!section) return;
-                      void mutate(() =>
-                        client.request(`${basePath}/categories`, {
-                          method: "POST",
-                          csrfToken: session.csrf_token,
-                          body: {
-                            section_id: section.id,
-                            name_uk: categoryName,
-                            stable_code: null,
-                            position: section.categories.length,
-                            expected_revision: draft.revision,
-                          },
-                        }),
-                      ).then(() => setCategoryName(""));
-                    }}
-                  >
-                    <div className="field-group">
-                      <label htmlFor="category-section">Розділ категорії</label>
-                      <select
-                        id="category-section"
-                        value={categorySectionId}
-                        onChange={(event) => setCategorySectionId(event.target.value)}
-                        required
-                      >
-                        <option value="">Оберіть розділ</option>
-                        {draft.sections.map((section) => (
-                          <option key={section.id} value={section.id}>
-                            {section.name_uk}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label htmlFor="new-category">Нова категорія</label>
-                      <input
-                        id="new-category"
-                        value={categoryName}
-                        onChange={(event) => setCategoryName(event.target.value)}
-                        required
-                      />
-                    </div>
-                    <button className="button button-quiet" type="submit" disabled={busy}>
-                      Додати категорію
-                    </button>
-                  </form>
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (!session) return;
-                      const count = itemByCategory(itemCategoryId).length;
-                      void mutate(() =>
-                        client.request(`${basePath}/items`, {
-                          method: "POST",
-                          csrfToken: session.csrf_token,
-                          body: {
-                            expected_revision: draft.revision,
-                            category_id: itemCategoryId,
-                            stable_code: null,
-                            name_uk: itemName,
-                            description_uk: null,
-                            price_minor: itemPrice ? Math.round(Number(itemPrice) * 100) : null,
-                            currency: "UAH",
-                            availability: "available",
-                            position: count,
-                            component_data_status: "confirmed_none",
-                            components: [],
-                            allergen_data_status: "confirmed_none",
-                            allergen_codes: [],
-                            source_kind: "manual",
-                            source_reference: null,
-                            source_item_key: null,
-                          },
-                        }),
-                      ).then(() => {
-                        setItemName("");
-                        setItemPrice("");
-                      });
-                    }}
-                  >
-                    <div className="field-group">
-                      <label htmlFor="item-category">Категорія позиції</label>
-                      <select
-                        id="item-category"
-                        value={itemCategoryId}
-                        onChange={(event) => setItemCategoryId(event.target.value)}
-                        required
-                      >
-                        <option value="">Оберіть категорію</option>
-                        {draft.sections.flatMap((section) =>
-                          section.categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {section.name_uk} · {category.name_uk}
-                            </option>
-                          )),
-                        )}
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label htmlFor="new-item">Нова позиція</label>
-                      <input
-                        id="new-item"
-                        value={itemName}
-                        onChange={(event) => setItemName(event.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="field-group">
-                      <label htmlFor="new-item-price">Ціна, ₴</label>
-                      <input
-                        id="new-item-price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={itemPrice}
-                        onChange={(event) => setItemPrice(event.target.value)}
-                      />
-                    </div>
-                    <button className="button button-quiet" type="submit" disabled={busy}>
-                      Додати позицію
-                    </button>
-                  </form>
+        <>
+          <div className="menu-editor-grid">
+            <aside className="menu-outline" aria-label="Структура меню">
+              <p className="eyebrow">Структура</p>
+              <ol>
+                {draft.sections.map((section) => (
+                  <li key={section.id}>
+                    <a href={`#section-${section.id}`}>{section.name_uk}</a>
+                    <span>{section.category_count}</span>
+                  </li>
+                ))}
+              </ol>
+            </aside>
+            <div className="menu-editor">
+              <div className="menu-editor-heading">
+                <div>
+                  <p className="eyebrow">Чернетка · ревізія {draft.revision}</p>
+                  <h2>Розділи та позиції</h2>
                 </div>
-              </details>
-            </div>
-            {draft.sections.length === 0 ? (
-              <div className="empty-state">
-                <h3>Додайте перший розділ</h3>
-                <p>Після нього можна створити категорію та позиції меню.</p>
-              </div>
-            ) : (
-              draft.sections.map((section, sectionIndex) => (
-                <section
-                  className="menu-section-block"
-                  id={`section-${section.id}`}
-                  key={section.id}
-                  aria-labelledby={`section-title-${section.id}`}
-                >
-                  <div className="menu-entity-heading">
-                    <h3 id={`section-title-${section.id}`}>{section.name_uk}</h3>
-                    <div
-                      className="compact-actions"
-                      aria-label={`Порядок розділу ${section.name_uk}`}
+                <details className="menu-add-panel">
+                  <summary className="button button-primary">Додати</summary>
+                  <div className="menu-add-forms">
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        if (!session) return;
+                        void mutate(() =>
+                          client.request(`${basePath}/sections`, {
+                            method: "POST",
+                            csrfToken: session.csrf_token,
+                            body: {
+                              name_uk: sectionName,
+                              stable_code: null,
+                              position: draft.sections.length,
+                              expected_revision: draft.revision,
+                            },
+                          }),
+                        ).then(() => setSectionName(""));
+                      }}
                     >
-                      <button
-                        className="button button-quiet"
-                        type="button"
-                        disabled={busy || sectionIndex === 0}
-                        aria-label={`Перемістити ${section.name_uk} вище`}
-                        onClick={() => {
-                          if (!session) return;
-                          const ordered = draft.sections.map(({ id }) => id);
-                          [ordered[sectionIndex - 1], ordered[sectionIndex]] = [
-                            ordered[sectionIndex],
-                            ordered[sectionIndex - 1],
-                          ];
-                          void mutate(() =>
-                            client.request(`${basePath}/sections/reorder`, {
-                              method: "POST",
-                              csrfToken: session.csrf_token,
-                              body: { ordered_ids: ordered, expected_revision: draft.revision },
-                            }),
-                          );
-                        }}
-                      >
-                        Вище
+                      <div className="field-group">
+                        <label htmlFor="new-section">Новий розділ</label>
+                        <input
+                          id="new-section"
+                          value={sectionName}
+                          onChange={(event) => setSectionName(event.target.value)}
+                          required
+                        />
+                      </div>
+                      <button className="button button-quiet" type="submit" disabled={busy}>
+                        Додати розділ
                       </button>
-                      <button
-                        className="button button-quiet"
-                        type="button"
-                        disabled={busy || sectionIndex === draft.sections.length - 1}
-                        aria-label={`Перемістити ${section.name_uk} нижче`}
-                        onClick={() => {
-                          if (!session) return;
-                          const ordered = draft.sections.map(({ id }) => id);
-                          [ordered[sectionIndex], ordered[sectionIndex + 1]] = [
-                            ordered[sectionIndex + 1],
-                            ordered[sectionIndex],
-                          ];
-                          void mutate(() =>
-                            client.request(`${basePath}/sections/reorder`, {
-                              method: "POST",
-                              csrfToken: session.csrf_token,
-                              body: { ordered_ids: ordered, expected_revision: draft.revision },
-                            }),
-                          );
-                        }}
-                      >
-                        Нижче
+                    </form>
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        if (!session) return;
+                        const section = draft.sections.find(({ id }) => id === categorySectionId);
+                        if (!section) return;
+                        void mutate(() =>
+                          client.request(`${basePath}/categories`, {
+                            method: "POST",
+                            csrfToken: session.csrf_token,
+                            body: {
+                              section_id: section.id,
+                              name_uk: categoryName,
+                              stable_code: null,
+                              position: section.categories.length,
+                              expected_revision: draft.revision,
+                            },
+                          }),
+                        ).then(() => setCategoryName(""));
+                      }}
+                    >
+                      <div className="field-group">
+                        <label htmlFor="category-section">Розділ категорії</label>
+                        <select
+                          id="category-section"
+                          value={categorySectionId}
+                          onChange={(event) => setCategorySectionId(event.target.value)}
+                          required
+                        >
+                          <option value="">Оберіть розділ</option>
+                          {draft.sections.map((section) => (
+                            <option key={section.id} value={section.id}>
+                              {section.name_uk}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field-group">
+                        <label htmlFor="new-category">Нова категорія</label>
+                        <input
+                          id="new-category"
+                          value={categoryName}
+                          onChange={(event) => setCategoryName(event.target.value)}
+                          required
+                        />
+                      </div>
+                      <button className="button button-quiet" type="submit" disabled={busy}>
+                        Додати категорію
                       </button>
-                    </div>
+                    </form>
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        if (!session) return;
+                        const count = itemByCategory(itemCategoryId).length;
+                        void mutate(() =>
+                          client.request(`${basePath}/items`, {
+                            method: "POST",
+                            csrfToken: session.csrf_token,
+                            body: {
+                              expected_revision: draft.revision,
+                              category_id: itemCategoryId,
+                              stable_code: null,
+                              name_uk: itemName,
+                              description_uk: null,
+                              price_minor: itemPrice ? Math.round(Number(itemPrice) * 100) : null,
+                              currency: "UAH",
+                              availability: "available",
+                              position: count,
+                              component_data_status: "confirmed_none",
+                              components: [],
+                              allergen_data_status: "confirmed_none",
+                              allergen_codes: [],
+                              source_kind: "manual",
+                              source_reference: null,
+                              source_item_key: null,
+                            },
+                          }),
+                        ).then(() => {
+                          setItemName("");
+                          setItemPrice("");
+                        });
+                      }}
+                    >
+                      <div className="field-group">
+                        <label htmlFor="item-category">Категорія позиції</label>
+                        <select
+                          id="item-category"
+                          value={itemCategoryId}
+                          onChange={(event) => setItemCategoryId(event.target.value)}
+                          required
+                        >
+                          <option value="">Оберіть категорію</option>
+                          {draft.sections.flatMap((section) =>
+                            section.categories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {section.name_uk} · {category.name_uk}
+                              </option>
+                            )),
+                          )}
+                        </select>
+                      </div>
+                      <div className="field-group">
+                        <label htmlFor="new-item">Нова позиція</label>
+                        <input
+                          id="new-item"
+                          value={itemName}
+                          onChange={(event) => setItemName(event.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="field-group">
+                        <label htmlFor="new-item-price">Ціна, ₴</label>
+                        <input
+                          id="new-item-price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={itemPrice}
+                          onChange={(event) => setItemPrice(event.target.value)}
+                        />
+                      </div>
+                      <button className="button button-quiet" type="submit" disabled={busy}>
+                        Додати позицію
+                      </button>
+                    </form>
                   </div>
-                  {section.categories.map((category) => (
-                    <div className="menu-category-block" key={category.id}>
-                      <h4>{category.name_uk}</h4>
-                      <div className="menu-item-list">
-                        {itemByCategory(category.id).map((item) => (
-                          <MenuItemEditor
-                            key={item.item_id}
-                            item={item}
-                            busy={busy}
-                            onSave={(current, name, priceMinor) =>
-                              mutate(() =>
-                                client.request(`${basePath}/items/${current.item_id}`, {
-                                  method: "PATCH",
-                                  csrfToken: session?.csrf_token,
-                                  body: {
-                                    expected_revision: draft.revision,
-                                    name_uk: name,
-                                    price_minor: priceMinor,
-                                  },
-                                }),
-                              )
-                            }
-                          />
-                        ))}
-                        {category.item_count === 0 ? (
-                          <p className="menu-quiet-row">У категорії ще немає позицій.</p>
-                        ) : null}
+                </details>
+              </div>
+              {draft.sections.length === 0 ? (
+                <div className="empty-state">
+                  <h3>Додайте перший розділ</h3>
+                  <p>Після нього можна створити категорію та позиції меню.</p>
+                </div>
+              ) : (
+                draft.sections.map((section, sectionIndex) => (
+                  <section
+                    className="menu-section-block"
+                    id={`section-${section.id}`}
+                    key={section.id}
+                    aria-labelledby={`section-title-${section.id}`}
+                  >
+                    <div className="menu-entity-heading">
+                      <h3 id={`section-title-${section.id}`}>{section.name_uk}</h3>
+                      <div
+                        className="compact-actions"
+                        aria-label={`Порядок розділу ${section.name_uk}`}
+                      >
+                        <button
+                          className="button button-quiet"
+                          type="button"
+                          disabled={busy || sectionIndex === 0}
+                          aria-label={`Перемістити ${section.name_uk} вище`}
+                          onClick={() => {
+                            if (!session) return;
+                            const ordered = draft.sections.map(({ id }) => id);
+                            [ordered[sectionIndex - 1], ordered[sectionIndex]] = [
+                              ordered[sectionIndex],
+                              ordered[sectionIndex - 1],
+                            ];
+                            void mutate(() =>
+                              client.request(`${basePath}/sections/reorder`, {
+                                method: "POST",
+                                csrfToken: session.csrf_token,
+                                body: { ordered_ids: ordered, expected_revision: draft.revision },
+                              }),
+                            );
+                          }}
+                        >
+                          Вище
+                        </button>
+                        <button
+                          className="button button-quiet"
+                          type="button"
+                          disabled={busy || sectionIndex === draft.sections.length - 1}
+                          aria-label={`Перемістити ${section.name_uk} нижче`}
+                          onClick={() => {
+                            if (!session) return;
+                            const ordered = draft.sections.map(({ id }) => id);
+                            [ordered[sectionIndex], ordered[sectionIndex + 1]] = [
+                              ordered[sectionIndex + 1],
+                              ordered[sectionIndex],
+                            ];
+                            void mutate(() =>
+                              client.request(`${basePath}/sections/reorder`, {
+                                method: "POST",
+                                csrfToken: session.csrf_token,
+                                body: { ordered_ids: ordered, expected_revision: draft.revision },
+                              }),
+                            );
+                          }}
+                        >
+                          Нижче
+                        </button>
                       </div>
                     </div>
-                  ))}
-                  {section.category_count === 0 ? (
-                    <p className="menu-quiet-row">У розділі ще немає категорій.</p>
-                  ) : null}
-                </section>
-              ))
-            )}
+                    {section.categories.map((category) => (
+                      <div className="menu-category-block" key={category.id}>
+                        <h4>{category.name_uk}</h4>
+                        <div className="menu-item-list">
+                          {itemByCategory(category.id).map((item) => (
+                            <MenuItemEditor
+                              key={item.item_id}
+                              item={item}
+                              busy={busy}
+                              onSave={(current, name, priceMinor) =>
+                                mutate(() =>
+                                  client.request(`${basePath}/items/${current.item_id}`, {
+                                    method: "PATCH",
+                                    csrfToken: session?.csrf_token,
+                                    body: {
+                                      expected_revision: draft.revision,
+                                      name_uk: name,
+                                      price_minor: priceMinor,
+                                    },
+                                  }),
+                                )
+                              }
+                            />
+                          ))}
+                          {category.item_count === 0 ? (
+                            <p className="menu-quiet-row">У категорії ще немає позицій.</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                    {section.category_count === 0 ? (
+                      <p className="menu-quiet-row">У розділі ще немає категорій.</p>
+                    ) : null}
+                  </section>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+          {organizationId ? (
+            <AdminMenuLifecyclePanel
+              organizationId={organizationId}
+              locationId={locationId}
+              draft={draft}
+              onDraftConfirmed={(confirmedDraft) => {
+                setDraft(confirmedDraft);
+                void refreshDraft(locationId, confirmedDraft.id);
+              }}
+              onPublished={() => void loadWorkspace(locationId)}
+            />
+          ) : null}
+        </>
       )}
     </section>
   );

@@ -314,3 +314,229 @@ test("admin invitation, pending setup, activation and active employee home", asy
   await expect(page.getByRole("button", { name: "Практика" })).toBeDisabled();
   await expect(page.getByRole("button", { name: /розпочати.*(іспит|практик)/i })).toHaveCount(0);
 });
+
+test("admin JSON review confirm and atomic menu publication", async ({ page }) => {
+  let currentUser: CurrentUser = "anonymous";
+  let published = false;
+  let draftRevision = 0;
+  let findingResolved = false;
+  const draft = () => ({
+    id: "menu-version-1",
+    menu_id: "menu-1",
+    organization_id: organization.id,
+    location_id: location.id,
+    version_number: 1,
+    status: "draft",
+    base_version_id: null,
+    revision: draftRevision,
+    section_count: 1,
+    category_count: 1,
+    item_count: 1,
+    created_at: "2026-08-27T00:00:00Z",
+    published_at: null,
+    archived_at: null,
+    sections: [
+      {
+        id: "section-1",
+        stable_code: "main",
+        name_uk: "Основне",
+        position: 0,
+        category_count: 1,
+        categories: [
+          {
+            id: "category-1",
+            section_id: "section-1",
+            stable_code: "soups",
+            name_uk: "Супи",
+            position: 0,
+            item_count: 1,
+          },
+        ],
+      },
+    ],
+  });
+  const finding = () => ({
+    id: "finding-1",
+    severity: "requires_review",
+    code: "CRITICAL_FACT_CHANGE",
+    entity_type: "menu_item",
+    source_key: "borshch",
+    message: "Критичні факти позиції змінено.",
+    resolution_status: findingResolved ? "resolved" : "unresolved",
+    allowed_actions: ["confirm_critical_change"],
+    resolution_action: findingResolved ? "confirm_critical_change" : null,
+    target_entity_id: null,
+    resolution_comment: null,
+    resolved_at: findingResolved ? "2026-08-27T01:00:00Z" : null,
+  });
+  const menuImport = (status = "ready_for_review") => ({
+    id: "import-1",
+    organization_id: organization.id,
+    location_id: location.id,
+    menu_id: "menu-1",
+    base_menu_version_id: null,
+    status,
+    review_revision: findingResolved ? 1 : 0,
+    source_filename: "menu.json",
+    source_reference: null,
+    source_checksum: "a".repeat(64),
+    section_count: 1,
+    category_count: 1,
+    item_count: 1,
+    added_count: 1,
+    changed_count: 0,
+    removed_count: 0,
+    unchanged_count: 0,
+    blocker_count: 0,
+    review_count: 1,
+    warning_count: 0,
+    findings: [finding()],
+    created_at: "2026-08-27T00:00:00Z",
+    confirmed_at: status === "confirmed" ? "2026-08-27T02:00:00Z" : null,
+    failure_code: null,
+  });
+
+  await page.route("**/api/v1/**", async (route: Route) => {
+    const request = route.request();
+    const method = request.method();
+    const pathname = new URL(request.url()).pathname.replace("/api/v1", "");
+    if (method === "GET" && pathname === "/auth/session") {
+      if (currentUser === "anonymous") {
+        await route.fulfill({
+          status: 401,
+          json: {
+            code: "UNAUTHENTICATED",
+            message: "Сесію не знайдено.",
+            field_errors: [],
+            request_id: "menu-session",
+          },
+        });
+      } else await route.fulfill({ json: sessionFor("admin", "active") });
+      return;
+    }
+    if (method === "POST" && pathname === "/auth/login") {
+      await route.fulfill({ json: { status: "mfa_required", expires_at: "2026-08-27T20:00:00Z" } });
+      return;
+    }
+    if (method === "POST" && pathname === "/auth/mfa/verify") {
+      currentUser = "admin";
+      await route.fulfill({ json: sessionFor("admin", "active") });
+      return;
+    }
+    if (method === "GET" && pathname === `/organizations/${organization.id}`) {
+      await route.fulfill({ json: organization });
+      return;
+    }
+    if (method === "GET" && pathname === `/organizations/${organization.id}/employees`) {
+      await route.fulfill({ json: { items: [], next_cursor: null } });
+      return;
+    }
+    if (method === "GET" && pathname === `/organizations/${organization.id}/locations`) {
+      await route.fulfill({ json: [location] });
+      return;
+    }
+    const versionsPath = `/organizations/${organization.id}/locations/${location.id}/menu-versions`;
+    if (method === "GET" && pathname === versionsPath) {
+      await route.fulfill({
+        json: {
+          menu_id: "menu-1",
+          organization_id: organization.id,
+          location_id: location.id,
+          current_published: published
+            ? { ...draft(), status: "published", published_at: "2026-08-27T03:00:00Z" }
+            : null,
+          draft: published ? null : draft(),
+          archived: [],
+        },
+      });
+      return;
+    }
+    if (method === "GET" && pathname === `${versionsPath}/menu-version-1`) {
+      await route.fulfill({ json: draft() });
+      return;
+    }
+    if (method === "GET" && pathname === `${versionsPath}/menu-version-1/items`) {
+      await route.fulfill({ json: { items: [], next_cursor: null, revision: draftRevision } });
+      return;
+    }
+    if (method === "GET" && pathname === `${versionsPath}/menu-version-1/readiness`) {
+      await route.fulfill({
+        json: {
+          menu_id: "menu-1",
+          menu_version_id: "menu-version-1",
+          organization_id: organization.id,
+          location_id: location.id,
+          revision: draftRevision,
+          can_publish: true,
+          blocking_errors: [],
+          warnings: [],
+          required_training_asset_count: 0,
+          ready_training_asset_count: 0,
+          applicable_training_content_count: 0,
+        },
+      });
+      return;
+    }
+    const importsPath = `/organizations/${organization.id}/locations/${location.id}/menu-imports`;
+    if (method === "POST" && pathname === importsPath) {
+      assertProtectedMutation(request, true);
+      await route.fulfill({ status: 201, json: menuImport() });
+      return;
+    }
+    if (method === "POST" && pathname.endsWith("/findings/finding-1/resolve")) {
+      assertProtectedMutation(request, true);
+      findingResolved = true;
+      await route.fulfill({ json: { finding: finding(), review_revision: 1 } });
+      return;
+    }
+    if (method === "POST" && pathname === `${importsPath}/import-1/confirm`) {
+      assertProtectedMutation(request, true);
+      draftRevision = 1;
+      await route.fulfill({ json: { import: menuImport("confirmed"), draft: draft() } });
+      return;
+    }
+    if (method === "POST" && pathname === `${versionsPath}/menu-version-1/publish`) {
+      assertProtectedMutation(request, true);
+      published = true;
+      await route.fulfill({
+        json: {
+          published: { ...draft(), status: "published", published_at: "2026-08-27T03:00:00Z" },
+          previous_published_version_id: null,
+          diff_counts: { added: 1, changed: 0, removed: 0, unchanged: 0 },
+          training_impact_counts: { none: 0, review: 0, required: 1 },
+          applicability: { published_content_count: 0, assignment_count: 0, notification_count: 0 },
+        },
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 404,
+      json: {
+        code: "UNEXPECTED_TEST_REQUEST",
+        message: `${method} ${pathname}`,
+        field_errors: [],
+        request_id: "menu-unexpected",
+      },
+    });
+  });
+
+  await page.goto("/login");
+  await loginAsAdmin(page);
+  await page.goto("/admin/menu");
+  await expect(page.getByRole("heading", { name: "Меню", level: 1 })).toBeVisible();
+  await page.getByLabel("JSON-файл меню").setInputFiles({
+    name: "menu.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"source_filename":"ignored.json","source_reference":null,"sections":[]}'),
+  });
+  await page.getByRole("button", { name: "Перевірити JSON" }).click();
+  await expect(page.getByText("CRITICAL_FACT_CHANGE")).toBeVisible();
+  await page.getByRole("button", { name: "Підтвердити критичну зміну" }).click();
+  await expect(page.getByText("Вирішено")).toBeVisible();
+  await page.getByRole("button", { name: "Підтвердити в чернетку" }).click();
+  await page.getByRole("button", { name: "Опублікувати меню" }).click();
+  const dialog = page.getByRole("dialog", { name: "Опублікувати цю версію меню?" });
+  await dialog.getByRole("button", { name: "Опублікувати" }).click();
+  await expect(page.getByText("Опубліковано v1")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Чернетки немає" })).toBeVisible();
+});
