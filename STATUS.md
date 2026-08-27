@@ -1,10 +1,11 @@
 # HoReCa Repository Status
 
 **Snapshot date:** 2026-08-27
-**Current bounded task:** resolve through the Linear
-[START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974)
-and the single active Linear issue. This document records durable checkpoints; it does not select
-or authorize the current task.
+**Current bounded task:**
+[CRA-34 — Implement Stage 4 Invitation Acceptance](https://linear.app/craftspacee/issue/CRA-34/implement-backend-mvp-vertical-slice-1-stage-4-invitation-acceptance),
+routed through the Linear
+[START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
+This document records durable checkpoints; it does not expand CRA-34 beyond its explicit approvals.
 
 ## Accepted implementation and planning checkpoints
 
@@ -20,6 +21,11 @@ or authorize the current task.
 - CRA-29 Stage 2 auth/session/CSRF/MFA/RBAC plan is accepted and Done.
 - CRA-30 Stage 2 auth/session/CSRF/MFA/RBAC implementation is accepted, Done, and published.
 - CRA-31 Stage 3 invitation plan is accepted and Done.
+- CRA-32 Stage 3 invitation administration implementation is accepted and Done locally; its six
+  commits are not yet published.
+- CRA-33 Stage 4 invitation-acceptance plan is accepted and Done.
+- CRA-34 Stage 4 invitation-acceptance implementation is a locally complete acceptance candidate.
+  Its four authorized checkpoints are committed locally and are not yet accepted or published.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -44,24 +50,43 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   coverage, Alembic head
   `0003_auth_security`, and no metadata drift.
 
-## Local Stage 3 candidate
+## Accepted local Stage 3 checkpoint
 
-- CRA-32 implements the bounded invitation lifecycle candidate: persistence, transactional email
+- CRA-32 implements the accepted invitation lifecycle boundary: persistence, transactional email
   outbox, deterministic versioned tokens, persistent idempotency and rate limits, create,
   validate, resend, and revoke.
-- Current local gate: Python 3.12.10, PostgreSQL 16.15,
+- Accepted local gate: Python 3.12.10, PostgreSQL 16.15,
   `156 passed / 0 failed / 0 skipped`, 94% overall statement/branch coverage, 90% critical
   invitation coverage, Alembic head `0005_invitation_email_outbox`, and no metadata drift.
 - Provider calls, a worker/runtime deployment, invitation acceptance, list/detail endpoints, and
   non-test provisioning remain outside CRA-32.
-- CRA-32 remains In Progress until Denys's final acceptance; its six local checkpoints are not
-  published.
+- Denys accepted CRA-32 on 2026-08-27. Linear records it as Done; publication remains a separate
+  approval gate.
+
+## Local Stage 4 acceptance candidate
+
+- CRA-34 adds only `POST /api/v1/invitations/accept`: locked Invitation authority, new/existing
+  User branches, Pending Membership and placeholder EmployeeProfile creation, an opaque Session,
+  a safe audit trail, and the Secure HttpOnly cookie response.
+- Acceptance is atomic and tenant-isolated. Same-token and same-email races have one winner;
+  failure paths roll back domain, session, and audit mutations. Acceptance never activates a
+  membership or records MFA verification.
+- Current local gate: Python 3.12.10, PostgreSQL 16.15,
+  `180 passed / 0 failed / 0 skipped`, 94% overall statement/branch coverage, 93% aggregate
+  critical acceptance coverage, Alembic head `0005_invitation_email_outbox`, and no metadata
+  drift.
+- The first full gate exposed a stale deterministic test clock, not a product failure. The clock
+  was moved forward without changing production behavior; the focused API suite then reported
+  `12 passed` and the full gate was green.
+- CRA-34 remains In Progress in Linear until Denys accepts this local candidate. Push remains a
+  separate approval gate.
 
 ## Repository and runtime state
 
 - Branch: `main`.
 - Published history includes the accepted repository baseline, CRA-28 Stage 1, and CRA-30 Stage 2
-  checkpoints. CRA-32 adds six local Stage 3 checkpoints pending acceptance/publication.
+  checkpoints. Local `main` adds six accepted CRA-32 checkpoints and four CRA-34 candidate
+  checkpoints; none of those ten commits is published.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: local `main` tracks `origin/main`; the initial baseline was published without
   force-push or history rewriting.
@@ -95,6 +120,11 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
 - CRA-32 authorizes its six mapped local commits only. Push, PR, merge, deploy, Railway/provider
   provisioning, and history rewriting remain separate approval gates.
+- CRA-33 accepted the Stage 4 contract and four-commit map. CRA-34 is the single bounded
+  implementation issue, and Denys authorized all four selective local commits on 2026-08-27.
+  Denys separately authorized production implementation on 2026-08-27. The local candidate now
+  awaits acceptance. Push, PR, merge, deploy, providers, non-test mutations, dependencies,
+  architecture changes, and history rewrite remain separate approval gates.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

@@ -3,10 +3,11 @@
 ## Purpose
 
 HoReCaFam is the repository for the HoReCa Training Platform. The accepted baseline contains the
-Stage 0 backend foundation, Stage 1 identity persistence, and Stage 2 authentication/security.
-A locally verified Stage 3 invitation candidate is pending acceptance and publication. Training,
-broader production administration, providers/workers, and frontend work require later bounded
-issues.
+Stage 0 backend foundation, Stage 1 identity persistence, Stage 2 authentication/security, and the
+accepted local Stage 3 invitation administration checkpoint. A locally verified Stage 4
+invitation-acceptance candidate is pending acceptance; both local invitation stages remain
+unpublished. Training, broader production administration, providers/workers, and frontend work
+require later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -59,15 +60,19 @@ sessions, secure cookies, synchronizer CSRF, current-session logout, encrypted T
 PostgreSQL abuse throttling, and deny-by-default RBAC dependencies.
 
 [CRA-32](https://linear.app/craftspacee/issue/CRA-32/implement-backend-mvp-vertical-slice-1-stage-3-invitation)
-adds the local Stage 3 invitation candidate: lifecycle persistence, deterministic versioned
-tokens, transactional email outbox state, persistent idempotency/rate limits, and protected
-create/resend/revoke plus public token validation routes. Provider delivery, worker deployment,
-invitation acceptance, list/detail routes, password recovery, MFA enrollment/recovery, training,
-and the frontend are not implemented.
+is accepted and adds Stage 3 invitation administration: lifecycle persistence, deterministic
+versioned tokens, transactional email outbox state, persistent idempotency/rate limits, and
+protected create/resend/revoke plus public token validation routes.
+
+[CRA-34](https://linear.app/craftspacee/issue/CRA-34/implement-backend-mvp-vertical-slice-1-stage-4-invitation-acceptance)
+adds the local Stage 4 candidate: atomic new/existing-account invitation acceptance, Pending
+Membership and placeholder EmployeeProfile creation, an opaque Session, and safe audit/cookie
+integration. Provider delivery, worker deployment, invitation list/detail routes, password
+recovery, MFA enrollment/recovery, training, and the frontend are not implemented.
 
 ## Repository map
 
-- [`backend/app`](backend/app): Stage 0 runtime through the local Stage 3 invitation candidate.
+- [`backend/app`](backend/app): Stage 0 runtime through the local Stage 4 acceptance candidate.
 - [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–3 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.

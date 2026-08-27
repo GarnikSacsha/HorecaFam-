@@ -109,13 +109,20 @@ Its final complete gate reports 92 passed, 0 failed, 0 skipped, 94% overall stat
 coverage, 92% critical auth coverage, Alembic head `0003_auth_security`, and no metadata drift.
 Canonical evidence remains in Linear.
 
-## CRA-32 Stage 3 candidate evidence
+## Accepted CRA-32 Stage 3 evidence
 
-The local CRA-32 invitation candidate uses Python 3.12.10 and native PostgreSQL 16.15. Its latest
+The accepted CRA-32 invitation checkpoint uses Python 3.12.10 and native PostgreSQL 16.15. Its
 complete gate reports 156 passed, 0 failed, 0 skipped, 94% overall statement/branch coverage, 90%
 aggregate critical invitation coverage, Alembic head `0005_invitation_email_outbox`, and no
-metadata drift. This remains a local candidate result until Denys accepts CRA-32; canonical
-evidence remains in Linear.
+metadata drift. Canonical evidence remains in Linear.
+
+## CRA-34 Stage 4 local candidate evidence
+
+The local invitation-acceptance candidate uses the same Python 3.12.10 and native PostgreSQL 16.15
+boundary. Its final gate reports 180 passed, 0 failed, 0 skipped, 94% overall statement/branch
+coverage, 93% aggregate critical acceptance coverage, Alembic head
+`0005_invitation_email_outbox`, and no metadata drift. Focused API acceptance reports 12 passed.
+CRA-34 remains In Progress until Denys accepts the candidate; push is a separate approval gate.
 
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.

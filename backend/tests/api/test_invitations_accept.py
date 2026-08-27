@@ -22,7 +22,7 @@ from app.security.passwords import PasswordManager
 from app.security.tokens import hash_secret
 from tests.factories import make_invitation, make_organization, make_user
 
-FIXED_NOW = datetime(2026, 8, 27, 10, 0, tzinfo=UTC)
+FIXED_NOW = datetime(2030, 8, 27, 10, 0, tzinfo=UTC)
 
 
 async def arrange_public_invitation(

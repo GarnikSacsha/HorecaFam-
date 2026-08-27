@@ -1,9 +1,10 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. The published accepted implementation contains the
-CRA-20 Stage 0 FastAPI foundation, CRA-28 Stage 1 identity persistence, and CRA-30 Stage 2
-authentication/security boundary. CRA-32 adds a locally verified Stage 3 invitation candidate
-pending final acceptance and publication.
+Repository for the HoReCa Training Platform. Published history contains the CRA-20 Stage 0 FastAPI
+foundation, CRA-28 Stage 1 identity persistence, and CRA-30 Stage 2 authentication/security
+boundary. Local history also contains accepted CRA-32 Stage 3 invitation administration and a
+verified CRA-34 Stage 4 invitation-acceptance candidate pending acceptance. The Stage 3 and Stage 4
+local commits are not yet published.
 
 ## Start here
 
@@ -18,7 +19,7 @@ Repository documentation summarizes verified local state and routes agents to th
 
 ## Repository map
 
-- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–3
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–4
   backend foundations.
 - [`frontend/`](frontend): reserved boundary for a separately approved frontend stage.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
@@ -44,8 +45,9 @@ integration and migration acceptance; there is no SQLite fallback.
 
 Stage 1 persists identity and organization records. Accepted CRA-30 adds non-enumerating
 login, server-side sessions, CSRF-protected logout, TOTP completion, and Organization-scoped RBAC
-dependencies. The local CRA-32 candidate adds create, public validate, resend, and revoke
-invitation flows backed by persistent idempotency/rate limits and a transactional email outbox.
-Invitation acceptance, provider/worker execution, list/detail endpoints, MFA enrollment/recovery,
-training workflows, broader production administration, and the frontend remain outside the
-implemented boundary.
+dependencies. Accepted CRA-32 adds create, public validate, resend, and revoke invitation flows
+backed by persistent idempotency/rate limits and a transactional email outbox. The local CRA-34
+candidate adds atomic new/existing-account invitation acceptance, Pending access, an opaque
+Session, and safe cookie/audit integration. Provider/worker execution, invitation list/detail
+endpoints, MFA enrollment/recovery, training workflows, broader production administration, and
+the frontend remain outside the implemented boundary.

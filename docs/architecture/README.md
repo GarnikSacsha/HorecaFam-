@@ -75,10 +75,27 @@ business transaction → invitation + audit + background job + email delivery st
 worker boundary → reconstruct current raw token only at the delivery adapter call
 ```
 
-The local CRA-32 candidate exposes create, validate, resend, and revoke only. Tokens are
+The accepted CRA-32 checkpoint exposes create, validate, resend, and revoke. Tokens are
 deterministically derived from server-held ordered HMAC keys and versioned invitation identity;
 only hashes and derivation coordinates persist. Delivery state is transactional, but no provider
 call or deployed worker is included.
+
+## Stage 4 invitation-acceptance boundary
+
+```text
+public invitation token + discriminated account mode
+→ locked Invitation and global-email serialization
+→ create or authenticate User
+→ Pending Membership + placeholder EmployeeProfile
+→ accepted Invitation + opaque Session + safe audit in one transaction
+→ Secure HttpOnly cookie after commit
+```
+
+The local CRA-34 candidate adds only `POST /api/v1/invitations/accept`. Invitation email and
+Organization remain authoritative; the request cannot redirect identity or tenant ownership.
+Concurrent reuse has one winner, all failures roll back, and the issued Session grants only the
+existing Pending boundary. Acceptance never activates Membership, assigns Role/Location, or marks
+MFA verified. No schema or migration was added.
 
 ## Test boundary
 
@@ -88,7 +105,7 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is no invitation acceptance/list/detail workflow, password recovery, MFA enrollment,
-production Organization or Employee administration endpoint, menu/training workflow, provider
-integration, deployed worker/resource, or frontend application. Adding any of these requires a
-new bounded Linear issue and approval.
+There is no invitation list/detail workflow, password recovery, MFA enrollment, production
+Organization or Employee administration endpoint, menu/training workflow, provider integration,
+deployed worker/resource, or frontend application. Adding any of these requires a new bounded
+Linear issue and approval.

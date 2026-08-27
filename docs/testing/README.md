@@ -61,9 +61,9 @@ The accepted Stage 2 checkpoint reports Python 3.12.10, PostgreSQL 16.15, 92 pas
 `horeca_test` base→`0003_auth_security` cycle passes and Alembic reports no metadata drift.
 Canonical RED/GREEN evidence and acceptance are recorded in CRA-30.
 
-## CRA-32 Stage 3 candidate
+## Accepted CRA-32 checkpoint
 
-The current local invitation candidate reports:
+The accepted local invitation checkpoint reports:
 
 - Python 3.12.10 and native PostgreSQL 16.15;
 - 156 passed, 0 failed, 0 skipped;
@@ -73,4 +73,20 @@ The current local invitation candidate reports:
   metadata drift;
 - a live async HTTP create → validate → resend → old-token rejection → revoke lifecycle.
 
-CRA-32 remains the canonical evidence source and stays In Progress until Denys accepts it.
+CRA-32 remains the canonical evidence source and is accepted and Done in Linear. Its six local
+commits are not yet published.
+
+## CRA-34 Stage 4 local candidate
+
+The invitation-acceptance candidate reports:
+
+- Python 3.12.10 and native PostgreSQL 16.15;
+- 180 passed, 0 failed, 0 skipped;
+- 94% overall statement/branch coverage and 93% aggregate critical acceptance coverage;
+- Alembic head `0005_invitation_email_outbox`, the empty-database migration test, and no metadata
+  drift;
+- focused API, service, concurrency, rollback, throttle, and tenant-isolation proof.
+
+The first full gate found only a stale deterministic test clock; after moving that test-only clock
+forward, the focused API suite reported 12 passed and the full gate above was green. CRA-34 remains
+In Progress until Denys accepts the local candidate.
