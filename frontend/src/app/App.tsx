@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { AdminEmployeeDetailPage } from "../admin/AdminEmployeeDetailPage";
+import { AdminEmployeesPage } from "../admin/AdminEmployeesPage";
 import { LoginPage } from "../auth/LoginPage";
 import { MfaPage } from "../auth/MfaPage";
 import { PendingPage } from "../employee/PendingPage";
@@ -32,7 +34,17 @@ export function App() {
             element={
               <ProtectedRoute audience="admin">
                 <AdminShell>
-                  <Placeholder eyebrow="Команда" title="Працівники" />
+                  <AdminEmployeesPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/employees/:employeeId"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminEmployeeDetailPage />
                 </AdminShell>
               </ProtectedRoute>
             }

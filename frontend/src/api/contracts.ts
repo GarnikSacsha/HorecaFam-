@@ -109,6 +109,14 @@ export interface EmployeeListResponse {
   next_cursor: string | null;
 }
 
+export interface EmployeeLifecycleActionResponse {
+  employee_id: string;
+  organization_id: string;
+  membership_status: "active";
+  training_participation_status: "active";
+  activated_at: string;
+}
+
 export interface OwnEmployeeProfile {
   id: string;
   organization: { id: string; name: string };
