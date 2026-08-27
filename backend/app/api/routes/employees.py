@@ -1,18 +1,21 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
 from app.api.dependencies.session import (
     AuthenticatedSession,
+    get_csrf_protected_session,
     get_current_session,
 )
+from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.schemas.employees import (
     EmployeeDetail,
     EmployeeListResponse,
+    EmployeeUpdate,
     LocationSummary,
     OperationalRoleSummary,
     OrganizationSummary,
@@ -25,6 +28,7 @@ from app.services.employees import (
     list_employees,
     list_locations,
     list_operational_roles,
+    update_pending_employee_profile,
 )
 
 router = APIRouter(tags=["employees"])
@@ -110,6 +114,29 @@ async def employee_detail_route(
         db,
         organization_id=organization_id,
         employee_id=employee_id,
+    )
+
+
+@router.patch(
+    "/organizations/{organization_id}/employees/{employee_id}",
+    response_model=EmployeeDetail,
+)
+async def employee_update_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    payload: EmployeeUpdate,
+    request: Request,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeDetail:
+    return await update_pending_employee_profile(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        payload=payload,
+        request_id=UUID(get_request_id()),
     )
 
 

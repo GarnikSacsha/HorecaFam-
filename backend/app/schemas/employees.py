@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 LifecycleStatus = Literal["active", "archived"]
 MembershipStatus = Literal["pending", "active", "disabled"]
@@ -66,6 +66,29 @@ class EmployeeDetail(EmployeeSummary):
 class EmployeeListResponse(StrictSchema):
     items: list[EmployeeSummary]
     next_cursor: str | None
+
+
+class EmployeeUpdate(StrictSchema):
+    first_name: str | None = Field(default=None, max_length=120)
+    last_name: str | None = Field(default=None, max_length=120)
+    operational_role_id: UUID | None = None
+    location_id: UUID | None = None
+
+    @field_validator("first_name", "last_name", mode="before")
+    @classmethod
+    def normalize_name(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Name must not be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def require_supplied_field(self) -> "EmployeeUpdate":
+        if not self.model_fields_set:
+            raise ValueError("At least one field must be supplied")
+        return self
 
 
 class OwnEmployeeProfile(StrictSchema):

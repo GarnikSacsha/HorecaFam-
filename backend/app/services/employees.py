@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
+    AuditEvent,
     EmployeeProfile,
     Location,
     OperationalRole,
@@ -19,6 +20,7 @@ from app.schemas.employees import (
     EmployeeDetail,
     EmployeeListResponse,
     EmployeeSummary,
+    EmployeeUpdate,
     LocationSummary,
     OperationalRoleSummary,
     OrganizationReference,
@@ -340,3 +342,184 @@ async def get_own_employee_profiles(
             )
         )
     return OwnEmployeeProfilesResponse(profiles=profiles)
+
+
+def _profile_not_editable() -> APIError:
+    return APIError(
+        status_code=409,
+        code="EMPLOYEE_PROFILE_NOT_EDITABLE",
+        message="Профіль працівника недоступний для редагування.",
+    )
+
+
+def _reference_inactive() -> APIError:
+    return APIError(
+        status_code=409,
+        code="REFERENCE_INACTIVE",
+        message="Обраний довідниковий запис неактивний.",
+    )
+
+
+async def _validated_role(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    role_id: UUID,
+) -> OperationalRole:
+    role = await db.scalar(
+        select(OperationalRole)
+        .where(
+            OperationalRole.id == role_id,
+            OperationalRole.organization_id == organization_id,
+        )
+        .with_for_update()
+    )
+    if role is None:
+        raise _resource_not_found()
+    if role.status != "active":
+        raise _reference_inactive()
+    return role
+
+
+async def _validated_location(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+) -> Location:
+    location = await db.scalar(
+        select(Location)
+        .where(
+            Location.id == location_id,
+            Location.organization_id == organization_id,
+        )
+        .with_for_update()
+    )
+    if location is None:
+        raise _resource_not_found()
+    if location.status != "active":
+        raise _reference_inactive()
+    return location
+
+
+async def _update_pending_employee_profile(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    payload: EmployeeUpdate,
+    request_id: UUID,
+) -> EmployeeDetail:
+    locked = (
+        (
+            await db.execute(
+                select(EmployeeProfile, OrganizationMembership)
+                .join(
+                    OrganizationMembership,
+                    and_(
+                        OrganizationMembership.id == EmployeeProfile.membership_id,
+                        OrganizationMembership.organization_id == EmployeeProfile.organization_id,
+                    ),
+                )
+                .where(
+                    EmployeeProfile.id == employee_id,
+                    EmployeeProfile.organization_id == organization_id,
+                )
+                .with_for_update()
+            )
+        )
+        .tuples()
+        .one_or_none()
+    )
+    if locked is None:
+        raise _resource_not_found()
+    profile, membership = locked
+    if membership.status != "pending":
+        raise _profile_not_editable()
+
+    supplied = payload.model_fields_set
+    old_values: dict[str, bool | str | None] = {}
+    new_values: dict[str, bool | str | None] = {}
+    if "first_name" in supplied:
+        old_values["first_name_changed"] = profile.first_name != payload.first_name
+        new_values["first_name_changed"] = profile.first_name != payload.first_name
+        profile.first_name = payload.first_name
+    if "last_name" in supplied:
+        old_values["last_name_changed"] = profile.last_name != payload.last_name
+        new_values["last_name_changed"] = profile.last_name != payload.last_name
+        profile.last_name = payload.last_name
+    if "operational_role_id" in supplied:
+        old_values["operational_role_id"] = (
+            str(profile.operational_role_id) if profile.operational_role_id is not None else None
+        )
+        if payload.operational_role_id is not None:
+            await _validated_role(
+                db,
+                organization_id=organization_id,
+                role_id=payload.operational_role_id,
+            )
+        profile.operational_role_id = payload.operational_role_id
+        new_values["operational_role_id"] = (
+            str(payload.operational_role_id) if payload.operational_role_id is not None else None
+        )
+    if "location_id" in supplied:
+        old_values["location_id"] = (
+            str(profile.location_id) if profile.location_id is not None else None
+        )
+        if payload.location_id is not None:
+            await _validated_location(
+                db,
+                organization_id=organization_id,
+                location_id=payload.location_id,
+            )
+        profile.location_id = payload.location_id
+        new_values["location_id"] = (
+            str(payload.location_id) if payload.location_id is not None else None
+        )
+
+    await db.flush()
+    detail = await get_employee_detail(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="employee_profile_updated",
+            target_type="employee_profile",
+            target_id=employee_id,
+            old_values=old_values,
+            new_values=new_values,
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    await db.commit()
+    return detail
+
+
+async def update_pending_employee_profile(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    payload: EmployeeUpdate,
+    request_id: UUID,
+) -> EmployeeDetail:
+    try:
+        return await _update_pending_employee_profile(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            actor_user_id=actor_user_id,
+            payload=payload,
+            request_id=request_id,
+        )
+    except Exception:
+        await db.rollback()
+        raise
