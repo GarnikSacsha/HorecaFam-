@@ -2,10 +2,12 @@
 
 **Snapshot date:** 2026-08-27
 **Current bounded task:**
-[CRA-36 — Implement Stage 5 Pending/Admin Profile Setup](https://linear.app/craftspacee/issue/CRA-36/implement-backend-mvp-vertical-slice-1-stage-5-pendingadmin-profile),
+[CRA-38 — Implement Stage 6 Explicit Activation](https://linear.app/craftspacee/issue/CRA-38/implement-backend-mvp-vertical-slice-1-stage-6-explicit-activation),
 routed through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-This document records durable checkpoints; it does not expand CRA-36 beyond its explicit approvals.
+Only CRA-38 checkpoint 1 documentation reconciliation is currently authorized. Production
+implementation, local commits, and push remain separate gates. This document records durable
+checkpoints; it does not expand CRA-38 beyond its explicit approvals.
 
 ## Accepted implementation and planning checkpoints
 
@@ -25,8 +27,12 @@ This document records durable checkpoints; it does not expand CRA-36 beyond its 
 - CRA-33 Stage 4 invitation-acceptance plan is accepted and Done.
 - CRA-34 Stage 4 invitation-acceptance implementation is accepted, Done, and published.
 - CRA-35 Stage 5 Pending/Admin Profile Setup plan is accepted and Done.
-- CRA-36 Stage 5 Pending/Admin Profile Setup implementation is accepted. Its five selective local
-  commits and fast-forward push were explicitly authorized on 2026-08-27.
+- CRA-36 Stage 5 Pending/Admin Profile Setup implementation is accepted, Done, and published through
+  `de6dd84`. Its five selective local commits and fast-forward push were explicitly authorized on
+  2026-08-27.
+- CRA-37 Stage 6 Explicit Activation plan and five-checkpoint map are accepted and Done.
+- CRA-38 Stage 6 Explicit Activation implementation issue is In Progress. Only checkpoint 1
+  documentation reconciliation is currently authorized.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -80,7 +86,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   `12 passed` and the full gate was green.
 - Denys accepted CRA-34 on 2026-08-27. Linear records it as Done, and its four commits are published.
 
-## Accepted Stage 5 checkpoint
+## Accepted and published Stage 5 checkpoint
 
 - CRA-36 adds MFA-verified Admin Organization/Location/OperationalRole reads, cursor-paginated
   Employee list/detail, authenticated own read-only operational profiles, and CSRF-protected
@@ -90,24 +96,25 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   but are not selectable, and profile completeness is derived.
 - Successful profile update appends a safe `employee_profile_updated` audit in the same transaction.
   Name/email values are not copied into audit. Forced commit failure rolls back domain and audit.
-- Membership remains Pending. Stage 6 Activation, applicability, Assignments, notifications,
-  Active/Disabled lifecycle changes, providers, frontend, and deployment remain excluded.
+- Membership remains Pending in CRA-36. That issue deliberately excludes Stage 6 Activation,
+  applicability, Assignments, notifications, Active/Disabled lifecycle changes, providers,
+  frontend, and deployment.
 - Accepted gate: Python 3.12.10, PostgreSQL 16, `195 passed / 0 failed / 0 skipped`, 94% overall
   branch coverage, and 92% aggregate critical Stage 5 coverage.
 - Alembic remains at `0005_invitation_email_outbox`; empty-database migration coverage passes,
   `current --check-heads` passes, and autogenerate reports no metadata drift.
-- The five CRA-36 checkpoints are committed on `main`. Push evidence and remote SHA remain
-  canonical in Linear/Git rather than being predicted in this snapshot.
+- The five CRA-36 checkpoints are committed on `main` and fast-forward published through
+  `de6dd84`. Canonical acceptance and push evidence remains in Linear/Git.
 
 ## Repository and runtime state
 
 - Branch: `main`.
-- Repository history includes the accepted repository baseline and Stage 1–5 checkpoints. The
-  pre-CRA-36 published base is `9fd2130`; current remote synchronization is verified through Git
-  and recorded in Linear after each approved push.
+- Repository history includes the accepted repository baseline and Stage 1–5 checkpoints. Local
+  `main`, `origin/main`, and `origin/HEAD` are synchronized at `de6dd84` before CRA-38 worktree
+  changes.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
-- Published branch: local `main` tracks `origin/main`; Stage 3 and Stage 4 were fast-forward
-  published without force-push or history rewriting.
+- Published branch: local `main` tracks `origin/main`; Stages 3–5 were fast-forward published
+  without force-push or history rewriting.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
@@ -136,12 +143,13 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   and deployment.
 - CRA-28 local commit and initial publication were separately authorized by Denys; their exact Git
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
-- CRA-32 and CRA-34 are accepted, Done, and published; their canonical implementation and Git
-  evidence remains in Linear.
-- CRA-35 accepted the Stage 5 contract and five-checkpoint map. Denys accepted CRA-36 and authorized
-  its five selective local commits plus a fast-forward push on 2026-08-27. PR, merge, deploy,
-  providers, non-test mutations, dependencies, architecture changes, migration, and history
-  rewrite remain separate gates.
+- CRA-32, CRA-34, and CRA-36 are accepted, Done, and published; their canonical implementation and
+  Git evidence remains in Linear.
+- CRA-37 accepted the Stage 6 contract and five-checkpoint map and is Done. CRA-38 is the active
+  Stage 6 implementation issue, but its current authorization covers only checkpoint 1 repository
+  documentation reconciliation. Production implementation, local commits, push, PR, merge,
+  deploy, providers, non-test mutations, dependencies, architecture changes, migration, and
+  history rewrite remain separate gates.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

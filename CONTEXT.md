@@ -4,9 +4,11 @@
 
 HoReCaFam is the repository for the HoReCa Training Platform. The accepted and published baseline
 contains Stage 0 backend foundation, Stage 1 identity persistence, Stage 2 authentication/security,
-Stage 3 invitation administration, and Stage 4 invitation acceptance through `9fd2130`. CRA-36 is
-the active bounded Stage 5 Pending/Admin Profile Setup implementation. Training, broader production
-administration, providers/workers, and frontend work require later bounded issues.
+Stage 3 invitation administration, Stage 4 invitation acceptance, and Stage 5 Pending/Admin Profile
+Setup through `de6dd84`. CRA-37 accepted the Stage 6 Explicit Activation contract and is Done.
+CRA-38 is the active bounded implementation issue; only its documentation-baseline checkpoint is
+currently authorized. Training, broader production administration, providers/workers, and frontend
+work require later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -70,13 +72,21 @@ integration. Provider delivery, worker deployment, invitation list/detail routes
 recovery, MFA enrollment/recovery, training, and the frontend are not implemented.
 
 [CRA-36](https://linear.app/craftspacee/issue/CRA-36/implement-backend-mvp-vertical-slice-1-stage-5-pendingadmin-profile)
-is accepted and adds Stage 5: scoped Organization/Location/OperationalRole reads, Admin Employee
-list/detail, own read-only operational profiles, and Pending-only profile PATCH with atomic safe
-audit. It deliberately does not activate Membership or create Assignments.
+is accepted, Done, and published through `de6dd84`. It adds Stage 5: scoped
+Organization/Location/OperationalRole reads, Admin Employee list/detail, own read-only operational
+profiles, and Pending-only profile PATCH with atomic safe audit. It deliberately does not activate
+Membership or create Assignments.
+
+[CRA-37](https://linear.app/craftspacee/issue/CRA-37/plan-backend-mvp-vertical-slice-1-stage-6-explicit-activation)
+is accepted and Done. It locks the Stage 6 Explicit Activation contract and five-checkpoint map.
+[CRA-38](https://linear.app/craftspacee/issue/CRA-38/implement-backend-mvp-vertical-slice-1-stage-6-explicit-activation)
+is the active bounded implementation issue. Its first documentation-only checkpoint is authorized;
+production implementation, local commits, and push remain separate gates.
 
 ## Repository map
 
-- [`backend/app`](backend/app): accepted Stage 0–4 runtime plus work inside the active bounded issue.
+- [`backend/app`](backend/app): accepted and published Stage 0–5 runtime; no Stage 6 production
+  change is authorized yet.
 - [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–3 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
