@@ -117,9 +117,9 @@ The Explicit Activation candidate reports:
 - Alembic head `0005_invitation_email_outbox`, empty-database migration coverage, current head,
   and no metadata drift.
 
-The five local CRA-38 checkpoints through `bd2f98e` are accepted and Done but remain unpushed.
+CRA-38 is accepted, Done, and published as part of the backend baseline through `abad74e`.
 
-## Current CRA-40 Stage 7 candidate
+## Accepted CRA-40 Stage 7 checkpoint
 
 The full Vertical Slice 1 regression and acceptance candidate reports:
 
@@ -136,5 +136,14 @@ The full Vertical Slice 1 regression and acceptance candidate reports:
 
 The complete requirement matrix, exact commands, coverage formula, security review, limitations,
 and staging exclusion are recorded in
-[`vertical-slice-1-acceptance.md`](vertical-slice-1-acceptance.md). CRA-40 remains In Progress until
-Denys accepts the three-checkpoint local candidate. Push is not authorized.
+[`vertical-slice-1-acceptance.md`](vertical-slice-1-acceptance.md). CRA-40 is accepted, Done, and
+published through `abad74e`.
+
+## Current CRA-43 frontend candidate
+
+The frontend candidate adds a contract-driven React implementation for login/MFA, both invitation
+entry boundaries, Pending Employee state, Admin employee profile setup, explicit Activation, and a
+truthful Active Employee zero-assignment home. Vitest/Testing Library covers 13 component and API
+behaviors. Playwright repeats the complete business path on desktop, compact, and mobile
+viewports. See [`frontend-vertical-slice-1-acceptance.md`](frontend-vertical-slice-1-acceptance.md)
+for the exact matrix, commands, results, and exclusions.

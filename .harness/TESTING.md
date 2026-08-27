@@ -142,9 +142,9 @@ response, preconditions, CSRF/MFA/RBAC, tenant isolation, idempotency replay and
 same-key/different-key concurrency, rollback, applicability, active access, OpenAPI, no new Session,
 and the live Stage 4→5→6 chain. Alembic remains at `0005_invitation_email_outbox`; the
 empty-database migration test, current head check, and metadata no-drift check pass. CRA-38 is
-accepted and Done; its five local commits through `bd2f98e` remain unpushed.
+accepted, Done, and published as part of the backend baseline through `abad74e`.
 
-## Current CRA-40 Stage 7 candidate evidence
+## Accepted CRA-40 Stage 7 evidence
 
 The Full Regression and Acceptance Gate candidate uses Python 3.12.10 and native PostgreSQL 16.
 Its complete gate reports 213 passed, 0 failed, 0 skipped, 94.05% exact overall statement/branch
@@ -155,7 +155,27 @@ integration suite reports 85 passed. Ruff format/check and strict mypy pass. Ale
 metadata no-drift all pass. The OpenAPI inventory contains 17 paths, all eight required first-slice
 paths, and none of the forbidden internal secret fields. Canonical command and matrix evidence is
 recorded in [`../docs/testing/vertical-slice-1-acceptance.md`](../docs/testing/vertical-slice-1-acceptance.md).
-CRA-40 remains In Progress until Denys accepts the local candidate; no push is authorized.
+CRA-40 is accepted, Done, and published through `abad74e`.
+
+## CRA-43 frontend commands and candidate evidence
+
+Use Node.js 24 and pnpm 11. Run from `frontend/`:
+
+```powershell
+rtk pnpm install --frozen-lockfile
+rtk pnpm format:check
+rtk pnpm lint
+rtk pnpm typecheck
+rtk pnpm test
+rtk pnpm build
+rtk pnpm exec playwright install chromium
+rtk pnpm test:e2e
+```
+
+The component gate currently contains 13 tests across nine files. The browser gate executes one
+complete route-mocked business path in three projects: 1440×1000 Admin desktop, 768×1024 compact,
+and 375×812 employee mobile. Exact scope, RED/GREEN evidence, and limitations are recorded in
+[`../docs/testing/frontend-vertical-slice-1-acceptance.md`](../docs/testing/frontend-vertical-slice-1-acceptance.md).
 
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.

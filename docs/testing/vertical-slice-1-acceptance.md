@@ -2,10 +2,10 @@
 
 ## Status and boundary
 
-This document records the local CRA-40 candidate executed on 2026-08-27 against Python 3.12.10
-and native PostgreSQL 16. CRA-39 is accepted and Done. CRA-40 is In Progress pending Denys's
-acceptance of its three local checkpoints. Push, staging, provider use, deployment, PR, merge,
-history rewriting, and non-test data operations were not authorized or executed.
+This document records the accepted CRA-40 backend gate executed on 2026-08-27 against Python
+3.12.10 and native PostgreSQL 16. CRA-40 is Done and published on `origin/main` through `abad74e`.
+Staging, provider use, deployment, PR, merge, history rewriting, and non-test data operations were
+not executed.
 
 Stage 7 changes tests and evidence only. It introduces no runtime code, API or data-contract
 change, dependency, schema object, migration, worker, provider integration, frontend behavior, or
@@ -13,20 +13,20 @@ training-domain implementation.
 
 ## Requirement-to-evidence matrix
 
-| CRA-13 / CRA-40 gate | Evidence | Result |
-|---|---|---|
-| Unit | Complete `tests/unit` suite inside the full run | Passed, no skips |
-| Real PostgreSQL integration | Complete `tests/integration` suite on dedicated `horeca_test` | Passed, no skips |
-| API contract and error envelope | Complete `tests/api` suite plus exact Stage 7 response assertions | Passed |
-| Concurrency and idempotency | Invitation and Activation same-key/different-key suites plus Stage 7 Activation replay | Passed |
-| CSRF, MFA, RBAC, tenant isolation | Existing security suites plus real Admin login/MFA in the Stage 7 chain | Passed |
-| Complete happy path | `test_complete_backend_slice_from_admin_login_to_active_employee_access` | Passed |
-| Pending and Disabled restrictions | Pending denial in the complete chain and dedicated Disabled Active-guard denial | Passed |
-| Migration smoke | Empty database to head test, `upgrade head`, `current --check-heads`, `alembic check` | Passed |
-| Coverage | Overall and declared critical aggregate with branch data | 94.05% / 91.80% |
-| OpenAPI and secret fields | 17-path inventory, eight required paths, forbidden-field scan | Complete; zero missing/hits |
-| Secret/log/debug/local-path review | Exact changed-path and Git inventory scan | No blocking finding |
-| Staging smoke | Requires separate remote/resource authorization | Not run; explicitly deferred |
+| CRA-13 / CRA-40 gate               | Evidence                                                                               | Result                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------- |
+| Unit                               | Complete `tests/unit` suite inside the full run                                        | Passed, no skips             |
+| Real PostgreSQL integration        | Complete `tests/integration` suite on dedicated `horeca_test`                          | Passed, no skips             |
+| API contract and error envelope    | Complete `tests/api` suite plus exact Stage 7 response assertions                      | Passed                       |
+| Concurrency and idempotency        | Invitation and Activation same-key/different-key suites plus Stage 7 Activation replay | Passed                       |
+| CSRF, MFA, RBAC, tenant isolation  | Existing security suites plus real Admin login/MFA in the Stage 7 chain                | Passed                       |
+| Complete happy path                | `test_complete_backend_slice_from_admin_login_to_active_employee_access`               | Passed                       |
+| Pending and Disabled restrictions  | Pending denial in the complete chain and dedicated Disabled Active-guard denial        | Passed                       |
+| Migration smoke                    | Empty database to head test, `upgrade head`, `current --check-heads`, `alembic check`  | Passed                       |
+| Coverage                           | Overall and declared critical aggregate with branch data                               | 94.05% / 91.80%              |
+| OpenAPI and secret fields          | 17-path inventory, eight required paths, forbidden-field scan                          | Complete; zero missing/hits  |
+| Secret/log/debug/local-path review | Exact changed-path and Git inventory scan                                              | No blocking finding          |
+| Staging smoke                      | Requires separate remote/resource authorization                                        | Not run; explicitly deferred |
 
 ## Complete backend acceptance path
 

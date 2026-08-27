@@ -3,12 +3,12 @@
 ## Current baseline state
 
 The repository is on `main`. The published history contains the accepted Stage 0 repository
-baseline and Stage 1–5 checkpoints through `de6dd84`. CRA-32's six Stage 3 commits, CRA-34's four
-Stage 4 commits, and CRA-36's five Stage 5 commits were fast-forward published without rewriting
-history. The accepted five-checkpoint CRA-38 Stage 6 series ends at local `bd2f98e`; push is not
-authorized. CRA-39 is accepted and Done. CRA-40 is the active Stage 7 implementation issue, and
-Denys authorized its accepted three-checkpoint local commit map. `origin` points to the approved
-HoReCa GitHub repository, and local `main` has upstream tracking.
+baseline and the accepted backend MVP Vertical Slice 1 through CRA-40. The backend history was
+fast-forward published without rewriting through `abad74e`. CRA-41 is the accepted frontend plan;
+CRA-43 is the active frontend implementation issue with an authorized six-checkpoint local map.
+Those frontend commits remain local until a separate push approval. CRA-42 is unrelated Backlog
+work. `origin` points to the approved HoReCa GitHub repository, and local `main` has upstream
+tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -105,8 +105,7 @@ baseline intentionally excludes:
 
 Publication of any checkpoint does not authorize the next implementation stage. Every subsequent
 change still requires an active bounded Linear issue, an agreed commit map, and the applicable
-local-commit and remote-action approvals. Stages 1–5 are accepted and published. CRA-37 accepted
-the Stage 6 contract and five-checkpoint map and is Done. CRA-38 is accepted and Done; its five
-local commits through `bd2f98e` remain unpushed. CRA-39 is accepted and Done. CRA-40 is the active
-Stage 7 implementation issue; its three local commits are authorized, while acceptance and remote
-actions remain separately gated.
+local-commit and remote-action approvals. Backend Stages 1–7 are accepted and published through
+`abad74e`. CRA-41 is accepted and Done. CRA-43 is the active frontend implementation issue; its six
+local commits are authorized, while candidate acceptance and every remote action remain separately
+gated.

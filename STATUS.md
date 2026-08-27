@@ -2,13 +2,13 @@
 
 **Snapshot date:** 2026-08-27
 **Current bounded task:**
-[CRA-40 — Implement Stage 7 Full Regression and Acceptance Gate](https://linear.app/craftspacee/issue/CRA-40/implement-backend-mvp-vertical-slice-1-stage-7-full-regression-and),
+[CRA-43 — Implement Frontend MVP Vertical Slice 1](https://linear.app/craftspacee/issue/CRA-43/implement-frontend-mvp-vertical-slice-1-foundation-auth-pending-and),
 routed through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-CRA-38 and CRA-39 are accepted and Done. Denys authorized CRA-40 implementation and its accepted
-three-checkpoint local commit map on 2026-08-27. Push, PR, merge, deployment, providers, and any
-later stage remain separate gates. This document records durable checkpoints; it does not expand
-CRA-40 beyond its explicit approvals.
+CRA-41 is accepted and Done. Denys authorized CRA-43 implementation, its exact dependency set, and
+its six-checkpoint local commit map on 2026-08-27. CRA-42 is an unrelated Backlog task. Push, PR,
+merge, deployment, providers, and later stages remain separate gates. This document records durable
+checkpoints; it does not expand CRA-43 beyond its explicit approvals.
 
 ## Accepted implementation and planning checkpoints
 
@@ -32,11 +32,12 @@ CRA-40 beyond its explicit approvals.
   `de6dd84`. Its five selective local commits and fast-forward push were explicitly authorized on
   2026-08-27.
 - CRA-37 Stage 6 Explicit Activation plan and five-checkpoint map are accepted and Done.
-- CRA-38 Stage 6 Explicit Activation implementation and its five local commits through `bd2f98e`
-  are accepted and Done. Push is not authorized.
+- CRA-38 Stage 6 Explicit Activation implementation is accepted, Done, and published.
 - CRA-39 Stage 7 Full Regression and Acceptance Gate plan is accepted and Done.
-- CRA-40 Stage 7 implementation is In Progress. Denys authorized its implementation and three
-  selective local commits; all remote and staging actions remain separate gates.
+- CRA-40 Stage 7 implementation is accepted, Done, and published through `abad74e`.
+- CRA-41 Frontend MVP Vertical Slice 1 plan and six-checkpoint map are accepted and Done.
+- CRA-43 Frontend MVP Vertical Slice 1 implementation is In Progress with six authorized local
+  commits; all remote and deployment actions remain separate gates.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -132,10 +133,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   mypy pass.
 - Alembic remains at `0005_invitation_email_outbox`; empty-database migration coverage,
   `current --check-heads`, and autogenerate no-drift checks pass.
-- The accepted local CRA-38 series is `0291208`, `e53e614`, `b0cd89b`, `c55545a`, and `bd2f98e`.
-  The five-checkpoint series is not pushed.
+- The accepted CRA-38 series is `0291208`, `e53e614`, `b0cd89b`, `c55545a`, and `bd2f98e`; it is
+  published as part of the backend baseline through `abad74e`.
 
-## Current CRA-40 Stage 7 candidate
+## Accepted CRA-40 Stage 7 checkpoint
 
 - Adds one test-only complete backend acceptance chain: real Admin password login and MFA,
   Invitation create, persisted outbox and fake delivery capture, new-User acceptance, Pending
@@ -155,22 +156,34 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - OpenAPI exposes 17 paths; all eight required first-slice paths are present and the forbidden
   `password_hash`, `token_hash`, `csrf_token_hash`, `secret_encrypted`, and `raw_token` fields are
   absent.
-- The first two CRA-40 checkpoints are `a7c73df` and `2fd8254`. The final evidence checkpoint is
-  authorized but remains unpushed; CRA-40 awaits Denys's acceptance after its third local commit.
+- The CRA-40 checkpoints are `a7c73df`, `2fd8254`, and `abad74e`; the accepted backend baseline is
+  published on `origin/main` through `abad74e`.
+
+## Current CRA-43 frontend candidate
+
+- Adds the approved React 19/TypeScript/Vite/Tailwind toolchain with exact pinned dependencies and
+  no global-state, form-schema, mock-server, animation, icon, or OpenAPI-generator dependency.
+- Uses the accepted cookie session, CSRF, idempotency, MFA, invitation, Employee, and Activation
+  contracts without changing the backend or persisting secrets in browser storage.
+- Implements responsive Admin and Employee shells, login/MFA, invitation acceptance, Pending
+  state, Admin invitation/profile setup, separate confirmed Activation, and truthful Active home.
+- Vitest/Testing Library candidate: 13 passed, 0 failed, 0 skipped across nine files.
+- Playwright candidate: 3 passed, 0 failed, 0 skipped at 1440×1000, 768×1024, and 375×812.
+- The five implementation checkpoints are `5b7e637`, `0ea5f14`, `6bcc8c4`, `b1aa74b`, and
+  `c5f38a8`; the sixth acceptance/documentation checkpoint is the current authorized boundary.
 
 ## Repository and runtime state
 
 - Branch: `main`.
-- Repository history includes the accepted published Stage 0–5 baseline through `de6dd84`, plus
-  the accepted unpushed five-checkpoint CRA-38 Stage 6 series and the local CRA-40 Stage 7
-  checkpoints on `main`.
+- Repository history includes the accepted backend MVP Vertical Slice 1 published through
+  `abad74e`, plus the local CRA-43 frontend checkpoints on `main`.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
-- Published branch: local `main` tracks `origin/main`; Stages 3–5 were fast-forward published
-  without force-push or history rewriting.
+- Published branch: local `main` tracks `origin/main` at `abad74e`; the backend series was
+  fast-forward published without force-push or history rewriting.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: reserved boundary only.
+- `frontend/`: active CRA-43 React implementation and automated acceptance boundary.
 
 ## Protected uncommitted material
 
@@ -197,11 +210,11 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
 - CRA-32, CRA-34, and CRA-36 are accepted, Done, and published; their canonical implementation and
   Git evidence remains in Linear.
-- CRA-37 and CRA-38 are accepted and Done; the accepted Stage 6 local series remains unpushed.
-  CRA-39 is accepted and Done. CRA-40 is the active Stage 7 implementation issue, and its three
-  local commits are authorized. Acceptance and every remote action remain separate gates. Push,
-  PR, merge, deploy, providers, non-test mutations, dependencies, architecture changes, migration,
-  and history rewrite are not authorized by CRA-40.
+- CRA-37 through CRA-41 are accepted and Done; the backend baseline through CRA-40 is published.
+  CRA-43 is the active frontend implementation issue, and its six local commits are authorized.
+  Candidate acceptance and every remote action remain separate gates. Push, PR, merge, deploy,
+  providers, non-test mutations, architecture changes, migration, and history rewrite are not
+  authorized by CRA-43.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

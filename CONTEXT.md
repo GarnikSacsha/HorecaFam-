@@ -2,13 +2,12 @@
 
 ## Purpose
 
-HoReCaFam is the repository for the HoReCa Training Platform. The accepted and published baseline
-contains the published Stage 0–5 backend through `de6dd84`. CRA-37 accepted the Stage 6 Explicit
-Activation contract and is Done. CRA-38 is accepted and Done; its five-checkpoint local series ends
-at `bd2f98e` and remains unpushed. CRA-39 is accepted and Done, and CRA-40 is the active bounded
-Stage 7 regression and acceptance implementation issue. Training, broader production
-administration, providers/workers, push, and frontend work require separate approval or later
-bounded issues.
+HoReCaFam is the repository for the HoReCa Training Platform. The accepted backend MVP Vertical
+Slice 1 through CRA-40 is published on `origin/main` through `abad74e`. CRA-41 is the accepted
+frontend planning checkpoint, and CRA-43 is the active bounded implementation issue for the first
+frontend slice. Its six local checkpoints are authorized. CRA-42 is unrelated Backlog work.
+Training-domain expansion, broader production administration, providers/workers, push, PR,
+merge, and deployment require separate approval or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -85,18 +84,17 @@ is accepted and Done. Its local implementation adds the exact protected
 Pending-to-Active transition, active-reference revalidation, existing-record idempotency, safe
 `employee_activated` audit, derived active training participation, and an explicit zero-output
 applicability boundary. It creates no new Session, Assignment, notification, content record, job,
-provider call, schema object, or migration. The five local checkpoints through `bd2f98e` were
-accepted; push was not authorized. CRA-39 is accepted and Done. CRA-40 is the active bounded Stage
-7 issue for the complete backend acceptance chain, full regression, and final evidence matrix.
+provider call, schema object, or migration. CRA-38 and CRA-40 are accepted, Done, and published
+through `abad74e`; the complete backend acceptance chain and evidence matrix remain historical
+evidence for the frontend slice.
 
 ## Repository map
 
-- [`backend/app`](backend/app): published Stage 0–5 runtime plus the accepted, unpushed CRA-38 Stage
-  6 implementation.
+- [`backend/app`](backend/app): accepted and published Stage 0–6 runtime.
 - [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–3 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): reserved boundary only.
+- [`frontend`](frontend): CRA-43 React frontend, unit/component tests, and Playwright acceptance.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.
