@@ -19,7 +19,11 @@ from app.models import (
 from app.schemas.invitations import InvitationResponse, InvitationValidationResponse
 from app.security.invitation_tokens import InvitationTokenManager
 from app.security.tokens import hash_secret
-from app.services.idempotency import request_fingerprint, reserve_idempotency
+from app.services.idempotency import (
+    find_idempotency_replay,
+    request_fingerprint,
+    reserve_idempotency,
+)
 from app.services.invitation_delivery import enqueue_invitation_email
 
 INVITATION_LIFETIME = timedelta(hours=72)
@@ -27,6 +31,7 @@ INVITATION_RATE_WINDOW = timedelta(minutes=15)
 INVITATION_RATE_BLOCK = timedelta(minutes=15)
 CREATE_RATE_LIMIT = 10
 VALIDATE_FAILURE_LIMIT = 10
+RESEND_RATE_LIMIT = 3
 
 
 def _rate_limited() -> APIError:
@@ -145,6 +150,29 @@ async def create_invitation(
     request_id: UUID,
 ) -> Invitation:
     settings.validate_invitation_security()
+    email_normalized = normalize_email(email)
+    fingerprint = request_fingerprint({"email": email_normalized})
+    replay = await find_idempotency_replay(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action="invitation.create",
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        now=now,
+    )
+    invitation: Invitation | None
+    if replay is not None:
+        invitation = await db.scalar(
+            select(Invitation).where(
+                Invitation.id == replay.resource_id,
+                Invitation.organization_id == organization_id,
+            )
+        )
+        if invitation is None:
+            raise RuntimeError("Idempotent Invitation resource is unavailable")
+        await db.commit()
+        return invitation
     await consume_invitation_rate_limit(
         db,
         action="create",
@@ -152,7 +180,6 @@ async def create_invitation(
         limit=CREATE_RATE_LIMIT,
         now=now,
     )
-    email_normalized = normalize_email(email)
     candidate_id = uuid4()
     decision = await reserve_idempotency(
         db,
@@ -160,7 +187,7 @@ async def create_invitation(
         actor_user_id=actor_user_id,
         action="invitation.create",
         key=idempotency_key,
-        fingerprint=request_fingerprint({"email": email_normalized}),
+        fingerprint=fingerprint,
         resource_type="invitation",
         resource_id=candidate_id,
         response_status=201,
@@ -232,6 +259,191 @@ async def create_invitation(
         )
     )
     await db.commit()
+    return invitation
+
+
+def _resource_not_found() -> APIError:
+    return APIError(
+        status_code=404,
+        code="RESOURCE_NOT_FOUND",
+        message="Ресурс не знайдено.",
+    )
+
+
+async def resend_invitation(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    invitation_id: UUID,
+    actor_user_id: UUID,
+    idempotency_key: str,
+    settings: Settings,
+    now: datetime,
+    request_id: UUID,
+) -> Invitation:
+    settings.validate_invitation_security()
+    fingerprint = request_fingerprint({"invitation_id": str(invitation_id)})
+    replay = await find_idempotency_replay(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action="invitation.resend",
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        now=now,
+    )
+    invitation: Invitation | None
+    if replay is not None:
+        invitation = await db.scalar(
+            select(Invitation).where(
+                Invitation.id == replay.resource_id,
+                Invitation.organization_id == organization_id,
+            )
+        )
+        if invitation is None:
+            raise RuntimeError("Idempotent Invitation resource is unavailable")
+        await db.commit()
+        return invitation
+    await consume_invitation_rate_limit(
+        db,
+        action="resend",
+        subject_hash=_subject_hash(f"{actor_user_id}:{invitation_id}"),
+        limit=RESEND_RATE_LIMIT,
+        now=now,
+    )
+    decision = await reserve_idempotency(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action="invitation.resend",
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        resource_type="invitation",
+        resource_id=invitation_id,
+        response_status=200,
+        now=now,
+    )
+    if decision.replayed:
+        invitation = await db.scalar(
+            select(Invitation).where(
+                Invitation.id == decision.record.resource_id,
+                Invitation.organization_id == organization_id,
+            )
+        )
+        if invitation is None:
+            raise RuntimeError("Idempotent Invitation resource is unavailable")
+        await db.commit()
+        return invitation
+
+    invitation = await db.scalar(
+        select(Invitation)
+        .where(
+            Invitation.id == invitation_id,
+            Invitation.organization_id == organization_id,
+        )
+        .with_for_update()
+    )
+    if invitation is None:
+        raise _resource_not_found()
+    if invitation.status == "accepted":
+        raise APIError(
+            status_code=409,
+            code="INVITATION_ALREADY_ACCEPTED",
+            message="Запрошення вже використано.",
+        )
+    if invitation.status == "revoked":
+        raise APIError(
+            status_code=409,
+            code="INVITATION_REVOKED",
+            message="Запрошення відкликано.",
+        )
+
+    previous_version = invitation.token_version
+    previous_expiry = invitation.expires_at
+    invitation.token_version += 1
+    token_manager = InvitationTokenManager(settings.invitation_token_hmac_keys)
+    invitation.token_key_index = token_manager.current_key_index
+    raw_token = token_manager.derive(
+        invitation.id,
+        token_version=invitation.token_version,
+        key_index=invitation.token_key_index,
+    )
+    invitation.token_hash = hash_secret(raw_token)
+    invitation.expires_at = now + INVITATION_LIFETIME
+    await enqueue_invitation_email(db, invitation=invitation)
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="invitation_resent",
+            target_type="invitation",
+            target_id=invitation.id,
+            request_id=request_id,
+            outcome="success",
+            old_values={
+                "expires_at": previous_expiry.isoformat(),
+                "token_version": previous_version,
+            },
+            new_values={
+                "status": "pending",
+                "expires_at": invitation.expires_at.isoformat(),
+                "token_version": invitation.token_version,
+            },
+        )
+    )
+    await db.commit()
+    await db.refresh(invitation)
+    return invitation
+
+
+async def revoke_invitation(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    invitation_id: UUID,
+    actor_user_id: UUID,
+    now: datetime,
+    request_id: UUID,
+) -> Invitation:
+    invitation = await db.scalar(
+        select(Invitation)
+        .where(
+            Invitation.id == invitation_id,
+            Invitation.organization_id == organization_id,
+        )
+        .with_for_update()
+    )
+    if invitation is None:
+        raise _resource_not_found()
+    if invitation.status == "accepted":
+        raise APIError(
+            status_code=409,
+            code="INVITATION_ALREADY_ACCEPTED",
+            message="Запрошення вже використано.",
+        )
+    if invitation.status == "revoked":
+        await db.commit()
+        return invitation
+
+    invitation.status = "revoked"
+    invitation.revoked_at = now
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="invitation_revoked",
+            target_type="invitation",
+            target_id=invitation.id,
+            request_id=request_id,
+            outcome="success",
+            old_values={"status": "pending"},
+            new_values={"status": "revoked"},
+        )
+    )
+    await db.commit()
+    await db.refresh(invitation)
     return invitation
 
 

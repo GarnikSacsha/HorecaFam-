@@ -31,6 +31,35 @@ def request_fingerprint(payload: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+async def find_idempotency_replay(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    actor_user_id: UUID,
+    action: str,
+    key: str,
+    fingerprint: str,
+    now: datetime,
+) -> ApiIdempotencyRecord | None:
+    record = await db.scalar(
+        select(ApiIdempotencyRecord).where(
+            ApiIdempotencyRecord.organization_id == organization_id,
+            ApiIdempotencyRecord.actor_user_id == actor_user_id,
+            ApiIdempotencyRecord.action == action,
+            ApiIdempotencyRecord.key == key,
+        )
+    )
+    if record is None or record.expires_at <= now:
+        return None
+    if record.request_fingerprint != fingerprint:
+        raise APIError(
+            status_code=409,
+            code="IDEMPOTENCY_KEY_REUSED",
+            message="Ключ ідемпотентності вже використано для іншого запиту.",
+        )
+    return record
+
+
 async def reserve_idempotency(
     db: AsyncSession,
     *,

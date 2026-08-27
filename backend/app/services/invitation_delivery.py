@@ -112,7 +112,11 @@ async def deliver_invitation_email(
     )
     if invitation is None:
         raise RuntimeError("Invitation email source is unavailable")
-    if invitation.token_version != token_version:
+    if (
+        invitation.status != "pending"
+        or invitation.expires_at <= now
+        or invitation.token_version != token_version
+    ):
         _fail_superseded(job, delivery, now=now)
         return False
 

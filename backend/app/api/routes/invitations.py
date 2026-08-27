@@ -19,6 +19,8 @@ from app.schemas.invitations import (
 from app.services.invitations import (
     create_invitation,
     invitation_response,
+    resend_invitation,
+    revoke_invitation,
     validate_invitation,
 )
 
@@ -52,6 +54,63 @@ async def create_invitation_route(
         email=str(payload.email),
         idempotency_key=idempotency_key,
         settings=settings,
+        now=now,
+        request_id=UUID(get_request_id()),
+    )
+    return invitation_response(invitation, now=now)
+
+
+@router.post(
+    "/organizations/{organization_id}/invitations/{invitation_id}/resend",
+    response_model=InvitationResponse,
+)
+async def resend_invitation_route(
+    organization_id: UUID,
+    invitation_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> InvitationResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    now = clock()
+    invitation = await resend_invitation(
+        db,
+        organization_id=organization_id,
+        invitation_id=invitation_id,
+        actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key,
+        settings=settings,
+        now=now,
+        request_id=UUID(get_request_id()),
+    )
+    return invitation_response(invitation, now=now)
+
+
+@router.post(
+    "/organizations/{organization_id}/invitations/{invitation_id}/revoke",
+    response_model=InvitationResponse,
+)
+async def revoke_invitation_route(
+    organization_id: UUID,
+    invitation_id: UUID,
+    request: Request,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> InvitationResponse:
+    clock = cast(Clock, request.app.state.clock)
+    now = clock()
+    invitation = await revoke_invitation(
+        db,
+        organization_id=organization_id,
+        invitation_id=invitation_id,
+        actor_user_id=authorization.user.id,
         now=now,
         request_id=UUID(get_request_id()),
     )

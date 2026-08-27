@@ -155,6 +155,45 @@ async def test_delivery_rejects_superseded_job_without_adapter_call(
 
 
 @pytest.mark.integration
+async def test_delivery_rejects_revoked_invitation_without_adapter_call(
+    db_session: AsyncSession,
+) -> None:
+    manager = token_manager()
+    organization = make_organization()
+    inviter = make_user(email_normalized="admin@example.com")
+    db_session.add_all([organization, inviter])
+    await db_session.flush()
+    invitation_id = uuid4()
+    raw_token = manager.derive(invitation_id, token_version=1, key_index=0)
+    invitation = make_invitation(
+        organization,
+        inviter,
+        id=invitation_id,
+        token_hash=hash_secret(raw_token),
+    )
+    db_session.add(invitation)
+    await db_session.flush()
+    job, delivery = await enqueue_invitation_email(db_session, invitation=invitation)
+    invitation.status = "revoked"
+    invitation.revoked_at = datetime.now(UTC)
+    adapter = CapturingEmailAdapter()
+
+    delivered = await deliver_invitation_email(
+        db_session,
+        job_id=job.id,
+        token_manager=manager,
+        adapter=adapter,
+        now=datetime.now(UTC),
+    )
+    await db_session.flush()
+
+    assert delivered is False
+    assert adapter.messages == []
+    assert job.status == "failed"
+    assert delivery.status == "failed"
+
+
+@pytest.mark.integration
 async def test_enqueue_rolls_back_with_its_business_transaction(
     db_session: AsyncSession,
 ) -> None:
