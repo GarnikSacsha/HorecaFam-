@@ -1,8 +1,8 @@
 # Backend Foundation
 
-This directory contains the accepted CRA-20 API foundation, accepted CRA-28 Stage 1 identity
-persistence, and the locally verified CRA-30 Stage 2 auth/security candidate. Python 3.12 and
-PostgreSQL 16 are the approved runtime versions.
+This directory contains the accepted CRA-20 API foundation, CRA-28 Stage 1 identity persistence,
+and CRA-30 Stage 2 auth/security boundary, plus the locally verified CRA-32 Stage 3 invitation
+candidate. Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository
 [`../AGENTS.md`](../AGENTS.md). Linear remains canonical for product/API/data/test-stage
@@ -37,9 +37,9 @@ secret-safe environment loading procedure in
 [`../.harness/TESTING.md`](../.harness/TESTING.md).
 
 The application is exposed through the factory `app.main:create_app`; configuration is required
-and there is no SQLite fallback. SQLAlchemy metadata covers identity records plus AdminAccess,
-Session, MFA credential/challenge, and authentication rate-limit records. Alembic is the only
-schema-management path; runtime and tests must not call `create_all`.
+and there is no SQLite fallback. SQLAlchemy metadata covers identity/authentication records plus
+invitations, API idempotency, invitation rate-limit buckets, background jobs, and email delivery
+state. Alembic is the only schema-management path; runtime and tests must not call `create_all`.
 
 ## Quality and test commands
 
@@ -57,5 +57,5 @@ rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini check
 
 `assert_safe_test_database` rejects cleanup unless `APP_ENV=test` and the resolved database name is `horeca_test` or a worker-scoped derivative such as `horeca_test_gw0`.
 
-The complete no-skip gate and CRA-20/CRA-28/CRA-30 evidence index are documented in
+The complete no-skip gate and CRA-20/CRA-28/CRA-30/CRA-32 evidence index are documented in
 [`../docs/testing/README.md`](../docs/testing/README.md).

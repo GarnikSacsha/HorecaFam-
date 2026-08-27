@@ -38,12 +38,13 @@ required environment configuration
 - `backend/app/db/safety.py` fails closed unless destructive test work targets `APP_ENV=test` and
   an explicitly test-scoped database.
 - `backend/app/db/base.py` owns the shared SQLAlchemy metadata and deterministic naming convention.
-- `backend/app/models` defines the seven CRA-28 identity entities plus CRA-30 authentication,
-  Session, MFA, access, and abuse-control state.
+- `backend/app/models` defines the seven CRA-28 identity entities, CRA-30 authentication/access
+  state, and CRA-32 invitation, idempotency, rate-limit, background-job, and email-delivery state.
 - `backend/migrations/env.py` wires that metadata into Alembic.
 - `backend/migrations/versions/0001_stage0_empty_schema.py` establishes the base history;
-  `0002_identity_persistence.py` creates the Stage 1 schema; `0003_auth_security.py` creates the
-  Stage 2 authentication/security schema.
+  `0002_identity_persistence.py` creates Stage 1; `0003_auth_security.py` creates Stage 2;
+  `0004_invitation_lifecycle.py` and `0005_invitation_email_outbox.py` create the local Stage 3
+  candidate schema.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -64,6 +65,21 @@ Only `/api/v1/auth/login`, `/api/v1/auth/mfa/verify`, `/api/v1/auth/session`, an
 only as reusable dependencies and tested through test-only probes; no later-stage product route is
 pulled forward.
 
+## Stage 3 invitation boundary
+
+```text
+Admin + MFA + CSRF + idempotency key → create/resend invitation
+public token body → validate invitation capability
+Admin + MFA + CSRF → revoke invitation
+business transaction → invitation + audit + background job + email delivery state
+worker boundary → reconstruct current raw token only at the delivery adapter call
+```
+
+The local CRA-32 candidate exposes create, validate, resend, and revoke only. Tokens are
+deterministically derived from server-held ordered HMAC keys and versioned invitation identity;
+only hashes and derivation coordinates persist. Delivery state is transactional, but no provider
+call or deployed worker is included.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -72,7 +88,7 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is no invitation/password-recovery/MFA-enrollment workflow, production Organization or
-Employee administration endpoint, menu/training workflow, provider integration, production
-resource, or frontend application. Adding any of these requires a new bounded Linear issue and
-approval.
+There is no invitation acceptance/list/detail workflow, password recovery, MFA enrollment,
+production Organization or Employee administration endpoint, menu/training workflow, provider
+integration, deployed worker/resource, or frontend application. Adding any of these requires a
+new bounded Linear issue and approval.

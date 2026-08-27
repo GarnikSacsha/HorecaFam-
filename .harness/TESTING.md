@@ -75,6 +75,7 @@ rtk ..\.venv\Scripts\python.exe -m pytest tests/integration/test_database.py -vv
 rtk ..\.venv\Scripts\python.exe -m pytest tests/integration/test_identity_models.py -vv -p no:cacheprovider
 rtk ..\.venv\Scripts\python.exe -m pytest tests/migration/test_migrations.py -vv -p no:cacheprovider
 rtk ..\.venv\Scripts\python.exe -m pytest tests/api/test_auth_login.py tests/api/test_auth_session.py tests/api/test_auth_csrf_logout.py tests/api/test_auth_mfa_rbac.py -vv -p no:cacheprovider
+rtk ..\.venv\Scripts\python.exe -m pytest tests/api/test_invitations_create_validate.py tests/api/test_invitations_resend_revoke.py tests/integration/test_invitation_services.py -vv -p no:cacheprovider
 ```
 
 The full gate is not green when required PostgreSQL tests are skipped. Report passed, failed, and
@@ -101,12 +102,20 @@ CRA-28 was accepted with a local Python 3.12.10/PostgreSQL 16.15 gate reporting 
 `0002_identity_persistence`, and no metadata drift. Rerun the complete gate before relying on this
 snapshot or preparing any authorized commit.
 
-## CRA-30 Stage 2 candidate evidence
+## Accepted CRA-30 Stage 2 evidence
 
-The local CRA-30 candidate uses the same Python 3.12.10 and native PostgreSQL 16.15 boundary. Its
-latest complete gate reports 91 passed, 0 failed, 0 skipped, 94% overall statement/branch coverage,
-92% critical auth coverage, Alembic head `0003_auth_security`, and no metadata drift. This is a
-local candidate result until Denys accepts CRA-30; canonical evidence remains in Linear.
+The accepted CRA-30 checkpoint uses the same Python 3.12.10 and native PostgreSQL 16.15 boundary.
+Its final complete gate reports 92 passed, 0 failed, 0 skipped, 94% overall statement/branch
+coverage, 92% critical auth coverage, Alembic head `0003_auth_security`, and no metadata drift.
+Canonical evidence remains in Linear.
+
+## CRA-32 Stage 3 candidate evidence
+
+The local CRA-32 invitation candidate uses Python 3.12.10 and native PostgreSQL 16.15. Its latest
+complete gate reports 156 passed, 0 failed, 0 skipped, 94% overall statement/branch coverage, 90%
+aggregate critical invitation coverage, Alembic head `0005_invitation_email_outbox`, and no
+metadata drift. This remains a local candidate result until Denys accepts CRA-32; canonical
+evidence remains in Linear.
 
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.

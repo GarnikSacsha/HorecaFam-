@@ -1,8 +1,9 @@
 # HoReCaFam
 
 Repository for the HoReCa Training Platform. The published accepted implementation contains the
-CRA-20 Stage 0 FastAPI foundation and CRA-28 Stage 1 identity persistence. CRA-30 adds a locally
-verified Stage 2 authentication/security candidate pending final acceptance and publication.
+CRA-20 Stage 0 FastAPI foundation, CRA-28 Stage 1 identity persistence, and CRA-30 Stage 2
+authentication/security boundary. CRA-32 adds a locally verified Stage 3 invitation candidate
+pending final acceptance and publication.
 
 ## Start here
 
@@ -17,7 +18,7 @@ Repository documentation summarizes verified local state and routes agents to th
 
 ## Repository map
 
-- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–2
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–3
   backend foundations.
 - [`frontend/`](frontend): reserved boundary for a separately approved frontend stage.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
@@ -41,7 +42,10 @@ Read [`backend/AGENTS.md`](backend/AGENTS.md) before backend work and use the ex
 commands in [`.harness/TESTING.md`](.harness/TESTING.md). Real PostgreSQL 16 is required for
 integration and migration acceptance; there is no SQLite fallback.
 
-Stage 1 persists identity and organization records. The CRA-30 candidate adds non-enumerating
+Stage 1 persists identity and organization records. Accepted CRA-30 adds non-enumerating
 login, server-side sessions, CSRF-protected logout, TOTP completion, and Organization-scoped RBAC
-dependencies. Invitations, MFA enrollment/recovery, training workflows, production admin
-endpoints, and the frontend application remain outside the implemented boundary.
+dependencies. The local CRA-32 candidate adds create, public validate, resend, and revoke
+invitation flows backed by persistent idempotency/rate limits and a transactional email outbox.
+Invitation acceptance, provider/worker execution, list/detail endpoints, MFA enrollment/recovery,
+training workflows, broader production administration, and the frontend remain outside the
+implemented boundary.
