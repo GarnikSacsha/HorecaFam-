@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Protocol
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select
@@ -70,6 +71,10 @@ class _Unset:
 
 
 UNSET = _Unset()
+
+
+class _Positioned(Protocol):
+    position: int
 
 
 def _resource_not_found() -> APIError:
@@ -687,7 +692,7 @@ async def get_menu_version_hierarchy(
 
 async def _set_positions(
     db: AsyncSession,
-    entities: Sequence[MenuVersionSection | MenuVersionCategory],
+    entities: Sequence[_Positioned],
 ) -> None:
     temporary_offset = max((entity.position for entity in entities), default=-1) + len(entities) + 1
     for index, entity in enumerate(entities):
