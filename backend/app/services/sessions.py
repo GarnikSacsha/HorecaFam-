@@ -63,20 +63,21 @@ async def create_session(
     user: User,
     now: datetime,
     hmac_key: SecretStr,
-    elevated: bool,
+    has_elevated_access: bool,
+    mfa_verified: bool,
     request_id: UUID,
     user_agent: str | None,
 ) -> IssuedSession:
     raw_token = generate_opaque_token()
     csrf_token = derive_csrf_token(raw_token, hmac_key)
-    lifetime = ELEVATED_SESSION_LIFETIME if elevated else EMPLOYEE_SESSION_LIFETIME
+    lifetime = ELEVATED_SESSION_LIFETIME if has_elevated_access else EMPLOYEE_SESSION_LIFETIME
     record = Session(
         user_id=user.id,
         token_hash=hash_secret(raw_token),
         csrf_token_hash=hash_secret(csrf_token),
         last_seen_at=now,
         absolute_expires_at=now + lifetime,
-        mfa_verified_at=now if elevated else None,
+        mfa_verified_at=now if mfa_verified else None,
         user_agent=user_agent[:512] if user_agent else None,
     )
     db.add(record)

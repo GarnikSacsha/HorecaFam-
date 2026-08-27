@@ -100,6 +100,64 @@ async def _register_failure(
     return bucket.blocked_until is not None
 
 
+def _rate_limited_error() -> APIError:
+    return APIError(
+        status_code=429,
+        code="AUTH_RATE_LIMITED",
+        message="Забагато спроб. Спробуйте пізніше.",
+    )
+
+
+def _invalid_credentials_error() -> APIError:
+    return APIError(
+        status_code=401,
+        code="INVALID_CREDENTIALS",
+        message="Неправильна електронна пошта або пароль.",
+    )
+
+
+async def authenticate_password(
+    db: AsyncSession,
+    *,
+    email: str,
+    password: str,
+    settings: Settings,
+    passwords: PasswordManager,
+    now: datetime,
+    lock_user: bool = False,
+) -> User:
+    settings.validate_auth_security()
+    normalized_email = normalize_email(email)
+    subject_hash = _rate_subject(normalized_email, settings)
+    bucket = await _rate_bucket(db, subject_hash)
+    if bucket is not None and bucket.blocked_until is not None and bucket.blocked_until > now:
+        raise _rate_limited_error()
+
+    user_query = select(User).where(User.email_normalized == normalized_email)
+    if lock_user:
+        user_query = user_query.with_for_update()
+    user = await db.scalar(user_query)
+    encoded_hash = user.password_hash if user is not None else None
+    if not passwords.verify_or_dummy(encoded_hash, password):
+        blocked = await _register_failure(
+            db,
+            bucket=bucket,
+            subject_hash=subject_hash,
+            now=now,
+        )
+        if blocked:
+            raise _rate_limited_error()
+        raise _invalid_credentials_error()
+
+    if user is None or user.password_hash is None:
+        raise RuntimeError("Credential verification returned an impossible result")
+    if bucket is not None:
+        await db.delete(bucket)
+    if passwords.needs_rehash(user.password_hash):
+        user.password_hash = passwords.hash(password)
+    return user
+
+
 async def login(
     db: AsyncSession,
     *,
@@ -111,44 +169,14 @@ async def login(
     request_id: UUID,
     user_agent: str | None,
 ) -> LoginOutcome:
-    settings.validate_auth_security()
-    normalized_email = normalize_email(email)
-    subject_hash = _rate_subject(normalized_email, settings)
-    bucket = await _rate_bucket(db, subject_hash)
-    if bucket is not None and bucket.blocked_until is not None and bucket.blocked_until > now:
-        raise APIError(
-            status_code=429,
-            code="AUTH_RATE_LIMITED",
-            message="Забагато спроб. Спробуйте пізніше.",
-        )
-
-    user = await db.scalar(select(User).where(User.email_normalized == normalized_email))
-    encoded_hash = user.password_hash if user is not None else None
-    if not passwords.verify_or_dummy(encoded_hash, password):
-        blocked = await _register_failure(
-            db,
-            bucket=bucket,
-            subject_hash=subject_hash,
-            now=now,
-        )
-        if blocked:
-            raise APIError(
-                status_code=429,
-                code="AUTH_RATE_LIMITED",
-                message="Забагато спроб. Спробуйте пізніше.",
-            )
-        raise APIError(
-            status_code=401,
-            code="INVALID_CREDENTIALS",
-            message="Неправильна електронна пошта або пароль.",
-        )
-
-    if user is None or user.password_hash is None:
-        raise RuntimeError("Credential verification returned an impossible result")
-    if bucket is not None:
-        await db.delete(bucket)
-    if passwords.needs_rehash(user.password_hash):
-        user.password_hash = passwords.hash(password)
+    user = await authenticate_password(
+        db,
+        email=email,
+        password=password,
+        settings=settings,
+        passwords=passwords,
+        now=now,
+    )
 
     elevated = (
         await db.scalar(
@@ -215,7 +243,8 @@ async def login(
         user=user,
         now=now,
         hmac_key=hmac_key,
-        elevated=False,
+        has_elevated_access=False,
+        mfa_verified=False,
         request_id=request_id,
         user_agent=user_agent,
     )
@@ -302,7 +331,8 @@ async def verify_mfa(
         user=challenge.user,
         now=now,
         hmac_key=hmac_key,
-        elevated=True,
+        has_elevated_access=True,
+        mfa_verified=True,
         request_id=request_id,
         user_agent=user_agent,
     )
