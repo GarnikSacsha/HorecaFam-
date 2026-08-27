@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     database_url: str
     mfa_encryption_keys: list[SecretStr] = []
     auth_throttle_hmac_key: SecretStr | None = None
+    invitation_token_hmac_keys: list[SecretStr] = []
     cors_allowed_origins: list[str] = []
     session_cookie_secure: bool = True
     session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
@@ -42,6 +43,12 @@ class Settings(BaseSettings):
             raise ValueError("Credentialed CORS cannot allow every origin")
         if self.app_env in {"test", "staging", "production"} and not self.session_cookie_secure:
             raise ValueError("Secure Session cookies are required outside development")
+
+    def validate_invitation_security(self) -> None:
+        if not self.invitation_token_hmac_keys:
+            raise ValueError("INVITATION_TOKEN_HMAC_KEYS must contain at least one key")
+        if any(len(key.get_secret_value()) < 32 for key in self.invitation_token_hmac_keys):
+            raise ValueError("Every INVITATION_TOKEN_HMAC_KEYS entry must contain 32 characters")
 
 
 @lru_cache

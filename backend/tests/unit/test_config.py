@@ -44,6 +44,27 @@ def test_auth_security_settings_reject_insecure_test_cookie() -> None:
         settings.validate_auth_security()
 
 
+def test_invitation_security_settings_require_ordered_hmac_keys() -> None:
+    settings = Settings(
+        app_env="test",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+    )
+
+    with pytest.raises(ValueError, match="INVITATION_TOKEN_HMAC_KEYS"):
+        settings.validate_invitation_security()
+
+
+def test_invitation_security_settings_reject_short_hmac_key() -> None:
+    settings = Settings(
+        app_env="test",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+        invitation_token_hmac_keys=["short"],
+    )
+
+    with pytest.raises(ValueError, match="32 characters"):
+        settings.validate_invitation_security()
+
+
 def test_test_database_guard_accepts_explicit_test_database() -> None:
     settings = Settings(
         app_env="test",
