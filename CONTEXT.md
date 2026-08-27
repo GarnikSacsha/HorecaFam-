@@ -2,12 +2,12 @@
 
 ## Purpose
 
-HoReCaFam is the repository for the HoReCa Training Platform. The accepted backend MVP Vertical
-Slice 1 through CRA-40 is published on `origin/main` through `abad74e`. CRA-41 is the accepted
-frontend planning checkpoint, and CRA-43 is the active bounded implementation issue for the first
-frontend slice. Its six local checkpoints are authorized. CRA-42 is unrelated Backlog work.
-Training-domain expansion, broader production administration, providers/workers, push, PR,
-merge, and deployment require separate approval or later bounded issues.
+HoReCaFam is the repository for the HoReCa Training Platform. Backend MVP Vertical Slice 1 through
+CRA-40 and Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward
+published on `origin/main` through `fa30a1f`. CRA-42 is unrelated Backlog work. No product
+implementation issue is active. Training-domain expansion, broader production administration,
+providers/workers, PR, merge, deployment, and production configuration require separate approval
+or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -94,7 +94,8 @@ evidence for the frontend slice.
 - [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–3 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): CRA-43 React frontend, unit/component tests, and Playwright acceptance.
+- [`frontend`](frontend): accepted and published CRA-43 React frontend, unit/component tests, and
+  Playwright acceptance.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

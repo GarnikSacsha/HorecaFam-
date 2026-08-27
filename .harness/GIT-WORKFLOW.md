@@ -3,12 +3,11 @@
 ## Current baseline state
 
 The repository is on `main`. The published history contains the accepted Stage 0 repository
-baseline and the accepted backend MVP Vertical Slice 1 through CRA-40. The backend history was
-fast-forward published without rewriting through `abad74e`. CRA-41 is the accepted frontend plan;
-CRA-43 is the active frontend implementation issue with an authorized six-checkpoint local map.
-Those frontend commits remain local until a separate push approval. CRA-42 is unrelated Backlog
-work. `origin` points to the approved HoReCa GitHub repository, and local `main` has upstream
-tracking.
+baseline and the accepted backend MVP Vertical Slice 1 through CRA-40. CRA-41 and CRA-43 are Done;
+the backend and frontend slice history was fast-forward published without rewriting through
+`fa30a1f`. CRA-42 is unrelated Backlog work. CRA-46 authorizes one local post-acceptance
+documentation synchronization commit; its push remains a separate gate. `origin` points to the
+approved HoReCa GitHub repository, and local `main` has upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -105,7 +104,7 @@ baseline intentionally excludes:
 
 Publication of any checkpoint does not authorize the next implementation stage. Every subsequent
 change still requires an active bounded Linear issue, an agreed commit map, and the applicable
-local-commit and remote-action approvals. Backend Stages 1–7 are accepted and published through
-`abad74e`. CRA-41 is accepted and Done. CRA-43 is the active frontend implementation issue; its six
-local commits are authorized, while candidate acceptance and every remote action remain separately
-gated.
+local-commit and remote-action approvals. Backend Stages 1–7 and Frontend MVP Vertical Slice 1 are
+accepted and published through `fa30a1f`; CRA-41 and CRA-43 are Done. No product implementation
+issue is active. CRA-46 is limited to one local documentation synchronization commit, while its
+push and every later remote or product action remain separately gated.

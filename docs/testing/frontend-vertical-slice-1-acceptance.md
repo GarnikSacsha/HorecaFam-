@@ -2,10 +2,10 @@
 
 ## Status and boundary
 
-This document records the local CRA-43 candidate executed on 2026-08-27 with Node.js 24.11.1 and
-pnpm 11.19.0. CRA-41 is accepted and Done. CRA-43 remains In Progress pending acceptance of its
-six local checkpoints. Push, PR, merge, deployment, provider calls, and production configuration
-are separate gates and were not executed.
+This document records the accepted CRA-43 checkpoint executed on 2026-08-27 with Node.js 24.11.1
+and pnpm 11.19.0. CRA-41 and CRA-43 are Done. The six commits `5b7e637..fa30a1f` were fast-forward
+published on `origin/main` without history rewriting. PR, merge, deployment, provider calls, and
+production configuration remain separate gates and were not executed.
 
 The frontend consumes the existing `/api/v1` contract without backend, schema, migration, or
 architecture changes. Route authority comes from the refreshed server session. The browser never
@@ -62,7 +62,7 @@ rtk pnpm build
 rtk pnpm test:e2e
 ```
 
-Final candidate results after the documentation audit:
+Final accepted results after the documentation audit:
 
 - Vitest: 13 passed, 0 failed, 0 skipped across nine files;
 - Playwright: 3 passed, 0 failed, 0 skipped across three viewport projects;
@@ -91,5 +91,5 @@ schema, migration, or dependency; CRA-40's accepted published full gate remains 
 
 ## Contract impact
 
-API contract: none. Data model and migrations: none. Backend runtime: none. The candidate adds only
-the approved frontend runtime, tests, build configuration, and repository documentation.
+API contract: none. Data model and migrations: none. Backend runtime: none. CRA-43 adds only the
+approved frontend runtime, tests, build configuration, and repository documentation.

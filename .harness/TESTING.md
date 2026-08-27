@@ -157,7 +157,7 @@ paths, and none of the forbidden internal secret fields. Canonical command and m
 recorded in [`../docs/testing/vertical-slice-1-acceptance.md`](../docs/testing/vertical-slice-1-acceptance.md).
 CRA-40 is accepted, Done, and published through `abad74e`.
 
-## CRA-43 frontend commands and candidate evidence
+## Accepted CRA-43 frontend commands and evidence
 
 Use Node.js 24 and pnpm 11. Run from `frontend/`:
 
@@ -172,7 +172,8 @@ rtk pnpm exec playwright install chromium
 rtk pnpm test:e2e
 ```
 
-The component gate currently contains 13 tests across nine files. The browser gate executes one
+CRA-43 is accepted, Done, and published through `fa30a1f`. Its component gate contains 13 tests
+across nine files. The browser gate executes one
 complete route-mocked business path in three projects: 1440×1000 Admin desktop, 768×1024 compact,
 and 375×812 employee mobile. Exact scope, RED/GREEN evidence, and limitations are recorded in
 [`../docs/testing/frontend-vertical-slice-1-acceptance.md`](../docs/testing/frontend-vertical-slice-1-acceptance.md).

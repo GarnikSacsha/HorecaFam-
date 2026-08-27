@@ -1,10 +1,10 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. The accepted backend MVP Vertical Slice 1 through
-CRA-40 is published on `origin/main` through `abad74e`. CRA-41 is the accepted frontend planning
-checkpoint. CRA-43 is the active bounded implementation issue for Frontend MVP Vertical Slice 1;
-its local six-checkpoint map is authorized, while push, PR, merge, deployment, and providers remain
-separate gates. CRA-42 is an unrelated Backlog task and is not part of this sequence.
+Repository for the HoReCa Training Platform. Backend MVP Vertical Slice 1 through CRA-40 and
+Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward published on
+`origin/main` through `fa30a1f`. CRA-42 is an unrelated Backlog task. No product implementation
+issue is active; the next slice requires a separately accepted bounded plan. PR, merge, deployment,
+providers, and production configuration remain separate gates.
 
 ## Start here
 
@@ -21,8 +21,8 @@ Repository documentation summarizes verified local state and routes agents to th
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–6
   backend foundations.
-- [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright implementation for CRA-43.
+- [`frontend/`](frontend): accepted and published CRA-43 React 19, TypeScript, Vite, Tailwind CSS,
+  Vitest, Testing Library, and Playwright implementation.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.

@@ -1,8 +1,9 @@
 # HoReCa Frontend
 
-CRA-43 implements the first bounded frontend slice against the accepted backend contracts. It uses
-React 19, TypeScript 6, Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is
-Ukrainian-first, server-session driven, responsive, keyboard accessible, and reduced-motion aware.
+CRA-43 is accepted, Done, and published through `fa30a1f`. It implements the first bounded frontend
+slice against the accepted backend contracts using React 19, TypeScript 6, Vite 8, Tailwind CSS 4,
+Vitest, Testing Library, and Playwright. The UI is Ukrainian-first, server-session driven,
+responsive, keyboard accessible, and reduced-motion aware.
 
 ## Local setup
 

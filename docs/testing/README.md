@@ -139,11 +139,12 @@ and staging exclusion are recorded in
 [`vertical-slice-1-acceptance.md`](vertical-slice-1-acceptance.md). CRA-40 is accepted, Done, and
 published through `abad74e`.
 
-## Current CRA-43 frontend candidate
+## Accepted CRA-43 frontend checkpoint
 
-The frontend candidate adds a contract-driven React implementation for login/MFA, both invitation
-entry boundaries, Pending Employee state, Admin employee profile setup, explicit Activation, and a
-truthful Active Employee zero-assignment home. Vitest/Testing Library covers 13 component and API
-behaviors. Playwright repeats the complete business path on desktop, compact, and mobile
-viewports. See [`frontend-vertical-slice-1-acceptance.md`](frontend-vertical-slice-1-acceptance.md)
-for the exact matrix, commands, results, and exclusions.
+CRA-43 is accepted, Done, and fast-forward published through `fa30a1f`. It adds a contract-driven
+React implementation for login/MFA, both invitation entry boundaries, Pending Employee state,
+Admin employee profile setup, explicit Activation, and a truthful Active Employee zero-assignment
+home. Vitest/Testing Library covers 13 component and API behaviors. Playwright repeats the complete
+business path on desktop, compact, and mobile viewports. See
+[`frontend-vertical-slice-1-acceptance.md`](frontend-vertical-slice-1-acceptance.md) for the exact
+matrix, commands, results, and exclusions.
