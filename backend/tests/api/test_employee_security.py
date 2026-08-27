@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
-from app.models import AuditEvent, EmployeeProfile, Organization, OrganizationMembership
+from app.models import AuditEvent, EmployeeProfile, Organization, OrganizationMembership, Session
 from tests.api.test_employee_profile_update import (
     _arrange_admin_session,
     _arrange_pending_profile,
@@ -160,6 +160,9 @@ async def test_employee_contract_validation_and_openapi_are_exact_and_safe(
             "get",
             "patch",
         },
+        "/api/v1/organizations/{organization_id}/employees/{employee_id}/activate": {
+            "post",
+        },
         "/api/v1/me/profile": {"get"},
     }
     for api_path, methods in expected_methods.items():
@@ -189,8 +192,123 @@ async def test_employee_contract_validation_and_openapi_are_exact_and_safe(
     ):
         assert forbidden not in serialized
 
+    activation_operation = openapi["paths"][
+        "/api/v1/organizations/{organization_id}/employees/{employee_id}/activate"
+    ]["post"]
+    assert "requestBody" not in activation_operation
+    assert {parameter["name"] for parameter in activation_operation["parameters"]} == {
+        "organization_id",
+        "employee_id",
+        "Idempotency-Key",
+    }
 
-async def test_stage4_acceptance_flows_into_admin_setup_and_pending_own_read(
+
+async def test_activation_requires_session_csrf_mfa_and_same_organization_admin(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    auth_app.state.clock = lambda: FIXED_NOW
+    organization = make_organization(name="Activation security organization")
+    db_session.add(organization)
+    await db_session.flush()
+    role = make_role(organization)
+    location = make_location(organization)
+    db_session.add_all([role, location])
+    await db_session.flush()
+    target_membership, target_profile = await _arrange_pending_profile(
+        db_session,
+        organization=organization,
+        email="activation-security-target@example.com",
+        first_name="Target",
+        last_name="Employee",
+    )
+    target_profile.operational_role_id = role.id
+    target_profile.location_id = location.id
+    await db_session.commit()
+    target_membership_id = target_membership.id
+    url = f"/api/v1/organizations/{organization.id}/employees/{target_profile.id}/activate"
+    mutation_headers = {
+        "Origin": "https://frontend.test",
+        "X-CSRF-Token": "untrusted",
+        "Idempotency-Key": "activation-security",
+    }
+
+    unauthenticated = await auth_client.post(url, headers=mutation_headers)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app),
+        base_url="https://api.test",
+    ) as admin_client:
+        admin_id, admin_csrf = await _arrange_admin_session(
+            admin_client,
+            auth_app,
+            db_session,
+            organization=organization,
+        )
+        missing_csrf = await admin_client.post(
+            url,
+            headers={
+                "Origin": "https://frontend.test",
+                "Idempotency-Key": "activation-missing-csrf",
+            },
+        )
+        admin_session = await db_session.scalar(select(Session).where(Session.user_id == admin_id))
+        assert admin_session is not None
+        admin_session.mfa_verified_at = None
+        await db_session.commit()
+        missing_mfa = await admin_client.post(
+            url,
+            headers={
+                "Origin": "https://frontend.test",
+                "X-CSRF-Token": admin_csrf,
+                "Idempotency-Key": "activation-missing-mfa",
+            },
+        )
+
+    peer_membership, _peer_profile = await _arrange_pending_profile(
+        db_session,
+        organization=organization,
+        email="activation-security-peer@example.com",
+        first_name="Peer",
+        last_name="Employee",
+    )
+    await db_session.commit()
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app),
+        base_url="https://api.test",
+    ) as employee_client:
+        employee_csrf = await _attach_session(
+            employee_client,
+            db_session,
+            user_id=peer_membership.user_id,
+            mfa_verified=False,
+        )
+        non_admin = await employee_client.post(
+            url,
+            headers={
+                "Origin": "https://frontend.test",
+                "X-CSRF-Token": employee_csrf,
+                "Idempotency-Key": "activation-non-admin",
+            },
+        )
+
+    assert unauthenticated.status_code == 401
+    assert unauthenticated.json()["code"] == "AUTHENTICATION_REQUIRED"
+    assert missing_csrf.status_code == 403
+    assert missing_csrf.json()["code"] == "CSRF_INVALID"
+    assert missing_mfa.status_code == 403
+    assert missing_mfa.json()["code"] == "MFA_REQUIRED"
+    assert non_admin.status_code == 403
+    assert non_admin.json()["code"] == "FORBIDDEN"
+    db_session.expire_all()
+    stored = await db_session.get_one(OrganizationMembership, target_membership_id)
+    assert stored.status == "pending"
+    assert stored.activated_at is None
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+
+
+async def test_stage4_acceptance_flows_through_admin_setup_to_stage6_activation(
     auth_client: AsyncClient,
     auth_app: FastAPI,
     auth_settings: Settings,
@@ -248,22 +366,36 @@ async def test_stage4_acceptance_flows_into_admin_setup_and_pending_own_read(
                 "location_id": str(location_id),
             },
         )
+        activated = await admin_client.post(
+            f"/api/v1/organizations/{organization_id}/employees/{employee_id}/activate",
+            headers={
+                "Origin": "https://frontend.test",
+                "X-CSRF-Token": csrf_token,
+                "Idempotency-Key": "stage4-to-stage6-activation",
+            },
+        )
 
     assert listed.status_code == 200
     assert [item["id"] for item in listed.json()["items"]] == [employee_id]
     assert updated.status_code == 200
     assert updated.json()["membership_status"] == "pending"
     assert updated.json()["profile_complete"] is True
+    assert activated.status_code == 200
+    assert activated.json()["membership_status"] == "active"
+    assert activated.json()["training_participation_status"] == "active"
+    assert "set-cookie" not in activated.headers
 
-    assert (await auth_client.get("/api/v1/auth/session")).status_code == 200
+    session_context = await auth_client.get("/api/v1/auth/session")
+    assert session_context.status_code == 200
+    assert session_context.json()["organization_access"][0]["membership_status"] == "active"
     own = await auth_client.get("/api/v1/me/profile")
     assert own.status_code == 200
     assert own.json()["profiles"][0]["id"] == employee_id
     assert own.json()["profiles"][0]["first_name"] == "Марія"
-    assert own.json()["profiles"][0]["membership_status"] == "pending"
+    assert own.json()["profiles"][0]["membership_status"] == "active"
     membership_status = await db_session.scalar(
         select(OrganizationMembership.status)
         .join(EmployeeProfile, EmployeeProfile.membership_id == OrganizationMembership.id)
         .where(EmployeeProfile.id == employee_id)
     )
-    assert membership_status == "pending"
+    assert membership_status == "active"

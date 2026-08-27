@@ -122,6 +122,7 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     organization_id = organization.id
     membership_id = membership.id
     profile_id = profile.id
+    session_count_before = await db_session.scalar(select(func.count()).select_from(Session))
     applicability_calls: list[tuple[UUID, UUID]] = []
 
     async def capture_applicability(
@@ -145,6 +146,7 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     )
 
     assert response.status_code == 200
+    assert "set-cookie" not in response.headers
     assert response.json() == {
         "employee_id": str(profile_id),
         "organization_id": str(organization_id),
@@ -171,6 +173,9 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     assert "Iryna" not in str(audit.old_values)
     assert "Iryna" not in str(audit.new_values)
     assert applicability_calls == [(organization_id, profile_id)]
+    assert (
+        await db_session.scalar(select(func.count()).select_from(Session)) == session_count_before
+    )
 
 
 async def test_activated_employee_immediately_passes_existing_active_employee_guard(
