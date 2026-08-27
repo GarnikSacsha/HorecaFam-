@@ -132,3 +132,104 @@ export interface OwnEmployeeProfile {
 export interface OwnEmployeeProfilesResponse {
   profiles: OwnEmployeeProfile[];
 }
+
+export type MenuVersionStatus = "draft" | "published" | "archived";
+export type MenuAvailability =
+  "available" | "temporarily_unavailable" | "seasonal" | "discontinued";
+export type FactDataStatus = "unknown" | "confirmed_none" | "confirmed_present";
+
+export interface MenuCategoryResponse {
+  id: string;
+  section_id: string;
+  stable_code: string | null;
+  name_uk: string;
+  position: number;
+  item_count: number;
+}
+
+export interface MenuSectionResponse {
+  id: string;
+  stable_code: string | null;
+  name_uk: string;
+  position: number;
+  category_count: number;
+  categories: MenuCategoryResponse[];
+}
+
+export interface MenuVersionSummary {
+  id: string;
+  menu_id: string;
+  organization_id: string;
+  location_id: string;
+  version_number: number;
+  status: MenuVersionStatus;
+  base_version_id: string | null;
+  revision: number;
+  section_count: number;
+  category_count: number;
+  item_count: number;
+  created_at: string;
+  published_at: string | null;
+  archived_at: string | null;
+}
+
+export interface MenuVersionDetail extends MenuVersionSummary {
+  sections: MenuSectionResponse[];
+}
+
+export interface MenuVersionCollection {
+  menu_id: string | null;
+  organization_id: string;
+  location_id: string;
+  current_published: MenuVersionSummary | null;
+  draft: MenuVersionSummary | null;
+  archived: MenuVersionSummary[];
+}
+
+export interface MenuComponentInput {
+  id: string | null;
+  stable_code: string | null;
+  name_uk: string;
+  optional: boolean | null;
+  position: number;
+}
+
+export interface MenuItemResponse {
+  item_id: string;
+  item_version_id: string;
+  version_id: string;
+  category_id: string;
+  stable_code: string | null;
+  name_uk: string;
+  description_uk: string | null;
+  price_minor: number | null;
+  currency: string;
+  availability: MenuAvailability;
+  position: number;
+  component_data_status: FactDataStatus;
+  components: Array<
+    MenuComponentInput & {
+      id: string;
+      source_kind: "manual" | "json_import";
+      source_reference: string | null;
+      verified_at: string | null;
+    }
+  >;
+  allergen_data_status: FactDataStatus;
+  allergen_codes: string[];
+  source_kind: "manual" | "json_import";
+  source_reference: string | null;
+  source_item_key: string | null;
+  verified_at: string | null;
+  delta_kind: "added" | "changed" | "removed" | "unchanged";
+  training_impact: "none" | "review" | "required";
+  changed_field_codes: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MenuItemListResponse {
+  items: MenuItemResponse[];
+  next_cursor: string | null;
+  revision: number;
+}

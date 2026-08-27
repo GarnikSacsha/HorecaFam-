@@ -418,6 +418,201 @@ h1 {
   color: var(--text-muted);
 }
 
+.menu-workspace {
+  max-width: 88rem;
+}
+
+.menu-toolbar,
+.menu-editor-heading,
+.menu-entity-heading,
+.menu-item-card,
+.menu-item-meta,
+.compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.menu-toolbar {
+  flex-wrap: wrap;
+  border-block: 1px solid var(--border-subtle);
+  padding: 1rem 0;
+}
+
+.menu-toolbar .field-group {
+  min-width: min(100%, 18rem);
+  margin-right: auto;
+}
+
+.menu-editor-grid {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: start;
+}
+
+.menu-outline {
+  position: sticky;
+  top: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--surface-raised);
+}
+
+.menu-outline ol {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-outline li {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.menu-outline a {
+  color: var(--text-primary);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.menu-outline a:hover {
+  color: var(--brand-provisional-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.menu-outline span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.menu-editor {
+  min-width: 0;
+}
+
+.menu-editor-heading,
+.menu-entity-heading {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.menu-editor-heading h2,
+.menu-section-block h3,
+.menu-category-block h4 {
+  margin: 0;
+}
+
+.menu-add-panel {
+  position: relative;
+}
+
+.menu-add-panel summary {
+  display: inline-flex;
+  align-items: center;
+  list-style: none;
+}
+
+.menu-add-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-add-forms {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  display: grid;
+  width: min(92vw, 34rem);
+  max-height: min(70vh, 40rem);
+  gap: 1.25rem;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: var(--surface-raised);
+  box-shadow: 0 18px 45px rgb(24 24 22 / 14%);
+}
+
+.menu-add-forms form {
+  display: grid;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1.25rem;
+}
+
+.menu-add-forms form:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.menu-section-block {
+  scroll-margin-top: 1rem;
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: var(--surface-raised);
+}
+
+.compact-actions {
+  flex-wrap: wrap;
+}
+
+.compact-actions .button {
+  min-height: 40px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.menu-category-block {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+}
+
+.menu-item-list {
+  display: grid;
+  gap: 0;
+  margin-top: 0.75rem;
+}
+
+.menu-item-card {
+  min-height: 72px;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding: 0.85rem 0;
+}
+
+.menu-item-card:first-child {
+  border-top: 0;
+}
+
+.menu-item-card p,
+.menu-quiet-row {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.menu-item-meta {
+  flex: 0 0 auto;
+}
+
+.menu-inline-editor {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 0.35fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
 .employee-detail-page {
   max-width: 68rem;
 }
@@ -581,6 +776,43 @@ h1 {
   .field-grid,
   .separate-actions {
     grid-template-columns: 1fr;
+  }
+
+  .menu-toolbar,
+  .menu-editor-heading,
+  .menu-entity-heading,
+  .menu-item-card,
+  .menu-item-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .menu-editor-grid,
+  .menu-inline-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-outline {
+    position: static;
+  }
+
+  .menu-add-panel,
+  .menu-add-panel summary {
+    width: 100%;
+  }
+
+  .menu-add-panel summary {
+    justify-content: center;
+  }
+
+  .menu-add-forms {
+    position: fixed;
+    z-index: 75;
+    inset: auto 0 0;
+    width: 100%;
+    max-height: 78vh;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
   }
 }
 

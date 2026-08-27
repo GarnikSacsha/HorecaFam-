@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 
 const links = [
   { to: "/admin/employees", label: "Працівники" },
+  { to: "/admin/menu", label: "Меню" },
   { to: "/admin/content", label: "Навчальні матеріали", disabled: true },
   { to: "/admin/results", label: "Результати", disabled: true },
 ];
