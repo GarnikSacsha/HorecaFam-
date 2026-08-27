@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import AuthorizationContext, require_active_employee
 from app.models import (
+    ApiIdempotencyRecord,
     AuditEvent,
     EmployeeProfile,
     Organization,
@@ -17,6 +19,8 @@ from app.models import (
     Session,
 )
 from app.security.tokens import hash_secret
+from app.services import employees as employee_service
+from app.services.applicability import ActivationApplicabilityResult
 from tests.factories.auth import make_admin_access
 from tests.factories.identity import (
     make_location,
@@ -105,6 +109,7 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     auth_client: AsyncClient,
     auth_app: FastAPI,
     db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     organization = make_organization(name="Activation organization")
     db_session.add(organization)
@@ -117,6 +122,22 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     organization_id = organization.id
     membership_id = membership.id
     profile_id = profile.id
+    applicability_calls: list[tuple[UUID, UUID]] = []
+
+    async def capture_applicability(
+        _db: AsyncSession,
+        *,
+        organization_id: UUID,
+        employee_profile_id: UUID,
+    ) -> ActivationApplicabilityResult:
+        applicability_calls.append((organization_id, employee_profile_id))
+        return ActivationApplicabilityResult(0, 0, 0)
+
+    monkeypatch.setattr(
+        employee_service,
+        "evaluate_activation_applicability",
+        capture_applicability,
+    )
 
     response = await auth_client.post(
         f"/api/v1/organizations/{organization_id}/employees/{profile_id}/activate",
@@ -149,6 +170,7 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     assert audit.outcome == "success"
     assert "Iryna" not in str(audit.old_values)
     assert "Iryna" not in str(audit.new_values)
+    assert applicability_calls == [(organization_id, profile_id)]
 
 
 async def test_activated_employee_immediately_passes_existing_active_employee_guard(
@@ -308,3 +330,203 @@ async def test_foreign_employee_is_hidden_from_activation(
     assert response.status_code == 404
     assert response.json()["code"] == "RESOURCE_NOT_FOUND"
     assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+
+
+@pytest.mark.parametrize("key", [None, "   "])
+async def test_activation_requires_valid_idempotency_key(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+    key: str | None,
+) -> None:
+    organization = make_organization(name="Idempotency header organization")
+    db_session.add(organization)
+    await db_session.flush()
+    _admin_id, csrf_token = await _arrange_admin_session(
+        auth_client, auth_app, db_session, organization=organization
+    )
+    membership, profile = await _arrange_profile(db_session, organization=organization)
+    await db_session.commit()
+    membership_id = membership.id
+    headers = {
+        "Origin": "https://frontend.test",
+        "X-CSRF-Token": csrf_token,
+    }
+    if key is not None:
+        headers["Idempotency-Key"] = key
+
+    response = await auth_client.post(
+        f"/api/v1/organizations/{organization.id}/employees/{profile.id}/activate",
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    db_session.expire_all()
+    assert (await db_session.get_one(OrganizationMembership, membership_id)).status == "pending"
+
+
+async def test_activation_replays_same_key_without_duplicate_audit(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization = make_organization(name="Activation replay organization")
+    db_session.add(organization)
+    await db_session.flush()
+    _admin_id, csrf_token = await _arrange_admin_session(
+        auth_client, auth_app, db_session, organization=organization
+    )
+    _membership, profile = await _arrange_profile(db_session, organization=organization)
+    await db_session.commit()
+    url = f"/api/v1/organizations/{organization.id}/employees/{profile.id}/activate"
+    first_headers = _activation_headers(csrf_token, key="  stable-activation-replay  ")
+    replay_headers = _activation_headers(csrf_token, key="stable-activation-replay")
+
+    first = await auth_client.post(url, headers=first_headers)
+    replay = await auth_client.post(url, headers=replay_headers)
+
+    assert first.status_code == replay.status_code == 200
+    assert replay.json() == first.json()
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "employee_activated")
+        )
+        == 1
+    )
+    assert await db_session.scalar(select(func.count()).select_from(ApiIdempotencyRecord)) == 1
+
+
+async def test_activation_rejects_same_key_for_different_employee(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization = make_organization(name="Activation key reuse organization")
+    db_session.add(organization)
+    await db_session.flush()
+    _admin_id, csrf_token = await _arrange_admin_session(
+        auth_client, auth_app, db_session, organization=organization
+    )
+    _first_membership, first_profile = await _arrange_profile(db_session, organization=organization)
+    second_employee = make_user(email_normalized=f"second-activation-{uuid4()}@example.com")
+    second_membership = make_membership(
+        organization,
+        second_employee,
+        status="pending",
+        activated_at=None,
+    )
+    db_session.add_all([second_employee, second_membership])
+    await db_session.flush()
+    second_profile = EmployeeProfile(
+        membership_id=second_membership.id,
+        organization_id=organization.id,
+        first_name="Olena",
+        last_name="Bondar",
+        operational_role_id=first_profile.operational_role_id,
+        location_id=first_profile.location_id,
+    )
+    db_session.add(second_profile)
+    await db_session.commit()
+    second_membership_id = second_membership.id
+    headers = _activation_headers(csrf_token, key="reused-activation-target")
+
+    first = await auth_client.post(
+        f"/api/v1/organizations/{organization.id}/employees/{first_profile.id}/activate",
+        headers=headers,
+    )
+    reused = await auth_client.post(
+        f"/api/v1/organizations/{organization.id}/employees/{second_profile.id}/activate",
+        headers=headers,
+    )
+
+    assert first.status_code == 200
+    assert reused.status_code == 409
+    assert reused.json()["code"] == "IDEMPOTENCY_KEY_REUSED"
+    db_session.expire_all()
+    assert (
+        await db_session.get_one(OrganizationMembership, second_membership_id)
+    ).status == "pending"
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "employee_activated")
+        )
+        == 1
+    )
+
+
+async def test_concurrent_activation_same_key_has_one_transition_and_replay(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization = make_organization(name="Concurrent activation replay organization")
+    db_session.add(organization)
+    await db_session.flush()
+    _admin_id, csrf_token = await _arrange_admin_session(
+        auth_client, auth_app, db_session, organization=organization
+    )
+    _membership, profile = await _arrange_profile(db_session, organization=organization)
+    await db_session.commit()
+    url = f"/api/v1/organizations/{organization.id}/employees/{profile.id}/activate"
+    headers = _activation_headers(csrf_token, key="concurrent-activation-replay")
+
+    first, second = await asyncio.gather(
+        auth_client.post(url, headers=headers),
+        auth_client.post(url, headers=headers),
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "employee_activated")
+        )
+        == 1
+    )
+    assert await db_session.scalar(select(func.count()).select_from(ApiIdempotencyRecord)) == 1
+
+
+async def test_concurrent_activation_different_keys_has_one_winner(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization = make_organization(name="Concurrent activation conflict organization")
+    db_session.add(organization)
+    await db_session.flush()
+    _admin_id, csrf_token = await _arrange_admin_session(
+        auth_client, auth_app, db_session, organization=organization
+    )
+    _membership, profile = await _arrange_profile(db_session, organization=organization)
+    await db_session.commit()
+    url = f"/api/v1/organizations/{organization.id}/employees/{profile.id}/activate"
+
+    responses = await asyncio.gather(
+        auth_client.post(
+            url,
+            headers=_activation_headers(csrf_token, key="activation-winner-one"),
+        ),
+        auth_client.post(
+            url,
+            headers=_activation_headers(csrf_token, key="activation-winner-two"),
+        ),
+    )
+
+    assert sorted(response.status_code for response in responses) == [200, 409]
+    conflict = next(response for response in responses if response.status_code == 409)
+    assert conflict.json()["code"] == "EMPLOYEE_ACTIVATION_NOT_ALLOWED"
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "employee_activated")
+        )
+        == 1
+    )
+    assert await db_session.scalar(select(func.count()).select_from(ApiIdempotencyRecord)) == 1

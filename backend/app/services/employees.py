@@ -29,6 +29,12 @@ from app.schemas.employees import (
     OwnEmployeeProfile,
     OwnEmployeeProfilesResponse,
 )
+from app.services.applicability import evaluate_activation_applicability
+from app.services.idempotency import (
+    find_idempotency_replay,
+    request_fingerprint,
+    reserve_idempotency,
+)
 
 EmployeeRow = tuple[
     EmployeeProfile,
@@ -542,15 +548,86 @@ def _employee_activation_not_allowed() -> APIError:
     )
 
 
+async def _activation_replay_response(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+) -> EmployeeLifecycleActionResponse:
+    membership = await db.scalar(
+        select(OrganizationMembership)
+        .join(
+            EmployeeProfile,
+            and_(
+                EmployeeProfile.membership_id == OrganizationMembership.id,
+                EmployeeProfile.organization_id == OrganizationMembership.organization_id,
+            ),
+        )
+        .where(
+            EmployeeProfile.id == employee_id,
+            EmployeeProfile.organization_id == organization_id,
+        )
+    )
+    if membership is None or membership.status != "active" or membership.activated_at is None:
+        raise RuntimeError("Idempotent employee activation resource is unavailable")
+    await db.commit()
+    return EmployeeLifecycleActionResponse(
+        employee_id=employee_id,
+        organization_id=organization_id,
+        membership_status="active",
+        training_participation_status="active",
+        activated_at=membership.activated_at,
+    )
+
+
 async def _activate_employee(
     db: AsyncSession,
     *,
     organization_id: UUID,
     employee_id: UUID,
     actor_user_id: UUID,
+    idempotency_key: str,
     now: datetime,
     request_id: UUID,
 ) -> EmployeeLifecycleActionResponse:
+    fingerprint = request_fingerprint({"employee_id": str(employee_id)})
+    replay = await find_idempotency_replay(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action="employee.activate",
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        now=now,
+    )
+    if replay is not None:
+        if replay.resource_type != "employee_profile" or replay.resource_id != employee_id:
+            raise RuntimeError("Idempotent employee activation target is inconsistent")
+        return await _activation_replay_response(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+        )
+
+    decision = await reserve_idempotency(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action="employee.activate",
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        resource_type="employee_profile",
+        resource_id=employee_id,
+        response_status=200,
+        now=now,
+    )
+    if decision.replayed:
+        return await _activation_replay_response(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+        )
+
     locked = (
         (
             await db.execute(
@@ -597,6 +674,11 @@ async def _activate_employee(
         organization_id=organization_id,
         location_id=profile.location_id,
     )
+    await evaluate_activation_applicability(
+        db,
+        organization_id=organization_id,
+        employee_profile_id=employee_id,
+    )
 
     membership.status = "active"
     membership.activated_at = now
@@ -631,6 +713,7 @@ async def activate_employee(
     organization_id: UUID,
     employee_id: UUID,
     actor_user_id: UUID,
+    idempotency_key: str,
     now: datetime,
     request_id: UUID,
 ) -> EmployeeLifecycleActionResponse:
@@ -640,6 +723,7 @@ async def activate_employee(
             organization_id=organization_id,
             employee_id=employee_id,
             actor_user_id=actor_user_id,
+            idempotency_key=idempotency_key,
             now=now,
             request_id=request_id,
         )

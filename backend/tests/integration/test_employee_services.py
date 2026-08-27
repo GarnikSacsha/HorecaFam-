@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AuditEvent, EmployeeProfile, OrganizationMembership
+from app.models import ApiIdempotencyRecord, AuditEvent, EmployeeProfile, OrganizationMembership
 from app.schemas.employees import EmployeeUpdate
 from app.services.employees import activate_employee, update_pending_employee_profile
 from tests.factories.identity import (
@@ -106,6 +106,7 @@ async def test_activation_rolls_back_domain_and_audit_when_commit_fails(
             organization_id=organization_id,
             employee_id=profile_id,
             actor_user_id=admin_id,
+            idempotency_key="rollback-activation",
             now=profile.created_at,
             request_id=uuid4(),
         )
@@ -116,3 +117,4 @@ async def test_activation_rolls_back_domain_and_audit_when_commit_fails(
     assert stored.status == "pending"
     assert stored.activated_at is None
     assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(ApiIdempotencyRecord)) == 0

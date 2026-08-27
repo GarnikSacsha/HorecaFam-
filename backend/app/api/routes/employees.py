@@ -151,7 +151,7 @@ async def employee_activate_route(
     organization_id: UUID,
     employee_id: UUID,
     request: Request,
-    _idempotency_key: Annotated[
+    idempotency_key: Annotated[
         str,
         Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
     ],
@@ -165,6 +165,7 @@ async def employee_activate_route(
         organization_id=organization_id,
         employee_id=employee_id,
         actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key.strip(),
         now=clock(),
         request_id=UUID(get_request_id()),
     )
