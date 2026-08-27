@@ -4,12 +4,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
+from app.api.dependencies.auth import (
+    AuthorizationContext,
+    require_current_active_employee,
+    require_organization_admin,
+)
 from app.api.dependencies.session import AuthenticatedSession, get_csrf_protected_session
 from app.core.clock import Clock
 from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.schemas.menu import (
+    EmployeeMenuItemDetail,
+    EmployeeMenuResponse,
     MenuCategoryCreate,
     MenuCategoryMutationResponse,
     MenuCategoryPatch,
@@ -41,6 +47,7 @@ from app.schemas.menu import (
     MenuVersionCreate,
     MenuVersionDetail,
 )
+from app.services.employee_menu import get_employee_menu_item, list_employee_menu
 from app.services.menu_drafts import (
     UNSET,
     create_category,
@@ -71,6 +78,52 @@ from app.services.menus import (
 )
 
 router = APIRouter(tags=["menus"])
+
+
+@router.get("/me/menu", response_model=EmployeeMenuResponse)
+async def employee_menu_route(
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    q: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
+    section_id: UUID | None = None,
+    category_id: UUID | None = None,
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> EmployeeMenuResponse:
+    if authorization.organization_id is None or authorization.location_id is None:
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    response = await list_employee_menu(
+        db,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        preferred_locale=authorization.user.preferred_locale,
+        query=q,
+        section_id=section_id,
+        category_id=category_id,
+        cursor=cursor,
+        limit=limit,
+    )
+    await db.commit()
+    return response
+
+
+@router.get("/me/menu/items/{item_id}", response_model=EmployeeMenuItemDetail)
+async def employee_menu_item_route(
+    item_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeMenuItemDetail:
+    if authorization.organization_id is None or authorization.location_id is None:
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    response = await get_employee_menu_item(
+        db,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        preferred_locale=authorization.user.preferred_locale,
+        item_id=item_id,
+    )
+    await db.commit()
+    return response
 
 
 @router.get(

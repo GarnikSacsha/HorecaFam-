@@ -726,3 +726,65 @@ class MenuImportConfirmResponse(StrictMenuSchema):
 
     import_: MenuImportDetail = Field(alias="import", serialization_alias="import")
     draft: MenuVersionDetail
+
+
+class EmployeeMenuCategorySummary(StrictMenuSchema):
+    id: UUID
+    section_id: UUID
+    name: str
+    position: int = Field(ge=0)
+
+
+class EmployeeMenuSectionSummary(StrictMenuSchema):
+    id: UUID
+    name: str
+    position: int = Field(ge=0)
+    categories: list[EmployeeMenuCategorySummary]
+
+
+class EmployeeMenuSummary(StrictMenuSchema):
+    menu_id: UUID
+    menu_version_id: UUID
+    location_id: UUID
+    version_number: int = Field(ge=1)
+    published_at: datetime
+    sections: list[EmployeeMenuSectionSummary]
+
+
+class EmployeeMenuItemSummary(StrictMenuSchema):
+    item_id: UUID
+    name: str
+    description_excerpt: str | None
+    category_id: UUID
+    category_name: str
+    section_id: UUID
+    section_name: str
+    availability: MenuAvailability
+    price_minor: int | None
+    currency: str
+    content_locale: Literal["uk", "en"]
+    translation_fallback: bool
+
+
+class EmployeeMenuResponse(StrictMenuSchema):
+    menu: EmployeeMenuSummary | None
+    items: list[EmployeeMenuItemSummary]
+    next_cursor: str | None
+
+
+class EmployeeMenuComponent(StrictMenuSchema):
+    name: str
+    optional: bool | None
+    position: int = Field(ge=0)
+
+
+class EmployeeMenuAllergen(StrictMenuSchema):
+    code: str
+    label: str
+
+
+class EmployeeMenuItemDetail(EmployeeMenuItemSummary):
+    description: str | None
+    components: list[EmployeeMenuComponent]
+    allergen_data_status: FactDataStatus
+    allergens: list[EmployeeMenuAllergen]

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.session import AuthenticatedSession, get_current_session
 from app.core.errors import APIError
 from app.db.dependencies import get_db
-from app.models import AdminAccess, EmployeeProfile, OrganizationMembership, Session, User
+from app.models import AdminAccess, EmployeeProfile, Location, OrganizationMembership, Session, User
 
 
 @dataclass(frozen=True)
@@ -17,6 +17,8 @@ class AuthorizationContext:
     user: User
     session: Session
     organization_id: UUID | None = None
+    employee_profile_id: UUID | None = None
+    location_id: UUID | None = None
 
 
 def _forbidden() -> APIError:
@@ -64,6 +66,46 @@ async def require_active_employee(
         user=current.user,
         session=current.record,
         organization_id=organization_id,
+    )
+
+
+async def require_current_active_employee(
+    current: Annotated[AuthenticatedSession, Depends(get_current_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> AuthorizationContext:
+    rows = (
+        (
+            await db.execute(
+                select(EmployeeProfile)
+                .join(
+                    OrganizationMembership,
+                    EmployeeProfile.membership_id == OrganizationMembership.id,
+                )
+                .join(
+                    Location,
+                    (Location.id == EmployeeProfile.location_id)
+                    & (Location.organization_id == EmployeeProfile.organization_id),
+                )
+                .where(
+                    OrganizationMembership.user_id == current.user.id,
+                    OrganizationMembership.status == "active",
+                    Location.status == "active",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if len(rows) != 1 or rows[0].location_id is None:
+        raise _forbidden()
+    profile = rows[0]
+    await db.commit()
+    return AuthorizationContext(
+        user=current.user,
+        session=current.record,
+        organization_id=profile.organization_id,
+        employee_profile_id=profile.id,
+        location_id=profile.location_id,
     )
 
 
