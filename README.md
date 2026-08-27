@@ -2,9 +2,12 @@
 
 Repository for the HoReCa Training Platform. Backend MVP Vertical Slice 1 through CRA-40 and
 Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward published on
-`origin/main` through `fa30a1f`. CRA-42 is an unrelated Backlog task. No product implementation
-issue is active; the next slice requires a separately accepted bounded plan. PR, merge, deployment,
-providers, and production configuration remain separate gates.
+`origin/main`; the CRA-43 implementation series ends at `fa30a1f`, while the accepted CRA-46
+documentation publication advances the published `origin/main` baseline to `586f8c5`. CRA-47
+planning for Menu Slice 2 is accepted and Done. CRA-48 is the active documentation-only
+synchronization issue and this repository state contains its authorized local checkpoint; its push
+is not authorized. CRA-49 exists but product implementation is not authorized. CRA-42 is unrelated
+Backlog work. PR, merge, deployment, providers, and production configuration remain separate gates.
 
 ## Start here
 

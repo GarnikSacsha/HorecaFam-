@@ -9,6 +9,11 @@
 - Test environment: `APP_ENV=test` and a dedicated database named `horeca_test` or an approved
   worker-scoped derivative.
 
+The published repository tip is `586f8c5`, including the accepted CRA-46 documentation checkpoint.
+CRA-43 runtime acceptance evidence remains anchored to its implementation endpoint `fa30a1f`.
+CRA-47 Menu Slice 2 planning is accepted, but CRA-49 runtime implementation is not authorized.
+CRA-48 changes documentation only and creates no new production-test evidence.
+
 ## Environment setup
 
 Run from the repository root:

@@ -1,8 +1,9 @@
 # Backend Foundation
 
-This directory contains the accepted CRA-20 API foundation, CRA-28 Stage 1 identity persistence,
-and CRA-30 Stage 2 auth/security boundary, plus the locally verified CRA-32 Stage 3 invitation
-candidate. Python 3.12 and PostgreSQL 16 are the approved runtime versions.
+This directory contains the accepted and published backend MVP Vertical Slice 1 through CRA-40:
+the Stage 0 API foundation, identity persistence, auth/security, invitation administration and
+acceptance, Pending profile setup, explicit Activation, and the full backend acceptance gate.
+Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository
 [`../AGENTS.md`](../AGENTS.md). Linear remains canonical for product/API/data/test-stage

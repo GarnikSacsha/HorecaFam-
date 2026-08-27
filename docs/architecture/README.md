@@ -146,5 +146,6 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
 reference CRUD, Employee disable/reactivate lifecycle administration, menu/training workflow,
-provider integration, deployed worker/resource, or frontend application. Adding any of these
-requires a new bounded Linear issue and approval.
+provider integration, or deployed worker/resource. The accepted CRA-43 frontend application lives
+in [`../../frontend/`](../../frontend/) and does not add these absent backend capabilities. Adding
+any absent capability requires a new bounded Linear issue and approval.

@@ -5,6 +5,11 @@ Canonical test strategy, stage acceptance criteria, and Definition of Done remai
 and the active bounded implementation issue. Exact local commands and environment safeguards are
 maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
+The published repository tip is `586f8c5`, including accepted CRA-46 documentation. CRA-43 test
+evidence remains correctly anchored to the implementation endpoint `fa30a1f`. CRA-47 Menu Slice 2
+planning is accepted, CRA-48 changes documentation only, and CRA-49 implementation is not
+authorized; no later runtime evidence is claimed here.
+
 ## Current test layout
 
 - `backend/tests/api`: application factory, health/errors, auth/session/CSRF/logout/MFA/RBAC, and

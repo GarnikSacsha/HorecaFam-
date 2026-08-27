@@ -5,9 +5,12 @@
 The repository is on `main`. The published history contains the accepted Stage 0 repository
 baseline and the accepted backend MVP Vertical Slice 1 through CRA-40. CRA-41 and CRA-43 are Done;
 the backend and frontend slice history was fast-forward published without rewriting through
-`fa30a1f`. CRA-42 is unrelated Backlog work. CRA-46 authorizes one local post-acceptance
-documentation synchronization commit; its push remains a separate gate. `origin` points to the
-approved HoReCa GitHub repository, and local `main` has upstream tracking.
+the CRA-43 endpoint `fa30a1f`. CRA-46 is Done, and its documentation checkpoint advances the
+published `origin/main` baseline to `586f8c5`. CRA-47 Menu Slice 2 planning is accepted and Done.
+CRA-48 is the active documentation-only task, and this repository state contains its one authorized
+local checkpoint on top of that published baseline; push is not authorized. CRA-49 exists but is
+not authorized to start. CRA-42 is unrelated Backlog work. `origin` points to the approved HoReCa
+GitHub repository, and local `main` has upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -106,5 +109,7 @@ Publication of any checkpoint does not authorize the next implementation stage. 
 change still requires an active bounded Linear issue, an agreed commit map, and the applicable
 local-commit and remote-action approvals. Backend Stages 1–7 and Frontend MVP Vertical Slice 1 are
 accepted and published through `fa30a1f`; CRA-41 and CRA-43 are Done. No product implementation
-issue is active. CRA-46 is limited to one local documentation synchronization commit, while its
-push and every later remote or product action remain separately gated.
+issue is active. CRA-46 is Done and published as the repository documentation checkpoint at
+`586f8c5`; CRA-47 planning is accepted and Done. CRA-48 is limited to the current local
+documentation synchronization commit, while CRA-49 implementation, push, and every later remote
+or product action remain separately gated.

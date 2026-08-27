@@ -4,10 +4,13 @@
 
 HoReCaFam is the repository for the HoReCa Training Platform. Backend MVP Vertical Slice 1 through
 CRA-40 and Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward
-published on `origin/main` through `fa30a1f`. CRA-42 is unrelated Backlog work. No product
-implementation issue is active. Training-domain expansion, broader production administration,
-providers/workers, PR, merge, deployment, and production configuration require separate approval
-or later bounded issues.
+published on `origin/main`. The CRA-43 implementation series ends at `fa30a1f`; accepted CRA-46
+documentation advances the published `origin/main` baseline to `586f8c5`. CRA-47 planning for Menu
+Slice 2 is accepted and Done. CRA-48 is the active documentation-only synchronization issue, and
+this repository state contains its authorized local checkpoint with push still unapproved. CRA-49
+exists but is not authorized for implementation. CRA-42 is unrelated Backlog work. Training-domain
+expansion, broader production administration, providers/workers, push, PR, merge, deployment, and
+production configuration require separate approval or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
