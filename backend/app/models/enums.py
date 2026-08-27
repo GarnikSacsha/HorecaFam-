@@ -64,3 +64,46 @@ class EmailDeliveryStatus(StrEnum):
     DELIVERED = "delivered"
     BOUNCED = "bounced"
     FAILED = "failed"
+
+
+class MenuVersionStatus(StrEnum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+class MenuAvailability(StrEnum):
+    AVAILABLE = "available"
+    TEMPORARILY_UNAVAILABLE = "temporarily_unavailable"
+    SEASONAL = "seasonal"
+    DISCONTINUED = "discontinued"
+
+
+class FactDataStatus(StrEnum):
+    UNKNOWN = "unknown"
+    CONFIRMED_NONE = "confirmed_none"
+    CONFIRMED_PRESENT = "confirmed_present"
+
+
+class MenuDeltaKind(StrEnum):
+    ADDED = "added"
+    CHANGED = "changed"
+    REMOVED = "removed"
+    UNCHANGED = "unchanged"
+
+
+class TrainingImpact(StrEnum):
+    NONE = "none"
+    REVIEW = "review"
+    REQUIRED = "required"
+
+
+class MenuSourceKind(StrEnum):
+    MANUAL = "manual"
+    JSON_IMPORT = "json_import"
+
+
+class TranslationStatus(StrEnum):
+    DRAFT = "draft"
+    NEEDS_REVIEW = "needs_review"
+    READY = "ready"

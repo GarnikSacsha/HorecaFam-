@@ -80,6 +80,7 @@ def test_invitation_outbox_migration_downgrades_and_upgrades() -> None:
 def test_metadata_contains_current_backend_tables() -> None:
     assert set(Base.metadata.tables) == {
         "admin_access",
+        "allergens",
         "api_idempotency_records",
         "audit_events",
         "auth_rate_limit_buckets",
@@ -89,6 +90,23 @@ def test_metadata_contains_current_backend_tables() -> None:
         "invitation_rate_limit_buckets",
         "invitations",
         "locations",
+        "menu_categories",
+        "menu_component_version_translations",
+        "menu_component_versions",
+        "menu_components",
+        "menu_item_version_allergens",
+        "menu_item_version_components",
+        "menu_item_version_translations",
+        "menu_item_versions",
+        "menu_items",
+        "menu_sections",
+        "menu_version_category_translations",
+        "menu_version_categories",
+        "menu_version_item_deltas",
+        "menu_version_section_translations",
+        "menu_version_sections",
+        "menu_versions",
+        "menus",
         "mfa_challenges",
         "mfa_credentials",
         "operational_roles",
@@ -97,6 +115,26 @@ def test_metadata_contains_current_backend_tables() -> None:
         "sessions",
         "users",
     }
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_menu_source_of_truth_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        command.downgrade(config, "0005_invitation_email_outbox")
+        table_names = asyncio.run(database_table_names(settings))
+
+        assert "menus" not in table_names
+        assert "menu_versions" not in table_names
+        assert "menu_item_versions" not in table_names
+    finally:
+        command.upgrade(config, "head")
 
 
 @pytest.mark.integration
