@@ -2,12 +2,13 @@
 
 **Snapshot date:** 2026-08-27
 **Current bounded task:**
-[CRA-38 — Implement Stage 6 Explicit Activation](https://linear.app/craftspacee/issue/CRA-38/implement-backend-mvp-vertical-slice-1-stage-6-explicit-activation),
+[CRA-40 — Implement Stage 7 Full Regression and Acceptance Gate](https://linear.app/craftspacee/issue/CRA-40/implement-backend-mvp-vertical-slice-1-stage-7-full-regression-and),
 routed through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-The authorized five-checkpoint CRA-38 local candidate is complete and awaiting Denys's acceptance.
-Push, PR, merge, deployment, providers, and any later stage remain separate gates. This document
-records durable checkpoints; it does not expand CRA-38 beyond its explicit approvals.
+CRA-38 and CRA-39 are accepted and Done. Denys authorized CRA-40 implementation and its accepted
+three-checkpoint local commit map on 2026-08-27. Push, PR, merge, deployment, providers, and any
+later stage remain separate gates. This document records durable checkpoints; it does not expand
+CRA-40 beyond its explicit approvals.
 
 ## Accepted implementation and planning checkpoints
 
@@ -31,9 +32,11 @@ records durable checkpoints; it does not expand CRA-38 beyond its explicit appro
   `de6dd84`. Its five selective local commits and fast-forward push were explicitly authorized on
   2026-08-27.
 - CRA-37 Stage 6 Explicit Activation plan and five-checkpoint map are accepted and Done.
-- CRA-38 Stage 6 Explicit Activation implementation issue is In Progress. Denys authorized the
-  production implementation and all five selective local commits; the completed candidate now
-  awaits acceptance. Push is not authorized.
+- CRA-38 Stage 6 Explicit Activation implementation and its five local commits through `bd2f98e`
+  are accepted and Done. Push is not authorized.
+- CRA-39 Stage 7 Full Regression and Acceptance Gate plan is accepted and Done.
+- CRA-40 Stage 7 implementation is In Progress. Denys authorized its implementation and three
+  selective local commits; all remote and staging actions remain separate gates.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -107,7 +110,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - The five CRA-36 checkpoints are committed on `main` and fast-forward published through
   `de6dd84`. Canonical acceptance and push evidence remains in Linear/Git.
 
-## Current CRA-38 Stage 6 candidate
+## Accepted CRA-38 Stage 6 checkpoint
 
 - Adds `POST /api/v1/organizations/{organization_id}/employees/{employee_id}/activate` for an
   authenticated, MFA-verified same-Organization Admin with CSRF and a required trimmed
@@ -129,9 +132,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   mypy pass.
 - Alembic remains at `0005_invitation_email_outbox`; empty-database migration coverage,
   `current --check-heads`, and autogenerate no-drift checks pass.
-- Local CRA-38 checkpoints before this documentation commit are `0291208`, `e53e614`, `b0cd89b`,
-  and `c55545a`. The five-checkpoint series is not pushed and CRA-38 remains In Progress until
-  Denys explicitly accepts it.
+- The accepted local CRA-38 series is `0291208`, `e53e614`, `b0cd89b`, `c55545a`, and `bd2f98e`.
+  The five-checkpoint series is not pushed.
 
 ## Repository and runtime state
 
@@ -171,11 +173,12 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   evidence remains canonical in CRA-28. Later commits and pushes require new explicit approval.
 - CRA-32, CRA-34, and CRA-36 are accepted, Done, and published; their canonical implementation and
   Git evidence remains in Linear.
-- CRA-37 accepted the Stage 6 contract and five-checkpoint map and is Done. CRA-38 is the active
-  Stage 6 implementation issue; its implementation and five local commits were authorized and are
-  complete. Acceptance and every remote action remain separate gates. Push, PR, merge, deploy,
+- CRA-37 and CRA-38 are accepted and Done; the accepted Stage 6 local series remains unpushed.
+  CRA-39 is accepted and Done. CRA-40 is the active Stage 7 implementation issue, and its three
+  local commits are authorized. Acceptance and every remote action remain separate gates. Push,
+  PR, merge, deploy,
   providers, non-test mutations, dependencies, architecture changes, migration, and history
-  rewrite are not authorized by the completed local candidate.
+  rewrite are not authorized by CRA-40.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

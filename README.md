@@ -2,9 +2,10 @@
 
 Repository for the HoReCa Training Platform. Repository history contains the accepted backend
 foundation through CRA-36 Stage 5 Pending/Admin Profile Setup, published through `de6dd84`.
-CRA-37 accepted the Stage 6 Explicit Activation plan. CRA-38 is the active bounded implementation
-issue, and its five-checkpoint local candidate is complete and awaiting Denys's acceptance. Push,
-PR, merge, deployment, providers, and later stages remain separately gated.
+CRA-37 and CRA-38 are accepted and Done. Their five-checkpoint Stage 6 Explicit Activation series
+is committed locally through `bd2f98e` and remains unpushed. CRA-39 is accepted and Done; CRA-40
+is the active bounded Stage 7 regression and acceptance implementation issue. Push, PR, merge,
+deployment, providers, and later stages remain separately gated.
 
 ## Start here
 
@@ -52,6 +53,6 @@ safe cookie/audit integration. Provider/worker execution, invitation list/detail
 endpoints, MFA enrollment/recovery, training workflows, broader production administration, and
 the frontend remain outside the implemented boundary. Accepted CRA-36 adds MFA-scoped Organization
 references and Employee list/detail reads, own read-only operational profiles, and CSRF-protected
-Pending profile setup. The CRA-38 local candidate adds explicit, idempotent Pending-to-Active
+Pending profile setup. Accepted CRA-38 adds explicit, idempotent Pending-to-Active
 activation with locked reference revalidation, a safe audit, and an explicit zero-applicability
 boundary. It creates no Session, Assignment, notification, content, provider call, or migration.
