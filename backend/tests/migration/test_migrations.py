@@ -45,12 +45,15 @@ def test_application_runtime_does_not_use_create_all() -> None:
     assert "create_all" not in application_source
 
 
-def test_metadata_contains_stage_2_auth_tables() -> None:
+def test_metadata_contains_current_backend_tables() -> None:
     assert set(Base.metadata.tables) == {
         "admin_access",
+        "api_idempotency_records",
         "audit_events",
         "auth_rate_limit_buckets",
         "employee_profiles",
+        "invitation_rate_limit_buckets",
+        "invitations",
         "locations",
         "mfa_challenges",
         "mfa_credentials",

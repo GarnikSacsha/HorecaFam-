@@ -20,6 +20,9 @@ from app.main import create_app
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
+    "invitation_rate_limit_buckets",
+    "api_idempotency_records",
+    "invitations",
     "auth_rate_limit_buckets",
     "mfa_challenges",
     "mfa_credentials",

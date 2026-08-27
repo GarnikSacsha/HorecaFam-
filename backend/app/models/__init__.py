@@ -25,6 +25,7 @@ from app.models.identity import (
     OrganizationMembership,
     User,
 )
+from app.models.invitations import ApiIdempotencyRecord, Invitation, InvitationRateLimitBucket
 
 __all__ = [
     "AccessStatus",
@@ -35,10 +36,13 @@ __all__ = [
     "AuditOutcome",
     "AuthRateLimitAction",
     "AuthRateLimitBucket",
+    "ApiIdempotencyRecord",
     "EmployeeProfile",
     "LifecycleStatus",
     "Locale",
     "Location",
+    "Invitation",
+    "InvitationRateLimitBucket",
     "MembershipStatus",
     "MfaChallenge",
     "MfaCredential",
