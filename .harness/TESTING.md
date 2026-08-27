@@ -133,5 +133,16 @@ aggregate critical Stage 5 coverage. Focused Stage 5 API/integration reports 15 
 remains at `0005_invitation_email_outbox`; the empty-database migration test, current head check,
 and metadata no-drift check pass. Canonical acceptance and publication evidence remains in Linear.
 
+## Current CRA-38 Stage 6 candidate evidence
+
+The Explicit Activation candidate uses Python 3.12.10 and native PostgreSQL 16. Its complete gate
+reports 211 passed, 0 failed, 0 skipped, 94% overall branch coverage, and 92% coverage for
+`app/services/employees.py`. Focused Stage 6 API/integration/security checks cover the exact
+response, preconditions, CSRF/MFA/RBAC, tenant isolation, idempotency replay and key reuse,
+same-key/different-key concurrency, rollback, applicability, active access, OpenAPI, no new Session,
+and the live Stage 4→5→6 chain. Alembic remains at `0005_invitation_email_outbox`; the
+empty-database migration test, current head check, and metadata no-drift check pass. CRA-38 remains
+In Progress until Denys accepts the local candidate; no push is authorized.
+
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.

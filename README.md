@@ -1,11 +1,10 @@
 # HoReCaFam
 
 Repository for the HoReCa Training Platform. Repository history contains the accepted backend
-foundation through CRA-32 Stage 3 invitation administration, CRA-34 Stage 4 invitation acceptance,
-and CRA-36 Stage 5 Pending/Admin Profile Setup, published through `de6dd84`. CRA-37 accepted the
-Stage 6 Explicit Activation plan, and CRA-38 is the active bounded implementation issue; only its
-documentation-baseline checkpoint is currently authorized. Production implementation, local
-commits, push, PR, merge, deployment, providers, and later stages remain separately gated.
+foundation through CRA-36 Stage 5 Pending/Admin Profile Setup, published through `de6dd84`.
+CRA-37 accepted the Stage 6 Explicit Activation plan. CRA-38 is the active bounded implementation
+issue, and its five-checkpoint local candidate is complete and awaiting Denys's acceptance. Push,
+PR, merge, deployment, providers, and later stages remain separately gated.
 
 ## Start here
 
@@ -20,7 +19,7 @@ Repository documentation summarizes verified local state and routes agents to th
 
 ## Repository map
 
-- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–5
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed Stage 0–6
   backend foundations.
 - [`frontend/`](frontend): reserved boundary for a separately approved frontend stage.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
@@ -53,5 +52,6 @@ safe cookie/audit integration. Provider/worker execution, invitation list/detail
 endpoints, MFA enrollment/recovery, training workflows, broader production administration, and
 the frontend remain outside the implemented boundary. Accepted CRA-36 adds MFA-scoped Organization
 references and Employee list/detail reads, own read-only operational profiles, and CSRF-protected
-Pending profile setup without Activation. CRA-38 owns the accepted Stage 6 Activation contract,
-but production behavior remains unchanged until Denys separately authorizes implementation.
+Pending profile setup. The CRA-38 local candidate adds explicit, idempotent Pending-to-Active
+activation with locked reference revalidation, a safe audit, and an explicit zero-applicability
+boundary. It creates no Session, Assignment, notification, content, provider call, or migration.

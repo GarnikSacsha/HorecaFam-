@@ -5,8 +5,9 @@
 The repository is on `main`. The published history contains the accepted Stage 0 repository
 baseline and Stage 1–5 checkpoints through `de6dd84`. CRA-32's six Stage 3 commits, CRA-34's four
 Stage 4 commits, and CRA-36's five Stage 5 commits were fast-forward published without rewriting
-history. `origin` points to the approved HoReCa GitHub repository, and local `main` has upstream
-tracking.
+history. The authorized five-checkpoint CRA-38 Stage 6 candidate is committed only on local `main`;
+push is not authorized. `origin` points to the approved HoReCa GitHub repository, and local `main`
+has upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -105,5 +106,5 @@ Publication of any checkpoint does not authorize the next implementation stage. 
 change still requires an active bounded Linear issue, an agreed commit map, and the applicable
 local-commit and remote-action approvals. Stages 1–5 are accepted and published. CRA-37 accepted
 the Stage 6 contract and five-checkpoint map and is Done. CRA-38 is the active Stage 6 implementation
-issue; only its first documentation reconciliation checkpoint is currently authorized. Production
-implementation, local commits, and remote actions remain separately gated.
+issue; Denys authorized its implementation and all five local commits, which form the completed
+candidate. Acceptance and remote actions remain separately gated.

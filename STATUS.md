@@ -5,9 +5,9 @@
 [CRA-38 — Implement Stage 6 Explicit Activation](https://linear.app/craftspacee/issue/CRA-38/implement-backend-mvp-vertical-slice-1-stage-6-explicit-activation),
 routed through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-Only CRA-38 checkpoint 1 documentation reconciliation is currently authorized. Production
-implementation, local commits, and push remain separate gates. This document records durable
-checkpoints; it does not expand CRA-38 beyond its explicit approvals.
+The authorized five-checkpoint CRA-38 local candidate is complete and awaiting Denys's acceptance.
+Push, PR, merge, deployment, providers, and any later stage remain separate gates. This document
+records durable checkpoints; it does not expand CRA-38 beyond its explicit approvals.
 
 ## Accepted implementation and planning checkpoints
 
@@ -31,8 +31,9 @@ checkpoints; it does not expand CRA-38 beyond its explicit approvals.
   `de6dd84`. Its five selective local commits and fast-forward push were explicitly authorized on
   2026-08-27.
 - CRA-37 Stage 6 Explicit Activation plan and five-checkpoint map are accepted and Done.
-- CRA-38 Stage 6 Explicit Activation implementation issue is In Progress. Only checkpoint 1
-  documentation reconciliation is currently authorized.
+- CRA-38 Stage 6 Explicit Activation implementation issue is In Progress. Denys authorized the
+  production implementation and all five selective local commits; the completed candidate now
+  awaits acceptance. Push is not authorized.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -106,12 +107,37 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - The five CRA-36 checkpoints are committed on `main` and fast-forward published through
   `de6dd84`. Canonical acceptance and push evidence remains in Linear/Git.
 
+## Current CRA-38 Stage 6 candidate
+
+- Adds `POST /api/v1/organizations/{organization_id}/employees/{employee_id}/activate` for an
+  authenticated, MFA-verified same-Organization Admin with CSRF and a required trimmed
+  `Idempotency-Key`.
+- Locks the scoped EmployeeProfile and Membership, revalidates nonblank names and active
+  same-Organization Role/Location references, then moves only Pending Membership to Active.
+- The same transaction records `activated_at`, clears `disabled_at`, appends one PII-safe
+  `employee_activated` audit, and reserves the existing API idempotency record. Failures roll back
+  all three boundaries.
+- Same-key replay creates no duplicate audit. Concurrent same-key requests converge on one result;
+  concurrent different keys produce one success and one `EMPLOYEE_ACTIVATION_NOT_ALLOWED` conflict.
+- Training participation is derived as Active. The explicit applicability call returns zero
+  published content, assignments, and notifications; no placeholder data, job, provider call,
+  schema object, or migration is added. Activation issues no new Session.
+- Focused Stage 6 API/integration/security evidence: `21 passed / 0 failed / 0 skipped`; the final
+  API-only activation/security subset reports `18 passed / 0 failed / 0 skipped`.
+- Full candidate gate: Python 3.12.10, PostgreSQL 16, `211 passed / 0 failed / 0 skipped`, 94%
+  overall branch coverage, and 92% coverage for `app/services/employees.py`. Ruff format/check and
+  mypy pass.
+- Alembic remains at `0005_invitation_email_outbox`; empty-database migration coverage,
+  `current --check-heads`, and autogenerate no-drift checks pass.
+- Local CRA-38 checkpoints before this documentation commit are `0291208`, `e53e614`, `b0cd89b`,
+  and `c55545a`. The five-checkpoint series is not pushed and CRA-38 remains In Progress until
+  Denys explicitly accepts it.
+
 ## Repository and runtime state
 
 - Branch: `main`.
-- Repository history includes the accepted repository baseline and Stage 1–5 checkpoints. Local
-  `main`, `origin/main`, and `origin/HEAD` are synchronized at `de6dd84` before CRA-38 worktree
-  changes.
+- Repository history includes the accepted published Stage 0–5 baseline through `de6dd84`, plus
+  the unpushed five-checkpoint CRA-38 Stage 6 local candidate on `main`.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: local `main` tracks `origin/main`; Stages 3–5 were fast-forward published
   without force-push or history rewriting.
@@ -146,10 +172,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - CRA-32, CRA-34, and CRA-36 are accepted, Done, and published; their canonical implementation and
   Git evidence remains in Linear.
 - CRA-37 accepted the Stage 6 contract and five-checkpoint map and is Done. CRA-38 is the active
-  Stage 6 implementation issue, but its current authorization covers only checkpoint 1 repository
-  documentation reconciliation. Production implementation, local commits, push, PR, merge,
-  deploy, providers, non-test mutations, dependencies, architecture changes, migration, and
-  history rewrite remain separate gates.
+  Stage 6 implementation issue; its implementation and five local commits were authorized and are
+  complete. Acceptance and every remote action remain separate gates. Push, PR, merge, deploy,
+  providers, non-test mutations, dependencies, architecture changes, migration, and history
+  rewrite are not authorized by the completed local candidate.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

@@ -113,6 +113,24 @@ cross-Organization probes do not enumerate resources, and completeness is derive
 names plus active same-Organization Role/Location. No schema/migration, Activation, Assignment,
 Training, notification, provider, worker, or frontend behavior is added.
 
+## Stage 6 Explicit Activation boundary
+
+```text
+Admin Session + MFA + CSRF + Idempotency-Key
+→ scoped EmployeeProfile + Membership locks
+→ Pending and completeness/reference revalidation
+→ zero-output applicability boundary
+→ Active Membership + safe audit + idempotency record in one commit
+→ existing employee Session gains Active access without replacement
+```
+
+The CRA-38 local candidate exposes only
+`POST /api/v1/organizations/{organization_id}/employees/{employee_id}/activate`. Employee identity
+remains `EmployeeProfile.id`. Same-key replay is side-effect free, key reuse for another target is
+rejected, and row locks serialize different-key races. Training participation is derived from the
+Active Membership; no Assignment/content/notification record, provider call, job, schema object,
+migration, or new Session is created.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -122,6 +140,6 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 ## Explicitly absent
 
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
-reference CRUD, Employee Activation/lifecycle administration, menu/training workflow, provider
-integration, deployed worker/resource, or frontend application. Adding any of these requires a
-new bounded Linear issue and approval.
+reference CRUD, Employee disable/reactivate lifecycle administration, menu/training workflow,
+provider integration, deployed worker/resource, or frontend application. Adding any of these
+requires a new bounded Linear issue and approval.

@@ -3,12 +3,11 @@
 ## Purpose
 
 HoReCaFam is the repository for the HoReCa Training Platform. The accepted and published baseline
-contains Stage 0 backend foundation, Stage 1 identity persistence, Stage 2 authentication/security,
-Stage 3 invitation administration, Stage 4 invitation acceptance, and Stage 5 Pending/Admin Profile
-Setup through `de6dd84`. CRA-37 accepted the Stage 6 Explicit Activation contract and is Done.
-CRA-38 is the active bounded implementation issue; only its documentation-baseline checkpoint is
-currently authorized. Training, broader production administration, providers/workers, and frontend
-work require later bounded issues.
+contains the published Stage 0–5 backend through `de6dd84`. CRA-37 accepted the Stage 6 Explicit
+Activation contract and is Done. CRA-38 is the active bounded implementation issue; its authorized
+five-checkpoint local candidate is complete and awaiting Denys's acceptance. Training, broader
+production administration, providers/workers, push, and frontend work require separate approval or
+later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -80,13 +79,18 @@ Membership or create Assignments.
 [CRA-37](https://linear.app/craftspacee/issue/CRA-37/plan-backend-mvp-vertical-slice-1-stage-6-explicit-activation)
 is accepted and Done. It locks the Stage 6 Explicit Activation contract and five-checkpoint map.
 [CRA-38](https://linear.app/craftspacee/issue/CRA-38/implement-backend-mvp-vertical-slice-1-stage-6-explicit-activation)
-is the active bounded implementation issue. Its first documentation-only checkpoint is authorized;
-production implementation, local commits, and push remain separate gates.
+is the active bounded implementation issue. Its local candidate adds the exact protected
+`POST /api/v1/organizations/{organization_id}/employees/{employee_id}/activate` contract, locked
+Pending-to-Active transition, active-reference revalidation, existing-record idempotency, safe
+`employee_activated` audit, derived active training participation, and an explicit zero-output
+applicability boundary. It creates no new Session, Assignment, notification, content record, job,
+provider call, schema object, or migration. The five local checkpoints were authorized; push was
+not.
 
 ## Repository map
 
-- [`backend/app`](backend/app): accepted and published Stage 0–5 runtime; no Stage 6 production
-  change is authorized yet.
+- [`backend/app`](backend/app): published Stage 0–5 runtime plus the complete local CRA-38 Stage 6
+  candidate awaiting acceptance.
 - [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–3 revisions.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.

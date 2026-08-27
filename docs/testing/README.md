@@ -103,3 +103,19 @@ The Pending/Admin Profile Setup checkpoint reports:
   and no metadata drift.
 
 CRA-36 is accepted. Its exact commit and publication evidence remains canonical in Linear and Git.
+
+## Current CRA-38 Stage 6 candidate
+
+The Explicit Activation candidate reports:
+
+- Python 3.12.10 and native PostgreSQL 16;
+- 211 passed, 0 failed, 0 skipped;
+- 94% overall branch coverage and 92% coverage for `app/services/employees.py`;
+- focused API/integration/security proof for the exact response, preconditions, CSRF/MFA/RBAC,
+  tenant isolation, safe audit, rollback, idempotency replay/reuse/concurrency, zero applicability,
+  immediate Active access, OpenAPI, no new Session, and the Stage 4→5→6 chain;
+- Alembic head `0005_invitation_email_outbox`, empty-database migration coverage, current head,
+  and no metadata drift.
+
+The five local CRA-38 checkpoints are complete but unpushed. CRA-38 remains In Progress until Denys
+explicitly accepts the candidate.
