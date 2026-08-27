@@ -1,5 +1,14 @@
+# Локальні середовища та секрети
 .venv/
 .pydeps/
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -8,9 +17,17 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
-.env
-.env.*
-!.env.example
-**/.env
-**/.env.*
-!**/.env.example
+
+# Frontend dependencies and generated output
+.pnpm-store/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
