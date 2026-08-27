@@ -132,6 +132,142 @@ h1 {
   margin: 0 auto;
 }
 
+.auth-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.25rem;
+  background: linear-gradient(145deg, var(--surface-page), #eceeea);
+}
+
+.auth-panel {
+  width: min(100%, 31rem);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: var(--surface-raised);
+}
+
+.auth-panel .brand-mark {
+  margin-bottom: 2.75rem;
+}
+
+.form-intro {
+  margin-bottom: 2rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.form-stack,
+.field-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.form-stack {
+  gap: 1.25rem;
+}
+
+.field-group label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.field-group input,
+.field-group select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #bdbdb5;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+}
+
+.field-group input[aria-invalid="true"],
+.field-group select[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.field-error,
+.inline-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.inline-error {
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--danger);
+  padding: 0.75rem 1rem;
+  background: var(--danger-soft);
+}
+
+.button-full {
+  width: 100%;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.pending-page {
+  display: grid;
+  gap: 2rem;
+}
+
+.page-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pending-summary {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 42rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 2rem;
+}
+
+.pending-summary h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.pending-summary p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.4fr) 1fr;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.9rem 0;
+}
+
+.detail-list dt {
+  color: var(--text-muted);
+}
+
+.detail-list dd {
+  margin: 0;
+  font-weight: 650;
+}
+
 .state-page {
   display: grid;
   min-height: 100vh;

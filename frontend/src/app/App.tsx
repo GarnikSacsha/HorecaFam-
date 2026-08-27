@@ -1,5 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { LoginPage } from "../auth/LoginPage";
+import { MfaPage } from "../auth/MfaPage";
+import { PendingPage } from "../employee/PendingPage";
+import { InvitationAcceptPage } from "../invitations/InvitationAcceptPage";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
 import { HomeRedirect, ProtectedRoute } from "../session/SessionGate";
@@ -20,14 +24,9 @@ export function App() {
       <SessionProvider>
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
-          <Route
-            path="/login"
-            element={
-              <main aria-label="Bacara Academy" className="state-page">
-                <Placeholder eyebrow="Bacara Academy" title="Вхід" />
-              </main>
-            }
-          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/mfa" element={<MfaPage />} />
+          <Route path="/invite" element={<InvitationAcceptPage />} />
           <Route
             path="/admin/employees"
             element={
@@ -43,7 +42,7 @@ export function App() {
             element={
               <ProtectedRoute audience="pending-employee">
                 <EmployeeShell>
-                  <Placeholder eyebrow="Статус профілю" title="Профіль готується" />
+                  <PendingPage />
                 </EmployeeShell>
               </ProtectedRoute>
             }

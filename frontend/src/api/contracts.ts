@@ -39,6 +39,26 @@ export interface MfaRequiredResponse {
   expires_at: string;
 }
 
+export interface InvitationValidationResponse {
+  status: "valid";
+  organization_id: string;
+  organization_name: string;
+  email_masked: string;
+  acceptance_mode: "activate_access" | "accept_existing_account";
+  expires_at: string;
+}
+
+export type InvitationAcceptanceResponse = SessionResponse & {
+  status: "accepted";
+  acceptance_mode: "activate_access" | "accept_existing_account";
+  membership: {
+    id: string;
+    organization_id: string;
+    employee_profile_id: string;
+    status: "pending";
+  };
+};
+
 export interface OrganizationSummary {
   id: string;
   name: string;
