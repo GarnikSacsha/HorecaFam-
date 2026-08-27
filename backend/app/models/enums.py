@@ -98,6 +98,34 @@ class TrainingImpact(StrEnum):
     REQUIRED = "required"
 
 
+class MenuImportStatus(StrEnum):
+    UPLOADED = "uploaded"
+    PROCESSING = "processing"
+    READY_FOR_REVIEW = "ready_for_review"
+    CONFIRMED = "confirmed"
+    FAILED = "failed"
+    STALE = "stale"
+
+
+class MenuFindingSeverity(StrEnum):
+    BLOCKER = "blocker"
+    REQUIRES_REVIEW = "requires_review"
+    WARNING = "warning"
+
+
+class MenuFindingResolutionStatus(StrEnum):
+    UNRESOLVED = "unresolved"
+    RESOLVED = "resolved"
+
+
+class MenuFindingResolutionAction(StrEnum):
+    CONFIRM_LEGITIMATE = "confirm_legitimate"
+    MAP_EXISTING = "map_existing"
+    CONFIRM_REMOVAL = "confirm_removal"
+    CONFIRM_CRITICAL_CHANGE = "confirm_critical_change"
+    EXCLUDE_SOURCE_RECORD = "exclude_source_record"
+
+
 class MenuSourceKind(StrEnum):
     MANUAL = "manual"
     JSON_IMPORT = "json_import"

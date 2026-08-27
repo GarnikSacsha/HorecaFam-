@@ -927,3 +927,182 @@ class MenuVersionItemDelta(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     changed_field_codes: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
+
+
+class MenuImport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "menu_imports"
+    __table_args__ = (
+        UniqueConstraint(
+            "id", "menu_id", "organization_id", "location_id", name="uq_menu_imports_scope"
+        ),
+        CheckConstraint(
+            "status IN ('uploaded', 'processing', 'ready_for_review', "
+            "'confirmed', 'failed', 'stale')",
+            name="status_allowed",
+        ),
+        CheckConstraint("review_revision >= 0", name="review_revision_nonnegative"),
+        CheckConstraint("length(btrim(source_filename)) > 0", name="filename_not_blank"),
+        CheckConstraint("length(source_checksum) = 64", name="checksum_sha256_length"),
+        CheckConstraint("section_count >= 0", name="section_count_nonnegative"),
+        CheckConstraint("category_count >= 0", name="category_count_nonnegative"),
+        CheckConstraint("item_count >= 0", name="item_count_nonnegative"),
+        CheckConstraint("added_count >= 0", name="added_count_nonnegative"),
+        CheckConstraint("changed_count >= 0", name="changed_count_nonnegative"),
+        CheckConstraint("removed_count >= 0", name="removed_count_nonnegative"),
+        CheckConstraint("unchanged_count >= 0", name="unchanged_count_nonnegative"),
+        CheckConstraint("blocker_count >= 0", name="blocker_count_nonnegative"),
+        CheckConstraint("review_count >= 0", name="review_count_nonnegative"),
+        CheckConstraint("warning_count >= 0", name="warning_count_nonnegative"),
+        ForeignKeyConstraint(
+            ["menu_id", "organization_id", "location_id"],
+            ["menus.id", "menus.organization_id", "menus.location_id"],
+            name="fk_menu_imports_menu_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["base_menu_version_id", "menu_id", "organization_id", "location_id"],
+            [
+                "menu_versions.id",
+                "menu_versions.menu_id",
+                "menu_versions.organization_id",
+                "menu_versions.location_id",
+            ],
+            name="fk_menu_imports_base_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["confirmed_menu_version_id", "menu_id", "organization_id", "location_id"],
+            [
+                "menu_versions.id",
+                "menu_versions.menu_id",
+                "menu_versions.organization_id",
+                "menu_versions.location_id",
+            ],
+            name="fk_menu_imports_confirmed_scope",
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "uq_menu_imports_checksum_with_base",
+            "menu_id",
+            "base_menu_version_id",
+            "source_checksum",
+            unique=True,
+            postgresql_where=text("base_menu_version_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_menu_imports_checksum_without_base",
+            "menu_id",
+            "source_checksum",
+            unique=True,
+            postgresql_where=text("base_menu_version_id IS NULL"),
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    menu_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False, index=True)
+    base_menu_version_id: Mapped[UUID | None] = mapped_column(_uuid())
+    confirmed_menu_version_id: Mapped[UUID | None] = mapped_column(_uuid())
+    status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="uploaded", server_default="uploaded"
+    )
+    review_revision: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    source_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_reference: Mapped[str | None] = mapped_column(String(500))
+    source_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    section_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    category_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    item_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    added_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    changed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    removed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    unchanged_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    blocker_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    review_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    warning_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_by_user_id: Mapped[UUID] = mapped_column(
+        _uuid(), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    confirmed_by_user_id: Mapped[UUID | None] = mapped_column(
+        _uuid(), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failure_code: Mapped[str | None] = mapped_column(String(100))
+
+
+class MenuImportFinding(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "menu_import_findings"
+    __table_args__ = (
+        UniqueConstraint(
+            "id",
+            "menu_import_id",
+            "menu_id",
+            "organization_id",
+            "location_id",
+            name="uq_menu_import_findings_scope",
+        ),
+        CheckConstraint(
+            "severity IN ('blocker', 'requires_review', 'warning')",
+            name="severity_allowed",
+        ),
+        CheckConstraint(
+            "resolution_status IN ('unresolved', 'resolved')",
+            name="resolution_status_allowed",
+        ),
+        CheckConstraint(
+            "resolution_action IS NULL OR resolution_action IN "
+            "('confirm_legitimate', 'map_existing', 'confirm_removal', "
+            "'confirm_critical_change', 'exclude_source_record')",
+            name="resolution_action_allowed",
+        ),
+        CheckConstraint("jsonb_typeof(allowed_actions) = 'array'", name="allowed_actions_array"),
+        CheckConstraint(
+            "(resolution_status = 'unresolved' AND resolution_action IS NULL "
+            "AND resolved_by_user_id IS NULL AND resolved_at IS NULL) OR "
+            "(resolution_status = 'resolved' AND resolution_action IS NOT NULL "
+            "AND resolved_by_user_id IS NOT NULL AND resolved_at IS NOT NULL)",
+            name="resolution_fields_match",
+        ),
+        ForeignKeyConstraint(
+            ["menu_import_id", "menu_id", "organization_id", "location_id"],
+            [
+                "menu_imports.id",
+                "menu_imports.menu_id",
+                "menu_imports.organization_id",
+                "menu_imports.location_id",
+            ],
+            name="fk_menu_import_findings_import_scope",
+            ondelete="RESTRICT",
+        ),
+        Index("ix_menu_import_findings_review", "menu_import_id", "severity", "resolution_status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    menu_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    menu_import_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(24), nullable=False)
+    code: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_key: Mapped[str | None] = mapped_column(String(200))
+    message_code: Mapped[str] = mapped_column(String(100), nullable=False)
+    message_parameters: Mapped[dict[str, object]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
+    allowed_actions: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    resolution_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="unresolved", server_default="unresolved"
+    )
+    resolution_action: Mapped[str | None] = mapped_column(String(32))
+    target_entity_id: Mapped[UUID | None] = mapped_column(_uuid())
+    resolution_comment: Mapped[str | None] = mapped_column(String(1000))
+    resolved_by_user_id: Mapped[UUID | None] = mapped_column(
+        _uuid(), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

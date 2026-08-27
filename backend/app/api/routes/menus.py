@@ -15,6 +15,12 @@ from app.schemas.menu import (
     MenuCategoryPatch,
     MenuCategoryReorderRequest,
     MenuCategoryResponse,
+    MenuFindingResolveRequest,
+    MenuFindingResolveResponse,
+    MenuImportConfirmRequest,
+    MenuImportConfirmResponse,
+    MenuImportCreate,
+    MenuImportDetail,
     MenuItemCreate,
     MenuItemListResponse,
     MenuItemMutationResponse,
@@ -44,6 +50,12 @@ from app.services.menu_drafts import (
     update_category,
     update_section,
 )
+from app.services.menu_imports import (
+    confirm_menu_import,
+    create_menu_import,
+    get_menu_import,
+    resolve_menu_import_finding,
+)
 from app.services.menus import (
     create_menu_item,
     delete_menu_item,
@@ -55,6 +67,124 @@ from app.services.menus import (
 )
 
 router = APIRouter(tags=["menus"])
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/menu-imports",
+    response_model=MenuImportDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def menu_import_create_route(
+    organization_id: UUID,
+    location_id: UUID,
+    payload: MenuImportCreate,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MenuImportDetail:
+    clock = cast(Clock, request.app.state.clock)
+    return await create_menu_import(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        payload=payload,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/menu-imports/{import_id}",
+    response_model=MenuImportDetail,
+)
+async def menu_import_detail_route(
+    organization_id: UUID,
+    location_id: UUID,
+    import_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MenuImportDetail:
+    return await get_menu_import(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        import_id=import_id,
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/menu-imports/"
+    "{import_id}/findings/{finding_id}/resolve",
+    response_model=MenuFindingResolveResponse,
+)
+async def menu_import_finding_resolve_route(
+    organization_id: UUID,
+    location_id: UUID,
+    import_id: UUID,
+    finding_id: UUID,
+    payload: MenuFindingResolveRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MenuFindingResolveResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await resolve_menu_import_finding(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        import_id=import_id,
+        finding_id=finding_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        payload=payload,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/menu-imports/{import_id}/confirm",
+    response_model=MenuImportConfirmResponse,
+)
+async def menu_import_confirm_route(
+    organization_id: UUID,
+    location_id: UUID,
+    import_id: UUID,
+    payload: MenuImportConfirmRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MenuImportConfirmResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await confirm_menu_import(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        import_id=import_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        acknowledge_warnings=payload.acknowledge_warnings,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
 
 
 def _section_response(detail: MenuVersionDetail, section_id: UUID) -> MenuSectionResponse:

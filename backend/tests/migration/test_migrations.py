@@ -98,6 +98,8 @@ def test_metadata_contains_current_backend_tables() -> None:
         "menu_item_version_components",
         "menu_item_version_translations",
         "menu_item_versions",
+        "menu_import_findings",
+        "menu_imports",
         "menu_items",
         "menu_sections",
         "menu_version_category_translations",
@@ -133,6 +135,26 @@ def test_menu_source_of_truth_migration_downgrades_and_upgrades() -> None:
         assert "menus" not in table_names
         assert "menu_versions" not in table_names
         assert "menu_item_versions" not in table_names
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_menu_import_review_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        command.downgrade(config, "0006_menu_source_of_truth")
+        table_names = asyncio.run(database_table_names(settings))
+
+        assert "menu_imports" not in table_names
+        assert "menu_import_findings" not in table_names
+        assert "menus" in table_names
     finally:
         command.upgrade(config, "head")
 

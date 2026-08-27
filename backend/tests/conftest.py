@@ -20,6 +20,8 @@ from app.main import create_app
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
+    "menu_import_findings",
+    "menu_imports",
     "menu_version_item_deltas",
     "menu_item_version_allergens",
     "menu_item_version_components",

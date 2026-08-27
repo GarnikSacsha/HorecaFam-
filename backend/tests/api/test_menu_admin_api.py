@@ -221,4 +221,4 @@ async def test_admin_menu_openapi_is_exact_and_excludes_internal_fields(
     assert set(paths[f"{prefix}/{{version_id}}/items"]) == {"get", "post"}
     serialized = str(document["components"]["schemas"])
     assert "verified_by_user_id" not in serialized
-    assert "source_checksum" not in serialized
+    assert "source_payload" not in serialized

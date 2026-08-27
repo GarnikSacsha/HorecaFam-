@@ -15,6 +15,23 @@ MenuSourceKind = Literal["manual", "json_import"]
 MenuVersionStatus = Literal["draft", "published", "archived"]
 MenuDeltaKind = Literal["added", "changed", "removed", "unchanged"]
 TrainingImpact = Literal["none", "review", "required"]
+MenuImportStatus = Literal[
+    "uploaded",
+    "processing",
+    "ready_for_review",
+    "confirmed",
+    "failed",
+    "stale",
+]
+MenuFindingSeverity = Literal["blocker", "requires_review", "warning"]
+MenuFindingResolutionStatus = Literal["unresolved", "resolved"]
+MenuFindingResolutionAction = Literal[
+    "confirm_legitimate",
+    "map_existing",
+    "confirm_removal",
+    "confirm_critical_change",
+    "exclude_source_record",
+]
 
 
 class StrictMenuSchema(BaseModel):
@@ -440,3 +457,220 @@ class MenuItemListResponse(StrictMenuSchema):
     items: list[MenuItemResponse]
     next_cursor: str | None
     revision: int = Field(ge=0)
+
+
+class MenuImportComponent(MenuComponentInput):
+    source_key: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class MenuImportItem(StrictMenuSchema):
+    source_key: str = Field(min_length=1, max_length=200)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    name_uk: str = Field(min_length=1, max_length=200)
+    description_uk: str | None = Field(default=None, max_length=4000)
+    price_minor: int | None = Field(default=None, ge=0)
+    currency: str = Field(default="UAH", pattern=r"^[A-Z]{3}$")
+    availability: MenuAvailability = "available"
+    position: int = Field(ge=0)
+    component_data_status: FactDataStatus
+    components: list[MenuImportComponent]
+    allergen_data_status: FactDataStatus
+    allergen_codes: list[str]
+    source_kind: MenuSourceKind = "json_import"
+    source_reference: str | None = Field(default=None, min_length=1, max_length=500)
+    source_item_key: str | None = Field(default=None, min_length=1, max_length=200)
+
+    @field_validator("source_key", "name_uk")
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_stable_code(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return value.strip().lower()
+
+    @field_validator("allergen_codes")
+    @classmethod
+    def normalize_allergens(cls, values: list[str]) -> list[str]:
+        return [value.strip().lower() for value in values]
+
+    @model_validator(mode="after")
+    def validate_facts(self) -> Self:
+        MenuItemWrite.model_validate(
+            {
+                "category_id": UUID(int=0),
+                "stable_code": self.stable_code,
+                "name_uk": self.name_uk,
+                "description_uk": self.description_uk,
+                "price_minor": self.price_minor,
+                "currency": self.currency,
+                "availability": self.availability,
+                "position": self.position,
+                "component_data_status": self.component_data_status,
+                "components": [
+                    component.model_dump(exclude={"source_key"}) for component in self.components
+                ],
+                "allergen_data_status": self.allergen_data_status,
+                "allergen_codes": self.allergen_codes,
+                "source_kind": self.source_kind,
+                "source_reference": self.source_reference,
+                "source_item_key": self.source_item_key or self.source_key,
+            }
+        )
+        return self
+
+
+class MenuImportCategory(StrictMenuSchema):
+    source_key: str = Field(min_length=1, max_length=100)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    name_uk: str = Field(min_length=1, max_length=200)
+    position: int = Field(ge=0)
+    items: list[MenuImportItem]
+
+    @field_validator("source_key", "name_uk")
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_code(cls, value: str | None) -> str | None:
+        return value.strip().lower() if value is not None else None
+
+    @model_validator(mode="after")
+    def validate_items(self) -> Self:
+        keys = [item.source_key for item in self.items]
+        if len(keys) != len(set(keys)):
+            raise ValueError("Item source keys must be unique inside a category")
+        if [item.position for item in self.items] != list(range(len(self.items))):
+            raise ValueError("Item positions must be a complete zero-based sequence")
+        return self
+
+
+class MenuImportSection(StrictMenuSchema):
+    source_key: str = Field(min_length=1, max_length=100)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    name_uk: str = Field(min_length=1, max_length=200)
+    position: int = Field(ge=0)
+    categories: list[MenuImportCategory]
+
+    @field_validator("source_key", "name_uk")
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_code(cls, value: str | None) -> str | None:
+        return value.strip().lower() if value is not None else None
+
+    @model_validator(mode="after")
+    def validate_categories(self) -> Self:
+        keys = [category.source_key for category in self.categories]
+        if len(keys) != len(set(keys)):
+            raise ValueError("Category source keys must be unique inside a section")
+        if [category.position for category in self.categories] != list(range(len(self.categories))):
+            raise ValueError("Category positions must be a complete zero-based sequence")
+        return self
+
+
+class MenuImportCreate(StrictMenuSchema):
+    source_filename: str = Field(min_length=1, max_length=255)
+    source_reference: str | None = Field(default=None, min_length=1, max_length=500)
+    sections: list[MenuImportSection]
+
+    @field_validator("source_filename", "source_reference")
+    @classmethod
+    def normalize_source_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Source text must not be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_sections(self) -> Self:
+        keys = [section.source_key for section in self.sections]
+        if len(keys) != len(set(keys)):
+            raise ValueError("Section source keys must be unique")
+        if [section.position for section in self.sections] != list(range(len(self.sections))):
+            raise ValueError("Section positions must be a complete zero-based sequence")
+        return self
+
+
+class MenuImportFindingResponse(StrictMenuSchema):
+    id: UUID
+    severity: MenuFindingSeverity
+    code: str
+    entity_type: str
+    source_key: str | None
+    message: str
+    resolution_status: MenuFindingResolutionStatus
+    allowed_actions: list[MenuFindingResolutionAction]
+    resolution_action: MenuFindingResolutionAction | None
+    target_entity_id: UUID | None
+    resolution_comment: str | None
+    resolved_at: datetime | None
+
+
+class MenuImportDetail(StrictMenuSchema):
+    id: UUID
+    organization_id: UUID
+    location_id: UUID
+    menu_id: UUID
+    base_menu_version_id: UUID | None
+    status: MenuImportStatus
+    review_revision: int = Field(ge=0)
+    source_filename: str
+    source_reference: str | None
+    source_checksum: str
+    section_count: int = Field(ge=0)
+    category_count: int = Field(ge=0)
+    item_count: int = Field(ge=0)
+    added_count: int = Field(ge=0)
+    changed_count: int = Field(ge=0)
+    removed_count: int = Field(ge=0)
+    unchanged_count: int = Field(ge=0)
+    blocker_count: int = Field(ge=0)
+    review_count: int = Field(ge=0)
+    warning_count: int = Field(ge=0)
+    findings: list[MenuImportFindingResponse]
+    created_at: datetime
+    confirmed_at: datetime | None
+    failure_code: str | None
+
+
+class MenuFindingResolveRequest(StrictMenuSchema):
+    action: MenuFindingResolutionAction
+    target_entity_id: UUID | None = None
+    comment: str | None = Field(default=None, max_length=1000)
+    expected_revision: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_target(self) -> Self:
+        if self.action == "map_existing" and self.target_entity_id is None:
+            raise ValueError("map_existing requires target_entity_id")
+        if self.action != "map_existing" and self.target_entity_id is not None:
+            raise ValueError("target_entity_id is only valid for map_existing")
+        return self
+
+
+class MenuFindingResolveResponse(StrictMenuSchema):
+    finding: MenuImportFindingResponse
+    review_revision: int = Field(ge=0)
+
+
+class MenuImportConfirmRequest(StrictMenuSchema):
+    expected_revision: int = Field(ge=0)
+    acknowledge_warnings: bool
+
+
+class MenuImportConfirmResponse(StrictMenuSchema):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    import_: MenuImportDetail = Field(alias="import", serialization_alias="import")
+    draft: MenuVersionDetail
