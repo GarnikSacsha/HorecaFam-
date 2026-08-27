@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal, Self
 from uuid import UUID
 
@@ -11,6 +12,9 @@ MenuAvailability = Literal[
 ]
 FactDataStatus = Literal["unknown", "confirmed_none", "confirmed_present"]
 MenuSourceKind = Literal["manual", "json_import"]
+MenuVersionStatus = Literal["draft", "published", "archived"]
+MenuDeltaKind = Literal["added", "changed", "removed", "unchanged"]
+TrainingImpact = Literal["none", "review", "required"]
 
 
 class StrictMenuSchema(BaseModel):
@@ -203,3 +207,236 @@ class MenuItemPatch(StrictMenuSchema):
         ):
             raise ValueError("Allergen codes must be unique")
         return self
+
+
+class MenuVersionCreate(StrictMenuSchema):
+    copy_from_version_id: UUID | None = None
+
+
+class MenuVersionSummary(StrictMenuSchema):
+    id: UUID
+    menu_id: UUID
+    organization_id: UUID
+    location_id: UUID
+    version_number: int = Field(ge=1)
+    status: MenuVersionStatus
+    base_version_id: UUID | None
+    revision: int = Field(ge=0)
+    section_count: int = Field(ge=0)
+    category_count: int = Field(ge=0)
+    item_count: int = Field(ge=0)
+    created_at: datetime
+    published_at: datetime | None
+    archived_at: datetime | None
+
+
+class MenuCategoryResponse(StrictMenuSchema):
+    id: UUID
+    section_id: UUID
+    stable_code: str | None
+    name_uk: str
+    position: int = Field(ge=0)
+    item_count: int = Field(ge=0)
+
+
+class MenuSectionResponse(StrictMenuSchema):
+    id: UUID
+    stable_code: str | None
+    name_uk: str
+    position: int = Field(ge=0)
+    category_count: int = Field(ge=0)
+    categories: list[MenuCategoryResponse]
+
+
+class MenuVersionDetail(MenuVersionSummary):
+    sections: list[MenuSectionResponse]
+
+
+class MenuVersionCollection(StrictMenuSchema):
+    menu_id: UUID | None
+    organization_id: UUID
+    location_id: UUID
+    current_published: MenuVersionSummary | None
+    draft: MenuVersionSummary | None
+    archived: list[MenuVersionSummary]
+
+
+class MenuSectionCreate(StrictMenuSchema):
+    name_uk: str = Field(min_length=1, max_length=200)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    position: int = Field(ge=0)
+    expected_revision: int = Field(ge=0)
+
+    @field_validator("name_uk")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_code(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_bounded_text(value, maximum=100).lower()
+
+
+class MenuSectionPatch(StrictMenuSchema):
+    expected_revision: int = Field(ge=0)
+    name_uk: str | None = Field(default=None, min_length=1, max_length=200)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    position: int | None = Field(default=None, ge=0)
+
+    @field_validator("name_uk")
+    @classmethod
+    def normalize_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_code(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_bounded_text(value, maximum=100).lower()
+
+    @model_validator(mode="after")
+    def require_mutation(self) -> Self:
+        if not (self.model_fields_set - {"expected_revision"}):
+            raise ValueError("At least one mutable field must be supplied")
+        return self
+
+
+class MenuCategoryCreate(StrictMenuSchema):
+    section_id: UUID
+    name_uk: str = Field(min_length=1, max_length=200)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    position: int = Field(ge=0)
+    expected_revision: int = Field(ge=0)
+
+    @field_validator("name_uk")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_code(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_bounded_text(value, maximum=100).lower()
+
+
+class MenuCategoryPatch(StrictMenuSchema):
+    expected_revision: int = Field(ge=0)
+    section_id: UUID | None = None
+    name_uk: str | None = Field(default=None, min_length=1, max_length=200)
+    stable_code: str | None = Field(default=None, min_length=1, max_length=100)
+    position: int | None = Field(default=None, ge=0)
+
+    @field_validator("name_uk")
+    @classmethod
+    def normalize_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_bounded_text(value, maximum=200)
+
+    @field_validator("stable_code")
+    @classmethod
+    def normalize_code(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _normalize_bounded_text(value, maximum=100).lower()
+
+    @model_validator(mode="after")
+    def require_mutation(self) -> Self:
+        if not (self.model_fields_set - {"expected_revision"}):
+            raise ValueError("At least one mutable field must be supplied")
+        return self
+
+
+class MenuReorderRequest(StrictMenuSchema):
+    ordered_ids: list[UUID]
+    expected_revision: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def require_unique_ids(self) -> Self:
+        if len(self.ordered_ids) != len(set(self.ordered_ids)):
+            raise ValueError("Ordered IDs must be unique")
+        return self
+
+
+class MenuCategoryReorderRequest(MenuReorderRequest):
+    section_id: UUID
+
+
+class MenuSectionMutationResponse(StrictMenuSchema):
+    section: MenuSectionResponse
+    revision: int = Field(ge=0)
+
+
+class MenuCategoryMutationResponse(StrictMenuSchema):
+    category: MenuCategoryResponse
+    revision: int = Field(ge=0)
+
+
+class MenuReorderResponse(StrictMenuSchema):
+    ordered_ids: list[UUID]
+    revision: int = Field(ge=0)
+
+
+class MenuRevisionResponse(StrictMenuSchema):
+    revision: int = Field(ge=0)
+
+
+class MenuComponentResponse(StrictMenuSchema):
+    id: UUID
+    stable_code: str | None
+    name_uk: str
+    optional: bool | None
+    position: int = Field(ge=0)
+    source_kind: MenuSourceKind
+    source_reference: str | None
+    verified_at: datetime | None
+
+
+class MenuItemResponse(StrictMenuSchema):
+    item_id: UUID
+    item_version_id: UUID
+    version_id: UUID
+    category_id: UUID
+    stable_code: str | None
+    name_uk: str
+    description_uk: str | None
+    price_minor: int | None
+    currency: str
+    availability: MenuAvailability
+    position: int = Field(ge=0)
+    component_data_status: FactDataStatus
+    components: list[MenuComponentResponse]
+    allergen_data_status: FactDataStatus
+    allergen_codes: list[str]
+    source_kind: MenuSourceKind
+    source_reference: str | None
+    source_item_key: str | None
+    verified_at: datetime | None
+    delta_kind: MenuDeltaKind
+    training_impact: TrainingImpact
+    changed_field_codes: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class MenuItemCreate(MenuItemWrite):
+    expected_revision: int = Field(ge=0)
+
+
+class MenuItemMutationResponse(StrictMenuSchema):
+    item: MenuItemResponse
+    revision: int = Field(ge=0)
+
+
+class MenuItemListResponse(StrictMenuSchema):
+    items: list[MenuItemResponse]
+    next_cursor: str | None
+    revision: int = Field(ge=0)

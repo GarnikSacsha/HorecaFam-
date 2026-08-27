@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from datetime import datetime
+from typing import Protocol, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select
@@ -24,6 +25,11 @@ from app.models import (
     MenuVersionCategoryTranslation,
     MenuVersionSection,
     MenuVersionSectionTranslation,
+)
+from app.services.idempotency import (
+    find_idempotency_replay,
+    request_fingerprint,
+    reserve_idempotency,
 )
 
 
@@ -549,7 +555,6 @@ async def _create_menu_draft(
             outcome="success",
         )
     )
-    await db.commit()
     return draft
 
 
@@ -563,7 +568,7 @@ async def create_menu_draft(
     copy_from_version_id: UUID | None = None,
 ) -> MenuVersion:
     try:
-        return await _create_menu_draft(
+        draft = await _create_menu_draft(
             db,
             organization_id=organization_id,
             location_id=location_id,
@@ -571,6 +576,107 @@ async def create_menu_draft(
             request_id=request_id,
             copy_from_version_id=copy_from_version_id,
         )
+        await db.commit()
+        return draft
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def create_menu_draft_idempotent(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    actor_user_id: UUID,
+    request_id: UUID,
+    copy_from_version_id: UUID | None,
+    idempotency_key: str,
+    now: datetime,
+) -> MenuVersion:
+    fingerprint = request_fingerprint(
+        {
+            "location_id": str(location_id),
+            "copy_from_version_id": (
+                str(copy_from_version_id) if copy_from_version_id is not None else None
+            ),
+        }
+    )
+    try:
+        replay = await find_idempotency_replay(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="menu_draft_create",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            now=now,
+        )
+        if replay is not None:
+            version = await db.scalar(
+                select(MenuVersion).where(
+                    MenuVersion.id == replay.resource_id,
+                    MenuVersion.organization_id == organization_id,
+                    MenuVersion.location_id == location_id,
+                )
+            )
+            if version is None:
+                raise RuntimeError("Idempotent Menu Version resource is unavailable")
+            await db.commit()
+            return version
+
+        try:
+            draft = await _create_menu_draft(
+                db,
+                organization_id=organization_id,
+                location_id=location_id,
+                actor_user_id=actor_user_id,
+                request_id=request_id,
+                copy_from_version_id=copy_from_version_id,
+            )
+        except APIError as exc:
+            if exc.code != "MENU_DRAFT_EXISTS":
+                raise
+            await db.rollback()
+            replay = await find_idempotency_replay(
+                db,
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                action="menu_draft_create",
+                key=idempotency_key,
+                fingerprint=fingerprint,
+                now=now,
+            )
+            if replay is None:
+                raise
+            version = await db.scalar(
+                select(MenuVersion).where(
+                    MenuVersion.id == replay.resource_id,
+                    MenuVersion.organization_id == organization_id,
+                    MenuVersion.location_id == location_id,
+                )
+            )
+            if version is None:
+                raise RuntimeError("Idempotent Menu Version resource is unavailable") from exc
+            await db.commit()
+            return cast(MenuVersion, version)
+
+        decision = await reserve_idempotency(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="menu_draft_create",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            resource_type="menu_version",
+            resource_id=draft.id,
+            response_status=201,
+            now=now,
+        )
+        if decision.replayed and decision.record.resource_id != draft.id:
+            raise RuntimeError("Concurrent Menu Draft replay selected another resource")
+        await db.commit()
+        return draft
     except Exception:
         await db.rollback()
         raise

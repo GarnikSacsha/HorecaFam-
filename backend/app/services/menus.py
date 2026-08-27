@@ -2,11 +2,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
     Allergen,
+    Location,
+    Menu,
     MenuComponent,
     MenuComponentVersion,
     MenuComponentVersionTranslation,
@@ -18,8 +20,19 @@ from app.models import (
     MenuVersion,
     MenuVersionCategory,
     MenuVersionItemDelta,
+    MenuVersionSection,
 )
-from app.schemas.menu import MenuComponentInput, MenuItemPatch, MenuItemWrite
+from app.schemas.menu import (
+    MenuComponentInput,
+    MenuComponentResponse,
+    MenuItemListResponse,
+    MenuItemPatch,
+    MenuItemResponse,
+    MenuItemWrite,
+    MenuVersionCollection,
+    MenuVersionDetail,
+    MenuVersionSummary,
+)
 from app.services.menu_drafts import (
     _audit_mutation,
     _lock_draft,
@@ -27,6 +40,7 @@ from app.services.menu_drafts import (
     _resource_not_found,
     _set_positions,
     _validation_error,
+    get_menu_version_hierarchy,
 )
 
 
@@ -801,3 +815,328 @@ async def delete_menu_item(
     except Exception:
         await db.rollback()
         raise
+
+
+async def _version_summary(
+    db: AsyncSession,
+    *,
+    version: MenuVersion,
+) -> MenuVersionSummary:
+    section_count = await db.scalar(
+        select(func.count(MenuVersionSection.id)).where(
+            MenuVersionSection.menu_version_id == version.id
+        )
+    )
+    category_count = await db.scalar(
+        select(func.count(MenuVersionCategory.id)).where(
+            MenuVersionCategory.menu_version_id == version.id
+        )
+    )
+    item_count = await db.scalar(
+        select(func.count(MenuItemVersion.id)).where(MenuItemVersion.menu_version_id == version.id)
+    )
+    return MenuVersionSummary(
+        id=version.id,
+        menu_id=version.menu_id,
+        organization_id=version.organization_id,
+        location_id=version.location_id,
+        version_number=version.version_number,
+        status=version.status,
+        base_version_id=version.base_version_id,
+        revision=version.revision,
+        section_count=section_count or 0,
+        category_count=category_count or 0,
+        item_count=item_count or 0,
+        created_at=version.created_at,
+        published_at=version.published_at,
+        archived_at=version.archived_at,
+    )
+
+
+async def list_menu_versions(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+) -> MenuVersionCollection:
+    location = await db.scalar(
+        select(Location.id).where(
+            Location.id == location_id,
+            Location.organization_id == organization_id,
+        )
+    )
+    if location is None:
+        raise _resource_not_found()
+    menu = await db.scalar(
+        select(Menu).where(
+            Menu.organization_id == organization_id,
+            Menu.location_id == location_id,
+        )
+    )
+    if menu is None:
+        return MenuVersionCollection(
+            menu_id=None,
+            organization_id=organization_id,
+            location_id=location_id,
+            current_published=None,
+            draft=None,
+            archived=[],
+        )
+    versions = list(
+        (
+            await db.scalars(
+                select(MenuVersion)
+                .where(MenuVersion.menu_id == menu.id)
+                .order_by(MenuVersion.version_number.desc())
+            )
+        ).all()
+    )
+    summaries = {version.id: await _version_summary(db, version=version) for version in versions}
+    published = next((summaries[row.id] for row in versions if row.status == "published"), None)
+    draft = next((summaries[row.id] for row in versions if row.status == "draft"), None)
+    archived = [summaries[row.id] for row in versions if row.status == "archived"]
+    return MenuVersionCollection(
+        menu_id=menu.id,
+        organization_id=organization_id,
+        location_id=location_id,
+        current_published=published,
+        draft=draft,
+        archived=archived,
+    )
+
+
+async def get_menu_version_detail(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+) -> MenuVersionDetail:
+    hierarchy = await get_menu_version_hierarchy(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+    )
+    summary = await _version_summary(db, version=hierarchy.version)
+    return MenuVersionDetail(
+        **summary.model_dump(),
+        sections=[
+            {
+                "id": section.id,
+                "stable_code": section.stable_code,
+                "name_uk": section.name_uk,
+                "position": section.position,
+                "category_count": len(section.categories),
+                "categories": [
+                    {
+                        "id": category.id,
+                        "section_id": section.id,
+                        "stable_code": category.stable_code,
+                        "name_uk": category.name_uk,
+                        "position": category.position,
+                        "item_count": category.item_count,
+                    }
+                    for category in section.categories
+                ],
+            }
+            for section in hierarchy.sections
+        ],
+    )
+
+
+async def _admin_item_response(
+    db: AsyncSession,
+    *,
+    item_version: MenuItemVersion,
+) -> MenuItemResponse:
+    identity = await db.get(MenuItem, item_version.menu_item_id)
+    translation = await db.scalar(
+        select(MenuItemVersionTranslation).where(
+            MenuItemVersionTranslation.menu_item_version_id == item_version.id,
+            MenuItemVersionTranslation.locale == "uk",
+        )
+    )
+    if identity is None or translation is None:
+        raise _resource_not_found()
+    component_rows = (
+        await db.execute(
+            select(
+                MenuComponent,
+                MenuComponentVersionTranslation,
+                MenuItemVersionComponent,
+            )
+            .join(
+                MenuComponentVersion,
+                MenuComponentVersion.menu_component_id == MenuComponent.id,
+            )
+            .join(
+                MenuItemVersionComponent,
+                MenuItemVersionComponent.menu_component_version_id == MenuComponentVersion.id,
+            )
+            .join(
+                MenuComponentVersionTranslation,
+                MenuComponentVersionTranslation.menu_component_version_id
+                == MenuComponentVersion.id,
+            )
+            .where(
+                MenuItemVersionComponent.menu_item_version_id == item_version.id,
+                MenuComponentVersionTranslation.locale == "uk",
+            )
+            .order_by(MenuItemVersionComponent.position)
+        )
+    ).all()
+    allergen_codes = list(
+        (
+            await db.scalars(
+                select(Allergen.code)
+                .join(
+                    MenuItemVersionAllergen,
+                    MenuItemVersionAllergen.allergen_id == Allergen.id,
+                )
+                .where(MenuItemVersionAllergen.menu_item_version_id == item_version.id)
+                .order_by(Allergen.code)
+            )
+        ).all()
+    )
+    delta = await db.scalar(
+        select(MenuVersionItemDelta).where(
+            MenuVersionItemDelta.menu_version_id == item_version.menu_version_id,
+            MenuVersionItemDelta.menu_item_id == item_version.menu_item_id,
+        )
+    )
+    return MenuItemResponse(
+        item_id=item_version.menu_item_id,
+        item_version_id=item_version.id,
+        version_id=item_version.menu_version_id,
+        category_id=item_version.menu_version_category_id,
+        stable_code=identity.stable_code,
+        name_uk=translation.name,
+        description_uk=translation.description,
+        price_minor=item_version.price_minor,
+        currency=item_version.currency,
+        availability=item_version.availability,
+        position=item_version.position,
+        component_data_status=item_version.component_data_status,
+        components=[
+            MenuComponentResponse(
+                id=component.id,
+                stable_code=component.stable_code,
+                name_uk=component_translation.name,
+                optional=link.optional,
+                position=link.position,
+                source_kind=link.source_kind,
+                source_reference=link.source_reference,
+                verified_at=link.verified_at,
+            )
+            for component, component_translation, link in component_rows
+        ],
+        allergen_data_status=item_version.allergen_data_status,
+        allergen_codes=allergen_codes,
+        source_kind=item_version.source_kind,
+        source_reference=item_version.source_reference,
+        source_item_key=item_version.source_item_key,
+        verified_at=item_version.verified_at,
+        delta_kind=delta.delta_kind if delta is not None else "unchanged",
+        training_impact=delta.training_impact if delta is not None else "none",
+        changed_field_codes=delta.changed_field_codes if delta is not None else [],
+        created_at=item_version.created_at,
+        updated_at=item_version.updated_at,
+    )
+
+
+async def get_admin_menu_item(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    item_id: UUID,
+) -> MenuItemResponse:
+    item_version = await db.scalar(
+        select(MenuItemVersion).where(
+            MenuItemVersion.menu_version_id == version_id,
+            MenuItemVersion.menu_item_id == item_id,
+            MenuItemVersion.organization_id == organization_id,
+            MenuItemVersion.location_id == location_id,
+        )
+    )
+    if item_version is None:
+        raise _resource_not_found()
+    return await _admin_item_response(db, item_version=item_version)
+
+
+async def list_admin_menu_items(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    query: str | None,
+    section_id: UUID | None,
+    category_id: UUID | None,
+    cursor: str | None,
+    limit: int,
+) -> MenuItemListResponse:
+    version = await db.scalar(
+        select(MenuVersion).where(
+            MenuVersion.id == version_id,
+            MenuVersion.organization_id == organization_id,
+            MenuVersion.location_id == location_id,
+        )
+    )
+    if version is None:
+        raise _resource_not_found()
+    statement = (
+        select(MenuItemVersion)
+        .join(
+            MenuItemVersionTranslation,
+            MenuItemVersionTranslation.menu_item_version_id == MenuItemVersion.id,
+        )
+        .join(
+            MenuVersionCategory,
+            MenuVersionCategory.id == MenuItemVersion.menu_version_category_id,
+        )
+        .where(
+            MenuItemVersion.menu_version_id == version.id,
+            MenuItemVersionTranslation.locale == "uk",
+        )
+    )
+    if query is not None:
+        pattern = f"%{query.strip().replace('%', r'\%').replace('_', r'\_')}%"
+        component_match = (
+            select(MenuItemVersionComponent.menu_item_version_id)
+            .join(
+                MenuComponentVersionTranslation,
+                MenuComponentVersionTranslation.menu_component_version_id
+                == MenuItemVersionComponent.menu_component_version_id,
+            )
+            .where(
+                MenuComponentVersionTranslation.locale == "uk",
+                MenuComponentVersionTranslation.name.ilike(pattern, escape="\\"),
+            )
+        )
+        statement = statement.where(
+            or_(
+                MenuItemVersionTranslation.name.ilike(pattern, escape="\\"),
+                MenuItemVersion.id.in_(component_match),
+            )
+        )
+    if section_id is not None:
+        statement = statement.where(MenuVersionCategory.menu_version_section_id == section_id)
+    if category_id is not None:
+        statement = statement.where(MenuVersionCategory.id == category_id)
+    if cursor is not None:
+        try:
+            cursor_id = UUID(cursor)
+        except ValueError as exc:
+            raise _validation_error() from exc
+        statement = statement.where(MenuItemVersion.id > cursor_id)
+    rows = list((await db.scalars(statement.order_by(MenuItemVersion.id).limit(limit + 1))).all())
+    page = rows[:limit]
+    next_cursor = str(page[-1].id) if len(rows) > limit and page else None
+    return MenuItemListResponse(
+        items=[await _admin_item_response(db, item_version=item) for item in page],
+        next_cursor=next_cursor,
+        revision=version.revision,
+    )
