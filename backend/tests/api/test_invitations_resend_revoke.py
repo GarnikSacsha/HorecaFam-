@@ -484,11 +484,11 @@ async def test_resend_and_revoke_require_valid_csrf(
     assert stored.status == "pending" and stored.token_version == 1
 
 
-def test_invitation_openapi_includes_resend_and_revoke_but_not_accept(
+def test_invitation_openapi_includes_resend_revoke_and_stage_4_accept(
     auth_app: FastAPI,
 ) -> None:
     paths = auth_app.openapi()["paths"]
 
     assert "/api/v1/organizations/{organization_id}/invitations/{invitation_id}/resend" in paths
     assert "/api/v1/organizations/{organization_id}/invitations/{invitation_id}/revoke" in paths
-    assert "/api/v1/invitations/accept" not in paths
+    assert "/api/v1/invitations/accept" in paths

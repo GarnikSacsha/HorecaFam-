@@ -720,7 +720,7 @@ async def test_cors_preflight_allows_idempotency_and_csrf_headers(
     assert "x-csrf-token" in allowed_headers
 
 
-def test_invitation_openapi_exposes_only_stage_3_create_and_validate_contracts(
+def test_invitation_openapi_exposes_create_validate_and_stage_4_accept_contracts(
     auth_app: FastAPI,
 ) -> None:
     schema = auth_app.openapi()
@@ -728,6 +728,7 @@ def test_invitation_openapi_exposes_only_stage_3_create_and_validate_contracts(
         "post"
     ]
     validate_operation = schema["paths"]["/api/v1/invitations/validate"]["post"]
+    accept_operation = schema["paths"]["/api/v1/invitations/accept"]["post"]
     idempotency_parameter = next(
         parameter
         for parameter in create_operation["parameters"]
@@ -737,7 +738,8 @@ def test_invitation_openapi_exposes_only_stage_3_create_and_validate_contracts(
     assert idempotency_parameter["in"] == "header"
     assert idempotency_parameter["required"] is True
     assert validate_operation["requestBody"]["required"] is True
-    assert "/api/v1/invitations/accept" not in schema["paths"]
+    assert accept_operation["requestBody"]["required"] is True
+    assert "201" in accept_operation["responses"]
     invitation_properties = schema["components"]["schemas"]["InvitationResponse"]["properties"]
     validation_properties = schema["components"]["schemas"]["InvitationValidationResponse"][
         "properties"
