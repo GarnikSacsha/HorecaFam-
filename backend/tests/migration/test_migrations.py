@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 
@@ -23,6 +24,17 @@ def database_settings() -> Settings:
     return settings
 
 
+async def database_table_names(settings: Settings) -> set[str]:
+    engine = create_engine(settings)
+    try:
+        async with engine.connect() as connection:
+            return await connection.run_sync(
+                lambda sync_connection: set(inspect(sync_connection).get_table_names())
+            )
+    finally:
+        await engine.dispose()
+
+
 @pytest.mark.integration
 @pytest.mark.migration
 def test_empty_database_reaches_alembic_head() -> None:
@@ -45,12 +57,34 @@ def test_application_runtime_does_not_use_create_all() -> None:
     assert "create_all" not in application_source
 
 
+@pytest.mark.integration
+@pytest.mark.migration
+def test_invitation_outbox_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        command.downgrade(config, "0004_invitation_lifecycle")
+        table_names = asyncio.run(database_table_names(settings))
+
+        assert "invitations" in table_names
+        assert "background_jobs" not in table_names
+        assert "email_deliveries" not in table_names
+    finally:
+        command.upgrade(config, "head")
+
+
 def test_metadata_contains_current_backend_tables() -> None:
     assert set(Base.metadata.tables) == {
         "admin_access",
         "api_idempotency_records",
         "audit_events",
         "auth_rate_limit_buckets",
+        "background_jobs",
+        "email_deliveries",
         "employee_profiles",
         "invitation_rate_limit_buckets",
         "invitations",

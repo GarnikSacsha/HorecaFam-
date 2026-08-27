@@ -45,3 +45,22 @@ class MfaCredentialType(StrEnum):
 
 class AuthRateLimitAction(StrEnum):
     LOGIN = "login"
+
+
+class BackgroundJobType(StrEnum):
+    INVITATION_EMAIL = "invitation_email"
+
+
+class BackgroundJobStatus(StrEnum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class EmailDeliveryStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DELIVERED = "delivered"
+    BOUNCED = "bounced"
+    FAILED = "failed"

@@ -5,8 +5,16 @@ from tests.factories.identity import (
     make_role,
     make_user,
 )
+from tests.factories.invitations import (
+    make_background_job,
+    make_email_delivery,
+    make_invitation,
+)
 
 __all__ = [
+    "make_background_job",
+    "make_email_delivery",
+    "make_invitation",
     "make_location",
     "make_membership",
     "make_organization",

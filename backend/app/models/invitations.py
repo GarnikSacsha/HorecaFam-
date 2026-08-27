@@ -30,6 +30,7 @@ class Invitation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "status <> 'accepted' OR accepted_at IS NOT NULL", name="accepted_timestamp"
         ),
         CheckConstraint("status <> 'revoked' OR revoked_at IS NOT NULL", name="revoked_timestamp"),
+        UniqueConstraint("id", "organization_id", name="uq_invitations_id_organization_id"),
         Index(
             "uq_invitations_pending_organization_email",
             "organization_id",

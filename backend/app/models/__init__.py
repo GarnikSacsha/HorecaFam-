@@ -12,6 +12,9 @@ from app.models.enums import (
     AuditActorType,
     AuditOutcome,
     AuthRateLimitAction,
+    BackgroundJobStatus,
+    BackgroundJobType,
+    EmailDeliveryStatus,
     LifecycleStatus,
     Locale,
     MembershipStatus,
@@ -26,6 +29,7 @@ from app.models.identity import (
     User,
 )
 from app.models.invitations import ApiIdempotencyRecord, Invitation, InvitationRateLimitBucket
+from app.models.jobs import BackgroundJob, EmailDelivery
 
 __all__ = [
     "AccessStatus",
@@ -37,6 +41,11 @@ __all__ = [
     "AuthRateLimitAction",
     "AuthRateLimitBucket",
     "ApiIdempotencyRecord",
+    "BackgroundJob",
+    "BackgroundJobStatus",
+    "BackgroundJobType",
+    "EmailDelivery",
+    "EmailDeliveryStatus",
     "EmployeeProfile",
     "LifecycleStatus",
     "Locale",

@@ -20,6 +20,8 @@ from app.main import create_app
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
+    "email_deliveries",
+    "background_jobs",
     "invitation_rate_limit_buckets",
     "api_idempotency_records",
     "invitations",
