@@ -1,18 +1,20 @@
 # HoReCa Repository Status
 
-**Snapshot date:** 2026-08-27
-**Current product implementation:** none. Backend MVP Vertical Slice 1 through CRA-40 and Frontend
+**Snapshot date:** 2026-08-28
+**Current product implementation:** CRA-49 local candidate complete. Backend MVP Vertical Slice 1
+through CRA-40 and Frontend
 MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward published on `origin/main`
 with the CRA-43 implementation series ending at `fa30a1f`. CRA-46 is Done, and its accepted
 documentation publication advances the published `origin/main` baseline to `586f8c5`. CRA-47 Menu
-Slice 2 planning is accepted and Done. The completed bounded repository-maintenance issue is
-[CRA-48 — Finalize published baseline documentation after CRA-46](https://linear.app/craftspacee/issue/CRA-48/finalize-published-baseline-documentation-after-cra-46),
-routed through the Linear
+Slice 2 planning is accepted and Done. The current bounded candidate is
+[CRA-49 — Menu Source of Truth implementation](https://linear.app/craftspacee/issue/CRA-49), routed
+through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
-CRA-48 is Done and has no pending push. CRA-49 exists but is not authorized for implementation.
-Every later product slice, PR, merge, deployment, provider, and production-configuration action
-remains separately gated. CRA-42 is unrelated Backlog work.
+CRA-48 is Done. The explicitly authorized CRA-49 ten-checkpoint Menu Source of Truth candidate is
+complete locally and verified, but not yet accepted or pushed. Every later product slice, push,
+PR, merge, deployment, provider, and production-configuration action remains separately gated.
+CRA-42 is unrelated Backlog work.
 
 ## Accepted implementation and planning checkpoints
 
@@ -49,7 +51,8 @@ remains separately gated. CRA-42 is unrelated Backlog work.
 - CRA-48 published-baseline documentation synchronization is accepted, Done, and published. Its
   primary checkpoint is `3b95b3c`; the corrective publication record removes temporary pre-push
   wording, and no CRA-48 push remains pending.
-- CRA-49 Menu Source of Truth implementation exists in Backlog but is not authorized to start.
+- CRA-49 Menu Source of Truth implementation is complete as a verified local candidate and awaits
+  Denys review plus separate publication authorization.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -186,19 +189,34 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`.
+- Branch: `main`; local CRA-49 checkpoints are ahead of `origin/main` and have not been pushed.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, followed by the accepted CRA-46 documentation
   checkpoint at `586f8c5`, the CRA-48 checkpoint at `3b95b3c`, and its corrective publication record.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
-- Published branch: local `main` and `origin/main` are synchronized after the CRA-48 corrective
-  publication. Resolve the exact current tip through Git rather than treating an older checkpoint
-  SHA as the tracking tip. Publication used no force-push or history rewriting.
+- Published branch: `origin/main` remains at the CRA-48 corrective publication. Local `main`
+  contains the authorized CRA-49 candidate; resolve exact tips and ahead count through Git. No
+  CRA-49 push, force-push, or history rewriting was performed.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted and published CRA-43 React implementation and automated acceptance
-  boundary.
+- `frontend/`: accepted CRA-43 implementation plus the local CRA-49 Admin/Employee Menu candidate
+  and automated acceptance boundary.
+
+## Verified CRA-49 candidate
+
+- Backend: 267 passed, 0 failed, 0 skipped on Python 3.12.10 and native PostgreSQL 16; 87% overall
+  statement/branch coverage; Ruff format/check and strict mypy passed.
+- Migrations: head `0007_menu_import_review`; current-head, empty-database/round-trip coverage, and
+  metadata no-drift passed.
+- Frontend: Prettier, ESLint, TypeScript, and production build passed; Vitest reports 19 passed,
+  0 failed, 0 skipped across 12 files.
+- Browser: Playwright reports 6 passed, 0 failed, 0 skipped across desktop, compact, and mobile;
+  the Menu path covers Admin JSON review/publication through Active Employee search/detail.
+- Scope/security: Employee reads expose only the own Active Profile's current Published Menu;
+  Training content, Assignments, and notifications remain zero-applicability; `Photos/` is
+  untouched and unstaged.
+- Exact matrix and limitations: [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
 
 ## Protected uncommitted material
 
@@ -227,8 +245,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   Git evidence remains in Linear.
 - CRA-37 through CRA-48 are accepted and Done. The CRA-43 implementation series ends at `fa30a1f`,
   and the published repository baseline includes the CRA-46 documentation checkpoint at `586f8c5`.
-  CRA-48 is published with no pending push. No product implementation issue is active, and CRA-49
-  is not authorized to start. Every later push, PR, merge, deploy, provider, non-test mutation,
+  CRA-48 is published. CRA-49 is the completed local candidate awaiting review; its push is not
+  authorized by the local-commit approval. Every later push, PR, merge, deploy, provider, non-test mutation,
   architecture change, migration, history rewrite, or product slice remains separately gated.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep

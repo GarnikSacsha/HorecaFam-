@@ -7,8 +7,9 @@ CRA-40 and Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and 
 published on `origin/main`. The CRA-43 implementation series ends at `fa30a1f`; accepted CRA-46
 documentation advances the published `origin/main` baseline to `586f8c5`. CRA-47 planning for Menu
 Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and its corrective
-publication record are published; CRA-48 is Done and has no pending push. CRA-49 exists but is not
-authorized for implementation. CRA-42 is unrelated Backlog work. Training-domain expansion,
+publication record are published; CRA-48 is Done. The authorized CRA-49 Menu Source of Truth
+candidate is complete locally, verified, and awaiting review/publication; no CRA-49 push has been
+performed. CRA-42 is unrelated Backlog work. Training-domain expansion,
 broader production administration, providers/workers, push, PR, merge, deployment, and production
 configuration require separate approval or later bounded issues.
 
@@ -91,14 +92,23 @@ provider call, schema object, or migration. CRA-38 and CRA-40 are accepted, Done
 through `abad74e`; the complete backend acceptance chain and evidence matrix remain historical
 evidence for the frontend slice.
 
+[CRA-49](https://linear.app/craftspacee/issue/CRA-49/implement-menu-source-of-truth-slice-2)
+is the current bounded implementation candidate. It adds Menu persistence and migrations through
+`0007_menu_import_review`, revision-guarded Draft hierarchy/facts, protected JSON review and atomic
+publication, published-only Employee API reads, Admin lifecycle UI, and Employee mobile search/
+detail. The fresh full gate is `267 passed / 0 failed / 0 skipped` with 87% backend coverage,
+19 Vitest tests, 6 Playwright tests, and no Alembic drift. It is not yet accepted or published; see
+[`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
+
 ## Repository map
 
-- [`backend/app`](backend/app): accepted and published Stage 0–6 runtime.
-- [`backend/migrations`](backend/migrations): Alembic environment and Stage 0–3 revisions.
+- [`backend/app`](backend/app): accepted Stage 0–6 runtime plus the local CRA-49 Menu candidate.
+- [`backend/migrations`](backend/migrations): Alembic environment and revisions through the local
+  CRA-49 head `0007_menu_import_review`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted and published CRA-43 React frontend, unit/component tests, and
-  Playwright acceptance.
+- [`frontend`](frontend): accepted CRA-43 React frontend plus the local CRA-49 Menu experience,
+  unit/component tests, and Playwright acceptance.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

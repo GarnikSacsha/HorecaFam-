@@ -7,6 +7,7 @@ import { LoginPage } from "../auth/LoginPage";
 import { MfaPage } from "../auth/MfaPage";
 import { PendingPage } from "../employee/PendingPage";
 import { ActiveHomePage } from "../employee/ActiveHomePage";
+import { EmployeeMenuPage } from "../employee/EmployeeMenuPage";
 import { InvitationAcceptPage } from "../invitations/InvitationAcceptPage";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
@@ -77,6 +78,16 @@ export function App() {
               <ProtectedRoute audience="active-employee">
                 <EmployeeShell>
                   <ActiveHomePage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/menu"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeMenuPage />
                 </EmployeeShell>
               </ProtectedRoute>
             }

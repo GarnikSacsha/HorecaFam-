@@ -1,9 +1,9 @@
 # Backend Foundation
 
-This directory contains the accepted and published backend MVP Vertical Slice 1 through CRA-40:
-the Stage 0 API foundation, identity persistence, auth/security, invitation administration and
-acceptance, Pending profile setup, explicit Activation, and the full backend acceptance gate.
-Python 3.12 and PostgreSQL 16 are the approved runtime versions.
+This directory contains the accepted and published backend MVP Vertical Slice 1 through CRA-40
+plus the verified local CRA-49 Menu Source of Truth candidate. CRA-49 adds Location-owned versioned
+Menu persistence, Draft/import/publication administration, and a published-only Employee reference
+API; it is not yet published. Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository
 [`../AGENTS.md`](../AGENTS.md). Linear remains canonical for product/API/data/test-stage
@@ -40,7 +40,8 @@ secret-safe environment loading procedure in
 The application is exposed through the factory `app.main:create_app`; configuration is required
 and there is no SQLite fallback. SQLAlchemy metadata covers identity/authentication records plus
 invitations, API idempotency, invitation rate-limit buckets, background jobs, and email delivery
-state. Alembic is the only schema-management path; runtime and tests must not call `create_all`.
+state, plus CRA-49 Menu versions, hierarchy, facts/provenance, deltas, import review, and publication
+records. Alembic is the only schema-management path; runtime and tests must not call `create_all`.
 
 ## Quality and test commands
 
@@ -60,3 +61,7 @@ rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini check
 
 The complete no-skip gate and CRA-20/CRA-28/CRA-30/CRA-32 evidence index are documented in
 [`../docs/testing/README.md`](../docs/testing/README.md).
+
+The fresh CRA-49 candidate gate reports 267 passed, 0 failed, 0 skipped, 87% overall
+statement/branch coverage, Alembic head `0007_menu_import_review`, and no metadata drift. See
+[`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).

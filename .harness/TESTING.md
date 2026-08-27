@@ -9,10 +9,11 @@
 - Test environment: `APP_ENV=test` and a dedicated database named `horeca_test` or an approved
   worker-scoped derivative.
 
-The published repository tip is `586f8c5`, including the accepted CRA-46 documentation checkpoint.
+The published repository includes the accepted CRA-48 corrective record after `3b95b3c`.
 CRA-43 runtime acceptance evidence remains anchored to its implementation endpoint `fa30a1f`.
-CRA-47 Menu Slice 2 planning is accepted, but CRA-49 runtime implementation is not authorized.
-CRA-48 changes documentation only and creates no new production-test evidence.
+CRA-47 planning and CRA-48 documentation are Done. The authorized CRA-49 implementation candidate
+is complete locally, not yet accepted or pushed; its fresh evidence is recorded in
+[`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
 
 ## Environment setup
 
@@ -185,3 +186,12 @@ and 375×812 employee mobile. Exact scope, RED/GREEN evidence, and limitations a
 
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.
+
+## Verified local CRA-49 candidate evidence
+
+The 2026-08-28 complete candidate gate reports 267 passed, 0 failed, 0 skipped with 87% overall
+statement/branch coverage on Python 3.12.10 and native PostgreSQL 16. Ruff format/check, strict
+mypy, Alembic head `0007_menu_import_review`, current-head validation, migration round-trips, and
+metadata no-drift all pass. The frontend reports 19 Vitest tests and 6 Playwright tests passing,
+with Prettier, ESLint, TypeScript, and production build green. This evidence does not claim CRA-49
+acceptance or publication.

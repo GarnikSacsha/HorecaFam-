@@ -320,3 +320,61 @@ export interface MenuPublishResponse {
     notification_count: number;
   };
 }
+
+export interface EmployeeMenuCategorySummary {
+  id: string;
+  section_id: string;
+  name: string;
+  position: number;
+}
+
+export interface EmployeeMenuSectionSummary {
+  id: string;
+  name: string;
+  position: number;
+  categories: EmployeeMenuCategorySummary[];
+}
+
+export interface EmployeeMenuSummary {
+  menu_id: string;
+  menu_version_id: string;
+  location_id: string;
+  version_number: number;
+  published_at: string;
+  sections: EmployeeMenuSectionSummary[];
+}
+
+export interface EmployeeMenuItemSummary {
+  item_id: string;
+  name: string;
+  description_excerpt: string | null;
+  category_id: string;
+  category_name: string;
+  section_id: string;
+  section_name: string;
+  availability: MenuAvailability;
+  price_minor: number | null;
+  currency: string;
+  content_locale: "uk" | "en";
+  translation_fallback: boolean;
+}
+
+export interface EmployeeMenuResponse {
+  menu: EmployeeMenuSummary | null;
+  items: EmployeeMenuItemSummary[];
+  next_cursor: string | null;
+}
+
+export interface EmployeeMenuItemDetail extends EmployeeMenuItemSummary {
+  description: string | null;
+  components: Array<{
+    name: string;
+    optional: boolean | null;
+    position: number;
+  }>;
+  allergen_data_status: FactDataStatus;
+  allergens: Array<{
+    code: string;
+    label: string;
+  }>;
+}

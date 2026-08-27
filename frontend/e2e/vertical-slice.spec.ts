@@ -411,7 +411,7 @@ test("admin JSON review confirm and atomic menu publication", async ({ page }) =
             request_id: "menu-session",
           },
         });
-      } else await route.fulfill({ json: sessionFor("admin", "active") });
+      } else await route.fulfill({ json: sessionFor(currentUser, "active") });
       return;
     }
     if (method === "POST" && pathname === "/auth/login") {
@@ -421,6 +421,77 @@ test("admin JSON review confirm and atomic menu publication", async ({ page }) =
     if (method === "POST" && pathname === "/auth/mfa/verify") {
       currentUser = "admin";
       await route.fulfill({ json: sessionFor("admin", "active") });
+      return;
+    }
+    if (method === "GET" && pathname === "/me/menu") {
+      await route.fulfill({
+        json: published
+          ? {
+              menu: {
+                menu_id: "menu-1",
+                menu_version_id: "menu-version-1",
+                location_id: location.id,
+                version_number: 1,
+                published_at: "2026-08-27T03:00:00Z",
+                sections: [
+                  {
+                    id: "section-1",
+                    name: "Основне",
+                    position: 0,
+                    categories: [
+                      {
+                        id: "category-1",
+                        section_id: "section-1",
+                        name: "Супи",
+                        position: 0,
+                      },
+                    ],
+                  },
+                ],
+              },
+              items: [
+                {
+                  item_id: "item-1",
+                  name: "Борщ",
+                  description_excerpt: "Зі сметаною",
+                  category_id: "category-1",
+                  category_name: "Супи",
+                  section_id: "section-1",
+                  section_name: "Основне",
+                  availability: "available",
+                  price_minor: 32500,
+                  currency: "UAH",
+                  content_locale: "uk",
+                  translation_fallback: false,
+                },
+              ],
+              next_cursor: null,
+            }
+          : { menu: null, items: [], next_cursor: null },
+      });
+      return;
+    }
+    if (method === "GET" && pathname === "/me/menu/items/item-1") {
+      await route.fulfill({
+        json: {
+          item_id: "item-1",
+          name: "Борщ",
+          description_excerpt: "Зі сметаною",
+          category_id: "category-1",
+          category_name: "Супи",
+          section_id: "section-1",
+          section_name: "Основне",
+          availability: "available",
+          price_minor: 32500,
+          currency: "UAH",
+          content_locale: "uk",
+          translation_fallback: false,
+          description: "Борщ на яловичому бульйоні.",
+          components: [{ name: "Сметана", optional: true, position: 0 }],
+          allergen_data_status: "confirmed_present",
+          allergens: [{ code: "milk", label: "Молоко" }],
+        },
+      });
       return;
     }
     if (method === "GET" && pathname === `/organizations/${organization.id}`) {
@@ -539,4 +610,15 @@ test("admin JSON review confirm and atomic menu publication", async ({ page }) =
   await dialog.getByRole("button", { name: "Опублікувати" }).click();
   await expect(page.getByText("Опубліковано v1")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Чернетки немає" })).toBeVisible();
+
+  currentUser = "employee";
+  await page.goto("/employee/menu");
+  await expect(page.getByRole("heading", { name: "Меню", level: 1 })).toBeVisible();
+  await page.getByLabel("Пошук у меню").fill("бор");
+  await page.getByRole("button", { name: "Знайти" }).click();
+  await page.getByRole("button", { name: /Борщ/ }).click();
+  const itemDialog = page.getByRole("dialog", { name: "Борщ" });
+  await expect(itemDialog).toContainText("Борщ на яловичому бульйоні.");
+  await expect(itemDialog).toContainText("Сметана (за бажанням)");
+  await expect(itemDialog).toContainText("Молоко");
 });

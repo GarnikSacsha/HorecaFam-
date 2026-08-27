@@ -5,19 +5,21 @@ Canonical test strategy, stage acceptance criteria, and Definition of Done remai
 and the active bounded implementation issue. Exact local commands and environment safeguards are
 maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
-The published repository tip is `586f8c5`, including accepted CRA-46 documentation. CRA-43 test
-evidence remains correctly anchored to the implementation endpoint `fa30a1f`. CRA-47 Menu Slice 2
-planning is accepted, CRA-48 changes documentation only, and CRA-49 implementation is not
-authorized; no later runtime evidence is claimed here.
+The published repository includes the accepted CRA-48 corrective record after `3b95b3c`. CRA-43
+test evidence remains anchored to `fa30a1f`. CRA-47 planning and CRA-48 documentation are Done.
+The authorized CRA-49 candidate is complete locally, not yet accepted or pushed; its fresh runtime
+evidence is recorded below.
 
 ## Current test layout
 
-- `backend/tests/api`: application factory, health/errors, auth/session/CSRF/logout/MFA/RBAC, and
-  invitation lifecycle behavior through the ASGI path with real PostgreSQL state.
+- `backend/tests/api`: application factory, health/errors, auth/session/CSRF/logout/MFA/RBAC,
+  invitation lifecycle, Admin Menu/import/publication, and Employee published-Menu behavior through
+  the ASGI path with real PostgreSQL state.
 - `backend/tests/unit`: required configuration, fail-closed test database rules, canonical email
   normalization, and deterministic versioned invitation tokens.
 - `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip, persistence constraints,
-  idempotency concurrency, and transactional invitation-delivery state against PostgreSQL 16.
+  idempotency concurrency, transactional invitation delivery, and Menu draft/facts/publication
+  state against PostgreSQL 16.
 - `backend/tests/migration`: Alembic head/schema/drift checks and the prohibition on runtime
   `create_all`.
 - `backend/tests/factories` and `backend/tests/conftest.py`: deterministic identity objects and
@@ -153,3 +155,20 @@ home. Vitest/Testing Library covers 13 component and API behaviors. Playwright r
 business path on desktop, compact, and mobile viewports. See
 [`frontend-vertical-slice-1-acceptance.md`](frontend-vertical-slice-1-acceptance.md) for the exact
 matrix, commands, results, and exclusions.
+
+## Verified local CRA-49 candidate
+
+The complete local candidate gate reports Python 3.12.10 and native PostgreSQL 16:
+
+- 267 passed, 0 failed, 0 skipped;
+- 87% overall statement/branch coverage;
+- Ruff format/check and strict mypy passing;
+- Alembic head `0007_menu_import_review`, current head, migration round-trips, and no metadata
+  drift;
+- frontend Prettier/ESLint/TypeScript/build passing;
+- 19 Vitest tests passing across 12 files;
+- 6 Playwright tests passing across the desktop, compact, and mobile projects.
+
+See [`menu-slice-2-acceptance.md`](menu-slice-2-acceptance.md) for the requirement matrix,
+RED/GREEN evidence, security review, exact browser path, limitations, and exclusions. This is a
+candidate record, not acceptance or publication evidence.
