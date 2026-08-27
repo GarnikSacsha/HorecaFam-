@@ -1,9 +1,10 @@
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -73,6 +74,15 @@ def _acceptance_mode_changed() -> APIError:
     )
 
 
+def _advisory_key(value: str) -> int:
+    return int.from_bytes(hashlib.sha256(value.encode("utf-8")).digest()[:8], "big", signed=True)
+
+
+async def _lock_global_user_email(db: AsyncSession, email: str) -> None:
+    # Транзакційне блокування закриває відсутній рядок User, який SELECT FOR UPDATE не захищає.
+    await db.execute(select(func.pg_advisory_xact_lock(_advisory_key(f"user-email:{email}"))))
+
+
 async def _accept_invitation(
     db: AsyncSession,
     *,
@@ -104,6 +114,7 @@ async def _accept_invitation(
     if invitation is None:
         raise RuntimeError("Invitation lifecycle validation returned an impossible result")
 
+    await _lock_global_user_email(db, invitation.email_normalized)
     user = await db.scalar(
         select(User).where(User.email_normalized == invitation.email_normalized).with_for_update()
     )

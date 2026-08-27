@@ -118,6 +118,17 @@ async def test_new_user_acceptance_returns_safe_session_and_secure_cookie(
     session_context = await auth_client.get("/api/v1/auth/session")
     assert session_context.status_code == 200
     assert session_context.json()["organization_access"] == body["organization_access"]
+    denied_admin_write = await auth_client.post(
+        f"/api/v1/organizations/{invitation.organization_id}/invitations",
+        headers={
+            "Origin": "https://frontend.test",
+            "X-CSRF-Token": body["csrf_token"],
+            "Idempotency-Key": "pending-must-not-administer",
+        },
+        json={"email": "forbidden-peer@example.com"},
+    )
+    assert denied_admin_write.status_code == 403
+    assert denied_admin_write.json()["code"] == "FORBIDDEN"
 
 
 async def test_existing_user_acceptance_reuses_user_with_one_character_password(
@@ -272,6 +283,52 @@ async def test_existing_wrong_password_is_non_enumerating_and_mutation_free(
     assert await db_session.scalar(select(func.count()).select_from(Session)) == 0
     assert await db_session.scalar(select(func.count()).select_from(EmployeeProfile)) == 0
     assert await db_session.scalar(select(func.count()).select_from(AuthRateLimitBucket)) == 1
+
+
+async def test_existing_acceptance_reuses_login_throttle_threshold(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    auth_settings: Settings,
+    db_session: AsyncSession,
+) -> None:
+    auth_app.state.clock = lambda: FIXED_NOW
+    passwords = PasswordManager()
+    existing_user = make_user(
+        email_normalized="acceptance-throttle@example.com",
+        password_hash=passwords.hash("correct password"),
+    )
+    db_session.add(existing_user)
+    await db_session.commit()
+    invitation, raw_token = await arrange_public_invitation(
+        db_session,
+        auth_settings,
+        invited_email=existing_user.email_normalized,
+    )
+    request = {
+        "token": raw_token,
+        "acceptance_mode": "accept_existing_account",
+        "password": "wrong password",
+    }
+
+    first_four = [
+        await auth_client.post("/api/v1/invitations/accept", json=request) for _ in range(4)
+    ]
+    fifth = await auth_client.post("/api/v1/invitations/accept", json=request)
+    request["password"] = "correct password"
+    blocked_correct_password = await auth_client.post(
+        "/api/v1/invitations/accept",
+        json=request,
+    )
+
+    assert [response.status_code for response in first_four] == [401, 401, 401, 401]
+    assert fifth.status_code == 429
+    assert fifth.json()["code"] == "AUTH_RATE_LIMITED"
+    assert blocked_correct_password.status_code == 429
+    await db_session.refresh(invitation)
+    assert invitation.status == "pending"
+    assert await db_session.scalar(select(func.count()).select_from(Session)) == 0
+    bucket = await db_session.scalar(select(AuthRateLimitBucket))
+    assert bucket is not None and bucket.failure_count == 5
 
 
 @pytest.mark.parametrize(

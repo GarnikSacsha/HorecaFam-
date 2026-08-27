@@ -420,3 +420,53 @@ async def test_session_failure_rolls_back_new_user_membership_profile_and_accept
         )
         == 0
     )
+
+
+@pytest.mark.integration
+async def test_acceptance_audit_failure_rolls_back_session_and_business_state(
+    db_session: AsyncSession,
+    auth_settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    invitation, raw_token = await arrange_invitation(
+        db_session,
+        auth_settings,
+        invited_email="audit-rollback@example.com",
+    )
+    invitation_id = invitation.id
+
+    def fail_acceptance_audit(*_args: Any, **_kwargs: Any) -> AuditEvent:
+        raise RuntimeError("synthetic acceptance audit failure")
+
+    monkeypatch.setattr(
+        "app.services.invitation_acceptance.AuditEvent",
+        fail_acceptance_audit,
+    )
+    with pytest.raises(RuntimeError, match="synthetic acceptance audit failure"):
+        await accept_invitation(
+            db_session,
+            raw_token=raw_token,
+            acceptance_mode="activate_access",
+            password="correct horse battery staple",
+            settings=auth_settings,
+            passwords=PasswordManager(),
+            now=FIXED_NOW,
+            request_id=uuid4(),
+            user_agent=None,
+        )
+
+    invitation_after = await db_session.get(Invitation, invitation_id)
+    assert invitation_after is not None
+    assert invitation_after.status == "pending"
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(User)
+            .where(User.email_normalized == "audit-rollback@example.com")
+        )
+        == 0
+    )
+    assert await db_session.scalar(select(func.count()).select_from(OrganizationMembership)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(EmployeeProfile)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(Session)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
