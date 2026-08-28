@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     mfa_encryption_keys: list[SecretStr] = []
     auth_throttle_hmac_key: SecretStr | None = None
     invitation_token_hmac_keys: list[SecretStr] = []
+    storage_bucket: str | None = None
+    storage_endpoint_url: str | None = None
+    storage_region: str = "auto"
+    storage_access_key_id: SecretStr | None = None
+    storage_secret_access_key: SecretStr | None = None
     cors_allowed_origins: list[str] = []
     session_cookie_secure: bool = True
     session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
@@ -49,6 +54,16 @@ class Settings(BaseSettings):
             raise ValueError("INVITATION_TOKEN_HMAC_KEYS must contain at least one key")
         if any(len(key.get_secret_value()) < 32 for key in self.invitation_token_hmac_keys):
             raise ValueError("Every INVITATION_TOKEN_HMAC_KEYS entry must contain 32 characters")
+
+    def validate_private_storage(self) -> None:
+        required = (
+            self.storage_bucket,
+            self.storage_endpoint_url,
+            self.storage_access_key_id,
+            self.storage_secret_access_key,
+        )
+        if any(value is None for value in required):
+            raise ValueError("Private storage configuration is incomplete")
 
 
 @lru_cache
