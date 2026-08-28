@@ -55,6 +55,12 @@ class TrainingVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UniqueConstraint(
             "id", "training_id", "organization_id", "location_id", name="uq_training_versions_scope"
         ),
+        UniqueConstraint(
+            "id",
+            "organization_id",
+            "location_id",
+            name="uq_training_versions_audience_scope",
+        ),
         CheckConstraint("version_number >= 1", name="version_number_positive"),
         CheckConstraint("revision >= 0", name="revision_nonnegative"),
         CheckConstraint("status IN ('draft', 'published', 'archived')", name="status_allowed"),
@@ -215,6 +221,7 @@ class LessonVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "training_module_version_id", "position", name="uq_lesson_versions_position"
         ),
         UniqueConstraint("id", "training_module_version_id", name="uq_lesson_versions_scope"),
+        UniqueConstraint("id", "lesson_id", name="uq_lesson_versions_lesson_scope"),
         CheckConstraint("position >= 0", name="position_nonnegative"),
         CheckConstraint(
             "estimated_minutes IS NULL OR estimated_minutes BETWEEN 1 AND 240",

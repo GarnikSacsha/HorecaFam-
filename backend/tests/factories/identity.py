@@ -1,7 +1,15 @@
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
-from app.models import Location, OperationalRole, Organization, OrganizationMembership, User
+from app.models import (
+    EmployeeProfile,
+    Location,
+    OperationalRole,
+    Organization,
+    OrganizationMembership,
+    User,
+)
 
 
 def make_organization(**overrides: Any) -> Organization:
@@ -59,3 +67,18 @@ def make_membership(
     }
     values.update(overrides)
     return OrganizationMembership(**values)
+
+
+def make_employee_profile(
+    membership: OrganizationMembership,
+    organization_id: UUID,
+    **overrides: Any,
+) -> EmployeeProfile:
+    values: dict[str, Any] = {
+        "membership": membership,
+        "organization_id": organization_id,
+        "first_name": "Марія",
+        "last_name": "Коваль",
+    }
+    values.update(overrides)
+    return EmployeeProfile(**values)

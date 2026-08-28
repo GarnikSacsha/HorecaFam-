@@ -250,6 +250,7 @@ class EmployeeProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             ondelete="RESTRICT",
         ),
         UniqueConstraint("membership_id", name="uq_employee_profiles_membership_id"),
+        UniqueConstraint("id", "organization_id", name="uq_employee_profiles_id_organization_id"),
     )
 
     membership_id: Mapped[UUID] = mapped_column(

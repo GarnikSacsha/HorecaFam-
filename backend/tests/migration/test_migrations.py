@@ -14,6 +14,15 @@ from app.db.session import create_engine
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
+ASSIGNMENT_ROLLOUT_TABLES = {
+    "lesson_completions",
+    "rollout_employee_impacts",
+    "rollout_lesson_rules",
+    "training_assignments",
+    "training_rollouts",
+    "training_version_audiences",
+}
+
 
 def database_settings() -> Settings:
     database_url = os.getenv("TEST_DATABASE_URL")
@@ -125,6 +134,12 @@ def test_metadata_contains_current_backend_tables() -> None:
         "training_module_versions",
         "training_modules",
         "training_version_menu_dependencies",
+        "training_version_audiences",
+        "training_assignments",
+        "lesson_completions",
+        "training_rollouts",
+        "rollout_lesson_rules",
+        "rollout_employee_impacts",
         "training_versions",
         "trainings",
         "users",
@@ -189,6 +204,29 @@ def test_training_content_migration_downgrades_and_upgrades() -> None:
         assert "lesson_content_blocks" not in table_names
         assert "assets" not in table_names
         assert "menus" in table_names
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_assignment_completion_rollout_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        current_tables = asyncio.run(database_table_names(settings))
+        assert current_tables >= ASSIGNMENT_ROLLOUT_TABLES
+
+        command.downgrade(config, "0008_training_content")
+        downgraded_tables = asyncio.run(database_table_names(settings))
+
+        assert ASSIGNMENT_ROLLOUT_TABLES.isdisjoint(downgraded_tables)
+        assert "training_versions" in downgraded_tables
+        assert "lesson_versions" in downgraded_tables
     finally:
         command.upgrade(config, "head")
 

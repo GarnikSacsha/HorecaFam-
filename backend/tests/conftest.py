@@ -20,6 +20,12 @@ from app.main import create_app
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
+    "rollout_employee_impacts",
+    "rollout_lesson_rules",
+    "lesson_completions",
+    "training_assignments",
+    "training_version_audiences",
+    "training_rollouts",
     "lesson_content_block_translations",
     "lesson_content_blocks",
     "lesson_translations",

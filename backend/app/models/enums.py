@@ -49,6 +49,8 @@ class AuthRateLimitAction(StrEnum):
 
 class BackgroundJobType(StrEnum):
     INVITATION_EMAIL = "invitation_email"
+    TRAINING_ASSIGNMENT_NOTIFICATION = "training_assignment_notification"
+    TRAINING_ROLLOUT_NOTIFICATION = "training_rollout_notification"
 
 
 class BackgroundJobStatus(StrEnum):
@@ -169,3 +171,48 @@ class AssetStatus(StrEnum):
     READY = "ready"
     FAILED = "failed"
     ARCHIVED = "archived"
+
+
+class TrainingAssignmentStatus(StrEnum):
+    ASSIGNED = "assigned"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    REVOKED = "revoked"
+
+
+class TrainingAssignmentSource(StrEnum):
+    AUTOMATIC = "automatic"
+    ADMIN = "admin"
+    REASSIGN = "reassign"
+    ROLLOUT = "rollout"
+
+
+class TrainingAssignmentRevokeReason(StrEnum):
+    ADMIN = "admin"
+    ROLE_CHANGED = "role_changed"
+    LOCATION_CHANGED = "location_changed"
+    ROLLOUT = "rollout"
+
+
+class LessonCompletionSource(StrEnum):
+    EMPLOYEE = "employee"
+    ROLLOUT_PRESERVED = "rollout_preserved"
+    REASSIGNMENT_PRESERVED = "reassignment_preserved"
+
+
+class TrainingRolloutStatus(StrEnum):
+    DRAFT = "draft"
+    PREVIEW_READY = "preview_ready"
+    CONFIRMED = "confirmed"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    STALE = "stale"
+
+
+class RolloutLessonRule(StrEnum):
+    PRESERVE_COMPLETION = "preserve_completion"
+    NEEDS_REPEAT = "needs_repeat"
+    NEW_INCOMPLETE = "new_incomplete"
+    REMOVED_HISTORICAL = "removed_historical"

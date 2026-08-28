@@ -27,16 +27,36 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("id", "organization_id", name="uq_background_jobs_id_organization_id"),
         UniqueConstraint("job_type", "idempotency_key", name="uq_background_jobs_type_key"),
-        CheckConstraint("job_type = 'invitation_email'", name="job_type_allowed"),
+        CheckConstraint(
+            "job_type IN ('invitation_email', 'training_assignment_notification', "
+            "'training_rollout_notification')",
+            name="job_type_allowed",
+        ),
         CheckConstraint(
             "status IN ('pending', 'processing', 'completed', 'failed')",
             name="status_allowed",
         ),
         CheckConstraint(
-            "jsonb_typeof(payload) = 'object' "
-            "AND payload ? 'invitation_id' "
-            "AND payload ? 'token_version'",
-            name="invitation_payload_required",
+            "jsonb_typeof(payload) = 'object' AND ("
+            "(job_type = 'invitation_email' "
+            "AND jsonb_typeof(payload->'invitation_id') = 'string' "
+            "AND jsonb_typeof(payload->'token_version') = 'number' "
+            "AND payload - ARRAY['invitation_id', 'token_version'] = '{}'::jsonb) OR "
+            "(job_type = 'training_assignment_notification' "
+            "AND jsonb_typeof(payload->'assignment_id') = 'string' "
+            "AND jsonb_typeof(payload->'template_code') = 'string' "
+            "AND length(payload->>'template_code') BETWEEN 1 AND 64 "
+            "AND payload->>'locale' IN ('uk', 'en') "
+            "AND payload - ARRAY['assignment_id', 'template_code', 'locale'] = '{}'::jsonb) OR "
+            "(job_type = 'training_rollout_notification' "
+            "AND jsonb_typeof(payload->'rollout_id') = 'string' "
+            "AND jsonb_typeof(payload->'assignment_id') = 'string' "
+            "AND jsonb_typeof(payload->'template_code') = 'string' "
+            "AND length(payload->>'template_code') BETWEEN 1 AND 64 "
+            "AND payload->>'locale' IN ('uk', 'en') "
+            "AND payload - ARRAY['rollout_id', 'assignment_id', 'template_code', 'locale'] "
+            "= '{}'::jsonb))",
+            name="payload_matches_job_type",
         ),
         CheckConstraint("priority >= 0", name="priority_nonnegative"),
         CheckConstraint(
