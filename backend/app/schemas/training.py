@@ -464,6 +464,14 @@ class EmployeeTrainingSummary(StrictTrainingSchema):
     published_at: datetime
 
 
+class EmployeeTrainingAssignmentSummary(StrictTrainingSchema):
+    id: UUID
+    status: Literal["assigned", "in_progress", "completed"]
+    assigned_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+
+
 class EmployeeTrainingModuleSummary(StrictTrainingSchema):
     id: UUID
     domain_type: Literal["menu"]
@@ -483,6 +491,7 @@ class EmployeeTrainingLessonSummary(StrictTrainingSchema):
     position: int
     required: bool
     estimated_minutes: int | None
+    completed: bool
     content_locale: Literal["uk", "en"]
     translation_fallback: bool
 
@@ -496,9 +505,12 @@ class EmployeeTrainingContentBlock(StrictTrainingSchema):
     translation_fallback: bool
 
 
-class EmployeeTrainingReferenceResponse(StrictTrainingSchema):
+class EmployeeTrainingHomeResponse(StrictTrainingSchema):
+    assignment: EmployeeTrainingAssignmentSummary | None
     training: EmployeeTrainingSummary | None
     modules: list[EmployeeTrainingModuleSummary]
+    progress: TrainingProgressResponse | None
+    next_action: Literal["open_lesson", "review_training", "none"]
     content_locale: Literal["uk", "en"]
     translation_fallback: bool
 

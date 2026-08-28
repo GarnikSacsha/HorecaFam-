@@ -8,28 +8,32 @@ from app.core.errors import APIError
 from app.models import (
     Asset,
     ContentBlockType,
+    LessonCompletion,
     LessonContentBlock,
     LessonContentBlockTranslation,
     LessonTranslation,
     LessonVersion,
     Training,
+    TrainingAssignment,
     TrainingModule,
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingVersion,
 )
 from app.schemas.training import (
+    EmployeeTrainingAssignmentSummary,
     EmployeeTrainingContentBlock,
+    EmployeeTrainingHomeResponse,
     EmployeeTrainingLessonDetail,
     EmployeeTrainingLessonSummary,
     EmployeeTrainingModuleDetail,
     EmployeeTrainingModuleSummary,
-    EmployeeTrainingReferenceResponse,
     EmployeeTrainingSummary,
 )
 from app.services.private_storage import PrivateStorage
 from app.services.training_assets import ACCESS_EXPIRES_SECONDS
 from app.services.training_content import resolve_localized_payload
+from app.services.training_progress import derive_training_progress
 
 
 def _not_found() -> APIError:
@@ -40,26 +44,29 @@ def _not_found() -> APIError:
     )
 
 
-async def _current_training_version(
+async def _assigned_training_version(
     db: AsyncSession,
     *,
     organization_id: UUID,
     location_id: UUID,
-) -> tuple[Training, TrainingVersion] | None:
+    employee_profile_id: UUID,
+) -> tuple[TrainingAssignment, Training, TrainingVersion] | None:
     row = (
         await db.execute(
-            select(Training, TrainingVersion)
-            .join(TrainingVersion, TrainingVersion.training_id == Training.id)
+            select(TrainingAssignment, Training, TrainingVersion)
+            .join(Training, Training.id == TrainingAssignment.training_id)
+            .join(TrainingVersion, TrainingVersion.id == TrainingAssignment.training_version_id)
             .where(
-                Training.organization_id == organization_id,
-                Training.location_id == location_id,
-                TrainingVersion.status == "published",
+                TrainingAssignment.organization_id == organization_id,
+                TrainingAssignment.location_id == location_id,
+                TrainingAssignment.employee_profile_id == employee_profile_id,
+                TrainingAssignment.status != "revoked",
             )
         )
     ).one_or_none()
     if row is None:
         return None
-    return row[0], row[1]
+    return row[0], row[1], row[2]
 
 
 def _localized_entity(
@@ -131,21 +138,26 @@ async def list_employee_training(
     *,
     organization_id: UUID,
     location_id: UUID,
+    employee_profile_id: UUID,
     requested_locale: Literal["uk", "en"],
-) -> EmployeeTrainingReferenceResponse:
-    current = await _current_training_version(
+) -> EmployeeTrainingHomeResponse:
+    current = await _assigned_training_version(
         db,
         organization_id=organization_id,
         location_id=location_id,
+        employee_profile_id=employee_profile_id,
     )
     if current is None:
-        return EmployeeTrainingReferenceResponse(
+        return EmployeeTrainingHomeResponse(
+            assignment=None,
             training=None,
             modules=[],
+            progress=None,
+            next_action="none",
             content_locale=requested_locale,
             translation_fallback=False,
         )
-    training, version = current
+    assignment, training, version = current
     if version.published_at is None:
         raise RuntimeError("Published Training Version has no publication timestamp")
     modules = await _module_summaries(
@@ -153,13 +165,23 @@ async def list_employee_training(
         version=version,
         requested_locale=requested_locale,
     )
-    return EmployeeTrainingReferenceResponse(
+    progress = await derive_training_progress(db, assignment=assignment)
+    return EmployeeTrainingHomeResponse(
+        assignment=EmployeeTrainingAssignmentSummary(
+            id=assignment.id,
+            status=assignment.status,
+            assigned_at=assignment.assigned_at,
+            started_at=assignment.started_at,
+            completed_at=assignment.completed_at,
+        ),
         training=EmployeeTrainingSummary(
             id=training.id,
             version_number=version.version_number,
             published_at=version.published_at,
         ),
         modules=modules,
+        progress=progress,
+        next_action="review_training" if progress.is_complete else "open_lesson",
         content_locale=(
             "en"
             if requested_locale == "en" and all(module.content_locale == "en" for module in modules)
@@ -175,6 +197,7 @@ async def _lesson_summaries(
     db: AsyncSession,
     *,
     module_version_id: UUID,
+    assignment_id: UUID,
     requested_locale: Literal["uk", "en"],
 ) -> list[EmployeeTrainingLessonSummary]:
     lessons = list(
@@ -183,6 +206,15 @@ async def _lesson_summaries(
                 select(LessonVersion)
                 .where(LessonVersion.training_module_version_id == module_version_id)
                 .order_by(LessonVersion.position, LessonVersion.id)
+            )
+        ).all()
+    )
+    completed_lesson_ids = set(
+        (
+            await db.scalars(
+                select(LessonCompletion.lesson_id).where(
+                    LessonCompletion.assignment_id == assignment_id
+                )
             )
         ).all()
     )
@@ -210,6 +242,7 @@ async def _lesson_summaries(
                 position=lesson.position,
                 required=lesson.required,
                 estimated_minutes=lesson.estimated_minutes,
+                completed=lesson.lesson_id in completed_lesson_ids,
                 content_locale=content_locale,
                 translation_fallback=fallback,
             )
@@ -222,17 +255,19 @@ async def get_employee_training_module(
     *,
     organization_id: UUID,
     location_id: UUID,
+    employee_profile_id: UUID,
     module_id: UUID,
     requested_locale: Literal["uk", "en"],
 ) -> EmployeeTrainingModuleDetail:
-    current = await _current_training_version(
+    current = await _assigned_training_version(
         db,
         organization_id=organization_id,
         location_id=location_id,
+        employee_profile_id=employee_profile_id,
     )
     if current is None:
         raise _not_found()
-    _training, version = current
+    assignment, _training, version = current
     module_version = await db.scalar(
         select(TrainingModuleVersion).where(
             TrainingModuleVersion.training_version_id == version.id,
@@ -254,6 +289,7 @@ async def get_employee_training_module(
         lessons=await _lesson_summaries(
             db,
             module_version_id=module_version.id,
+            assignment_id=assignment.id,
             requested_locale=requested_locale,
         ),
     )
@@ -264,17 +300,19 @@ async def get_employee_training_lesson(
     *,
     organization_id: UUID,
     location_id: UUID,
+    employee_profile_id: UUID,
     lesson_id: UUID,
     requested_locale: Literal["uk", "en"],
 ) -> EmployeeTrainingLessonDetail:
-    current = await _current_training_version(
+    current = await _assigned_training_version(
         db,
         organization_id=organization_id,
         location_id=location_id,
+        employee_profile_id=employee_profile_id,
     )
     if current is None:
         raise _not_found()
-    _training, version = current
+    assignment, _training, version = current
     lesson = await db.scalar(
         select(LessonVersion)
         .join(TrainingModuleVersion)
@@ -288,6 +326,7 @@ async def get_employee_training_lesson(
     summaries = await _lesson_summaries(
         db,
         module_version_id=lesson.training_module_version_id,
+        assignment_id=assignment.id,
         requested_locale=requested_locale,
     )
     summary = next((item for item in summaries if item.id == lesson_id), None)
@@ -342,6 +381,7 @@ async def get_employee_training_asset_access(
     storage: PrivateStorage,
     organization_id: UUID,
     location_id: UUID,
+    employee_profile_id: UUID,
     asset_id: UUID,
 ) -> str:
     asset = await db.scalar(
@@ -353,6 +393,10 @@ async def get_employee_training_asset_access(
             TrainingModuleVersion.id == LessonVersion.training_module_version_id,
         )
         .join(TrainingVersion, TrainingVersion.id == TrainingModuleVersion.training_version_id)
+        .join(
+            TrainingAssignment,
+            TrainingAssignment.training_version_id == TrainingVersion.id,
+        )
         .where(
             Asset.id == asset_id,
             Asset.organization_id == organization_id,
@@ -360,7 +404,10 @@ async def get_employee_training_asset_access(
             Asset.status == "ready",
             TrainingVersion.organization_id == organization_id,
             TrainingVersion.location_id == location_id,
-            TrainingVersion.status == "published",
+            TrainingAssignment.employee_profile_id == employee_profile_id,
+            TrainingAssignment.organization_id == organization_id,
+            TrainingAssignment.location_id == location_id,
+            TrainingAssignment.status != "revoked",
         )
     )
     if asset is None:

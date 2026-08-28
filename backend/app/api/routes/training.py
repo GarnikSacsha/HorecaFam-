@@ -21,9 +21,9 @@ from app.schemas.training import (
     AssetUploadIntentResponse,
     ContentBlockUpdate,
     ContentBlockWrite,
+    EmployeeTrainingHomeResponse,
     EmployeeTrainingLessonDetail,
     EmployeeTrainingModuleDetail,
-    EmployeeTrainingReferenceResponse,
     ReorderRequest,
     TrainingAssetResponse,
     TrainingAudienceResponse,
@@ -106,18 +106,23 @@ def _employee_locale(
     return "en" if authorization.user.preferred_locale == "en" else "uk"
 
 
-@router.get("/me/training", response_model=EmployeeTrainingReferenceResponse)
+@router.get("/me/training", response_model=EmployeeTrainingHomeResponse)
 async def employee_training_route(
     authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
     db: Annotated[AsyncSession, Depends(get_db)],
     locale: Literal["uk", "en"] | None = None,
-) -> EmployeeTrainingReferenceResponse:
-    if authorization.organization_id is None or authorization.location_id is None:
+) -> EmployeeTrainingHomeResponse:
+    if (
+        authorization.organization_id is None
+        or authorization.location_id is None
+        or authorization.employee_profile_id is None
+    ):
         raise RuntimeError("Active Employee authorization has no Organization or Location")
     response = await list_employee_training(
         db,
         organization_id=authorization.organization_id,
         location_id=authorization.location_id,
+        employee_profile_id=authorization.employee_profile_id,
         requested_locale=_employee_locale(authorization, locale),
     )
     await db.commit()
@@ -134,12 +139,17 @@ async def employee_training_module_route(
     db: Annotated[AsyncSession, Depends(get_db)],
     locale: Literal["uk", "en"] | None = None,
 ) -> EmployeeTrainingModuleDetail:
-    if authorization.organization_id is None or authorization.location_id is None:
+    if (
+        authorization.organization_id is None
+        or authorization.location_id is None
+        or authorization.employee_profile_id is None
+    ):
         raise RuntimeError("Active Employee authorization has no Organization or Location")
     response = await get_employee_training_module(
         db,
         organization_id=authorization.organization_id,
         location_id=authorization.location_id,
+        employee_profile_id=authorization.employee_profile_id,
         module_id=module_id,
         requested_locale=_employee_locale(authorization, locale),
     )
@@ -157,12 +167,17 @@ async def employee_training_lesson_route(
     db: Annotated[AsyncSession, Depends(get_db)],
     locale: Literal["uk", "en"] | None = None,
 ) -> EmployeeTrainingLessonDetail:
-    if authorization.organization_id is None or authorization.location_id is None:
+    if (
+        authorization.organization_id is None
+        or authorization.location_id is None
+        or authorization.employee_profile_id is None
+    ):
         raise RuntimeError("Active Employee authorization has no Organization or Location")
     response = await get_employee_training_lesson(
         db,
         organization_id=authorization.organization_id,
         location_id=authorization.location_id,
+        employee_profile_id=authorization.employee_profile_id,
         lesson_id=lesson_id,
         requested_locale=_employee_locale(authorization, locale),
     )
@@ -180,13 +195,18 @@ async def employee_training_asset_access_route(
     db: Annotated[AsyncSession, Depends(get_db)],
     storage: Annotated[PrivateStorage, Depends(get_private_storage)],
 ) -> AssetAccessResponse:
-    if authorization.organization_id is None or authorization.location_id is None:
+    if (
+        authorization.organization_id is None
+        or authorization.location_id is None
+        or authorization.employee_profile_id is None
+    ):
         raise RuntimeError("Active Employee authorization has no Organization or Location")
     url = await get_employee_training_asset_access(
         db,
         storage=storage,
         organization_id=authorization.organization_id,
         location_id=authorization.location_id,
+        employee_profile_id=authorization.employee_profile_id,
         asset_id=asset_id,
     )
     await db.commit()

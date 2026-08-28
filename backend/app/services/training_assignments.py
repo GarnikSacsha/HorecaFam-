@@ -28,6 +28,7 @@ from app.services.idempotency import (
     request_fingerprint,
     reserve_idempotency,
 )
+from app.services.training_progress import derive_training_progress
 
 
 def _not_found() -> APIError:
@@ -245,7 +246,9 @@ async def list_training_assignments(
     return TrainingAssignmentListResponse(
         current=_response(current) if current is not None else None,
         history=[_response(row) for row in history],
-        progress=None,
+        progress=(
+            await derive_training_progress(db, assignment=current) if current is not None else None
+        ),
     )
 
 

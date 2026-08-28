@@ -2,13 +2,24 @@ from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import (
+    EmployeeProfile,
+    LessonVersion,
+    OrganizationMembership,
+    Training,
+    TrainingAssignment,
+    TrainingModuleVersion,
+    TrainingVersion,
+)
 from app.services.private_storage import ObjectMetadata
 from tests.api.test_employee_menu_api import attach_employee
 from tests.api.test_menu_admin_api import arrange_admin, mutation_headers
 from tests.api.test_training_admin_api import FakePrivateStorage
 from tests.api.test_training_publication_api import arrange_ready_training, publish_menu
+from tests.factories.training import make_lesson_completion, make_training_assignment
 
 
 def first_lesson_id(detail: dict[str, object]) -> UUID:
@@ -46,6 +57,107 @@ async def publish_training(
     )
     assert response.status_code == 200
     return draft
+
+
+async def test_employee_training_home_is_assignment_scoped_with_derived_progress(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    await publish_menu(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="assignment-home-menu",
+    )
+    published = await publish_training(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="assignment-home-training",
+    )
+    version = await db_session.get_one(TrainingVersion, UUID(str(published["id"])))
+    training = await db_session.get_one(Training, version.training_id)
+    user_id = await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    profile = await db_session.scalar(
+        select(EmployeeProfile)
+        .join(OrganizationMembership)
+        .where(OrganizationMembership.user_id == user_id)
+    )
+    assert profile is not None
+    assignment = make_training_assignment(profile, training, version)
+    db_session.add(assignment)
+    await db_session.commit()
+
+    response = await auth_client.get("/api/v1/me/training")
+
+    assert response.status_code == 200
+    assert response.json()["assignment"] == {
+        "id": str(assignment.id),
+        "status": "assigned",
+        "assigned_at": assignment.assigned_at.isoformat().replace("+00:00", "Z"),
+        "started_at": None,
+        "completed_at": None,
+    }
+    assert response.json()["progress"] == {
+        "required_lesson_count": 1,
+        "completed_required_lesson_count": 0,
+        "percentage": 0,
+        "is_complete": False,
+    }
+    assert response.json()["next_action"] == "open_lesson"
+
+    lesson_version = await db_session.scalar(
+        select(LessonVersion)
+        .join(TrainingModuleVersion)
+        .where(TrainingModuleVersion.training_version_id == version.id)
+    )
+    assert lesson_version is not None
+    db_session.add(make_lesson_completion(assignment, lesson_version, user_id))
+    await db_session.commit()
+
+    completed_home = await auth_client.get("/api/v1/me/training")
+    completed_lesson = await auth_client.get(
+        f"/api/v1/me/training/lessons/{lesson_version.lesson_id}"
+    )
+    assert completed_home.json()["progress"] == {
+        "required_lesson_count": 1,
+        "completed_required_lesson_count": 1,
+        "percentage": 100,
+        "is_complete": True,
+    }
+    assert completed_home.json()["next_action"] == "review_training"
+    assert completed_lesson.json()["completed"] is True
+
+
+async def attach_training_assignment(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    version_id: UUID,
+) -> TrainingAssignment:
+    profile = await db.scalar(
+        select(EmployeeProfile)
+        .join(OrganizationMembership)
+        .where(OrganizationMembership.user_id == user_id)
+    )
+    version = await db.get_one(TrainingVersion, version_id)
+    training = await db.get_one(Training, version.training_id)
+    assert profile is not None
+    assignment = make_training_assignment(profile, training, version)
+    db.add(assignment)
+    await db.commit()
+    return assignment
 
 
 async def test_employee_reads_only_current_published_training_with_entity_fallback(
@@ -94,13 +206,24 @@ async def test_employee_reads_only_current_published_training_with_entity_fallba
         },
     )
     hidden_lesson_id = UUID(hidden_lesson.json()["lesson"]["id"])
+    replacement = await auth_client.post(
+        f"{versions_url}/{hidden_draft.json()['id']}/publish",
+        headers=mutation_headers(csrf, key="employee-training-replacement-publish"),
+        json={"expected_revision": hidden_lesson.json()["revision"]},
+    )
+    assert replacement.status_code == 200
 
-    await attach_employee(
+    user_id = await attach_employee(
         auth_client,
         db_session,
         organization_id=organization_id,
         location_id=location_id,
         preferred_locale="en",
+    )
+    await attach_training_assignment(
+        db_session,
+        user_id=user_id,
+        version_id=published_id,
     )
     listing = await auth_client.get("/api/v1/me/training", params={"locale": "en"})
     module_id = UUID(listing.json()["modules"][0]["id"])
@@ -114,6 +237,7 @@ async def test_employee_reads_only_current_published_training_with_entity_fallba
 
     assert listing.status_code == module.status_code == lesson.status_code == 200
     assert listing.json()["training"]["id"] != str(published_id)
+    assert listing.json()["training"]["version_number"] == 1
     assert listing.json()["modules"][0]["content_locale"] == "uk"
     assert listing.json()["modules"][0]["translation_fallback"] is True
     assert module.json()["lessons"][0]["id"] == str(published_lesson_id)
@@ -137,6 +261,21 @@ async def test_employee_reads_only_current_published_training_with_entity_fallba
         assert forbidden not in module.text
         assert forbidden not in lesson.text
 
+    auth_client.cookies.clear()
+    await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    unassigned = await auth_client.get("/api/v1/me/training")
+    assert unassigned.status_code == 200
+    assert unassigned.json()["assignment"] is None
+    assert unassigned.json()["training"] is None
+    assert unassigned.json()["modules"] == []
+    assert unassigned.json()["progress"] is None
+    assert unassigned.json()["next_action"] == "none"
+
 
 async def test_employee_training_empty_state_and_active_profile_boundary(
     auth_client: AsyncClient,
@@ -155,8 +294,11 @@ async def test_employee_training_empty_state_and_active_profile_boundary(
     empty = await auth_client.get("/api/v1/me/training")
     assert empty.status_code == 200
     assert empty.json() == {
+        "assignment": None,
         "training": None,
         "modules": [],
+        "progress": None,
+        "next_action": "none",
         "content_locale": "uk",
         "translation_fallback": False,
     }
@@ -252,11 +394,16 @@ async def test_employee_asset_access_requires_current_published_training_link(
     )
     assert publish.status_code == 200
 
-    await attach_employee(
+    user_id = await attach_employee(
         auth_client,
         db_session,
         organization_id=organization_id,
         location_id=location_id,
+    )
+    await attach_training_assignment(
+        db_session,
+        user_id=user_id,
+        version_id=version_id,
     )
     lesson = await auth_client.get(f"/api/v1/me/training/lessons/{lesson_id}")
     linked = await auth_client.get(f"/api/v1/me/training/assets/{linked_asset_id}/access")
@@ -282,6 +429,10 @@ async def test_employee_training_openapi_is_read_only_and_has_no_completion_rout
     assert set(paths["/api/v1/me/training/lessons/{lesson_id}"]) == {"get"}
     assert set(paths["/api/v1/me/training/assets/{asset_id}/access"]) == {"get"}
     assert "/api/v1/me/training/lessons/{lesson_id}/complete" not in paths
+    home_schema = paths["/api/v1/me/training"]["get"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"]
+    assert home_schema["$ref"].endswith("/EmployeeTrainingHomeResponse")
     employee_schemas = {
         key: value
         for key, value in document["components"]["schemas"].items()

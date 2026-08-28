@@ -261,7 +261,12 @@ async def test_admin_reassign_creates_new_current_assignment_without_mutating_so
     assert listed.status_code == 200
     assert listed.json()["current"]["id"] == reassigned.json()["id"]
     assert [row["id"] for row in listed.json()["history"]] == [str(source.id)]
-    assert listed.json()["progress"] is None
+    assert listed.json()["progress"] == {
+        "required_lesson_count": 0,
+        "completed_required_lesson_count": 0,
+        "percentage": 0,
+        "is_complete": False,
+    }
 
 
 async def test_admin_assignment_rejects_duplicate_and_foreign_scope_without_leakage(
