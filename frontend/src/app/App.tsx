@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminEmployeeDetailPage } from "../admin/AdminEmployeeDetailPage";
 import { AdminEmployeesPage } from "../admin/AdminEmployeesPage";
 import { AdminMenuPage } from "../admin/AdminMenuPage";
+import { AdminTrainingPage } from "../admin/AdminTrainingPage";
 import { LoginPage } from "../auth/LoginPage";
 import { MfaPage } from "../auth/MfaPage";
 import { PendingPage } from "../employee/PendingPage";
@@ -48,6 +49,16 @@ export function App() {
               <ProtectedRoute audience="admin">
                 <AdminShell>
                   <AdminMenuPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/content"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminTrainingPage />
                 </AdminShell>
               </ProtectedRoute>
             }

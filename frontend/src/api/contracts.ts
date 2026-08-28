@@ -378,3 +378,119 @@ export interface EmployeeMenuItemDetail extends EmployeeMenuItemSummary {
     label: string;
   }>;
 }
+
+export type TrainingVersionStatus = "draft" | "published" | "archived";
+export type TrainingContentBlockType =
+  "heading" | "text" | "list" | "callout" | "menu_item_card" | "image" | "external_video";
+
+export interface TrainingAssetResponse {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  status: "pending_upload" | "ready" | "failed" | "archived";
+  ready_at: string | null;
+  created_at: string;
+}
+
+export interface TrainingContentBlockResponse {
+  id: string;
+  type: TrainingContentBlockType;
+  position: number;
+  payload: Record<string, unknown>;
+  menu_item_id: string | null;
+  asset: TrainingAssetResponse | null;
+}
+
+export interface TrainingLessonResponse {
+  id: string;
+  position: number;
+  title_uk: string;
+  description_uk: string | null;
+  required: boolean;
+  estimated_minutes: number | null;
+  translation_status_en: "pending" | "ready" | "failed" | "stale" | null;
+  content_blocks: TrainingContentBlockResponse[];
+}
+
+export interface TrainingModuleResponse {
+  id: string;
+  domain_type: "menu";
+  position: number;
+  title_uk: string;
+  description_uk: string | null;
+  required: boolean;
+  translation_status_en: "pending" | "ready" | "failed" | "stale" | null;
+  lessons: TrainingLessonResponse[];
+}
+
+export interface TrainingVersionSummary {
+  id: string;
+  training_id: string;
+  location_id: string;
+  version_number: number;
+  status: TrainingVersionStatus;
+  revision: number;
+  base_version_id: string | null;
+  module_count: number;
+  lesson_count: number;
+  created_at: string;
+  published_at: string | null;
+  archived_at: string | null;
+}
+
+export interface TrainingVersionDetail extends TrainingVersionSummary {
+  modules: TrainingModuleResponse[];
+  menu_version_id: string | null;
+}
+
+export interface TrainingVersionCollection {
+  published: TrainingVersionSummary | null;
+  draft: TrainingVersionSummary | null;
+  archived: TrainingVersionSummary[];
+}
+
+export interface TrainingReadinessIssue {
+  code: string;
+  message: string;
+  entity_type: string;
+  entity_id: string | null;
+}
+
+export interface TrainingReadinessResponse {
+  training_id: string;
+  training_version_id: string;
+  organization_id: string;
+  location_id: string;
+  revision: number;
+  can_publish: boolean;
+  blocking_errors: TrainingReadinessIssue[];
+  warnings: TrainingReadinessIssue[];
+  counts: {
+    module_count: number;
+    lesson_count: number;
+    required_lesson_count: number;
+    content_block_count: number;
+    required_asset_count: number;
+    ready_asset_count: number;
+    menu_item_link_count: number;
+  };
+}
+
+export interface TrainingPublishResponse {
+  published: TrainingVersionSummary;
+  previous_published_version_id: string | null;
+  employee_reference_switched: boolean;
+  assignment_count: 0;
+  completion_count: 0;
+  progress_count: 0;
+  rollout_count: 0;
+  notification_count: 0;
+}
+
+export interface AssetUploadIntentResponse {
+  asset_id: string;
+  upload_url: string;
+  upload_fields: Record<string, string>;
+  expires_at: string;
+}
