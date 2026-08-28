@@ -135,3 +135,37 @@ class TranslationStatus(StrEnum):
     DRAFT = "draft"
     NEEDS_REVIEW = "needs_review"
     READY = "ready"
+
+
+class TrainingVersionStatus(StrEnum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+class TrainingDomain(StrEnum):
+    MENU = "menu"
+
+
+class ContentBlockType(StrEnum):
+    HEADING = "heading"
+    TEXT = "text"
+    LIST = "list"
+    CALLOUT = "callout"
+    MENU_ITEM_CARD = "menu_item_card"
+    IMAGE = "image"
+    EXTERNAL_VIDEO = "external_video"
+
+
+class TrainingTranslationStatus(StrEnum):
+    PENDING = "pending"
+    READY = "ready"
+    FAILED = "failed"
+    STALE = "stale"
+
+
+class AssetStatus(StrEnum):
+    PENDING_UPLOAD = "pending_upload"
+    READY = "ready"
+    FAILED = "failed"
+    ARCHIVED = "archived"

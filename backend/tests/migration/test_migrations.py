@@ -115,6 +115,18 @@ def test_metadata_contains_current_backend_tables() -> None:
         "organization_memberships",
         "organizations",
         "sessions",
+        "assets",
+        "lesson_content_block_translations",
+        "lesson_content_blocks",
+        "lesson_translations",
+        "lesson_versions",
+        "lessons",
+        "training_module_translations",
+        "training_module_versions",
+        "training_modules",
+        "training_version_menu_dependencies",
+        "training_versions",
+        "trainings",
         "users",
     }
 
@@ -154,6 +166,28 @@ def test_menu_import_review_migration_downgrades_and_upgrades() -> None:
 
         assert "menu_imports" not in table_names
         assert "menu_import_findings" not in table_names
+        assert "menus" in table_names
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_training_content_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        command.downgrade(config, "0007_menu_import_review")
+        table_names = asyncio.run(database_table_names(settings))
+
+        assert "trainings" not in table_names
+        assert "training_versions" not in table_names
+        assert "lesson_content_blocks" not in table_names
+        assert "assets" not in table_names
         assert "menus" in table_names
     finally:
         command.upgrade(config, "head")
