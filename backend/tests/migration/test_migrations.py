@@ -44,6 +44,19 @@ async def database_table_names(settings: Settings) -> set[str]:
         await engine.dispose()
 
 
+async def database_column_names(settings: Settings, table_name: str) -> set[str]:
+    engine = create_engine(settings)
+    try:
+        async with engine.connect() as connection:
+            return await connection.run_sync(
+                lambda sync_connection: {
+                    column["name"] for column in inspect(sync_connection).get_columns(table_name)
+                }
+            )
+    finally:
+        await engine.dispose()
+
+
 @pytest.mark.integration
 @pytest.mark.migration
 def test_empty_database_reaches_alembic_head() -> None:
@@ -220,6 +233,10 @@ def test_assignment_completion_rollout_migration_downgrades_and_upgrades() -> No
     try:
         current_tables = asyncio.run(database_table_names(settings))
         assert current_tables >= ASSIGNMENT_ROLLOUT_TABLES
+        current_membership_columns = asyncio.run(
+            database_column_names(settings, "organization_memberships")
+        )
+        assert "training_participation_status" in current_membership_columns
 
         command.downgrade(config, "0008_training_content")
         downgraded_tables = asyncio.run(database_table_names(settings))
@@ -227,6 +244,10 @@ def test_assignment_completion_rollout_migration_downgrades_and_upgrades() -> No
         assert ASSIGNMENT_ROLLOUT_TABLES.isdisjoint(downgraded_tables)
         assert "training_versions" in downgraded_tables
         assert "lesson_versions" in downgraded_tables
+        downgraded_membership_columns = asyncio.run(
+            database_column_names(settings, "organization_memberships")
+        )
+        assert "training_participation_status" not in downgraded_membership_columns
     finally:
         command.upgrade(config, "head")
 

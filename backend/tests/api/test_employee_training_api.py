@@ -1,22 +1,27 @@
+import asyncio
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
+    AuditEvent,
     EmployeeProfile,
+    LessonCompletion,
     LessonVersion,
     OrganizationMembership,
+    Session,
     Training,
     TrainingAssignment,
     TrainingModuleVersion,
     TrainingVersion,
 )
+from app.security.tokens import hash_secret
 from app.services.private_storage import ObjectMetadata
 from tests.api.test_employee_menu_api import attach_employee
-from tests.api.test_menu_admin_api import arrange_admin, mutation_headers
+from tests.api.test_menu_admin_api import FIXED_NOW, arrange_admin, mutation_headers
 from tests.api.test_training_admin_api import FakePrivateStorage
 from tests.api.test_training_publication_api import arrange_ready_training, publish_menu
 from tests.factories.training import make_lesson_completion, make_training_assignment
@@ -57,6 +62,320 @@ async def publish_training(
     )
     assert response.status_code == 200
     return draft
+
+
+async def test_employee_explicit_completion_is_the_only_progress_write(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    await publish_menu(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="explicit-completion-menu",
+    )
+    published = await publish_training(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="explicit-completion-training",
+    )
+    user_id = await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    assignment = await attach_training_assignment(
+        db_session,
+        user_id=user_id,
+        version_id=UUID(str(published["id"])),
+    )
+    lesson_version = await db_session.scalar(
+        select(LessonVersion)
+        .join(TrainingModuleVersion)
+        .where(TrainingModuleVersion.training_version_id == assignment.training_version_id)
+    )
+    session = await db_session.scalar(select(Session).where(Session.user_id == user_id))
+    assert lesson_version is not None
+    assert session is not None
+    employee_csrf = "explicit-completion-csrf"
+    session.csrf_token_hash = hash_secret(employee_csrf)
+    await db_session.commit()
+
+    viewed = await auth_client.get(f"/api/v1/me/training/lessons/{lesson_version.lesson_id}")
+    assert viewed.status_code == 200
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 0
+
+    completed = await auth_client.post(
+        f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete",
+        headers={
+            "X-CSRF-Token": employee_csrf,
+            "Idempotency-Key": "explicit-completion",
+        },
+    )
+
+    assert completed.status_code == 200
+    assert completed.json()["completion"]["assignment_id"] == str(assignment.id)
+    assert completed.json()["completion"]["lesson_id"] == str(lesson_version.lesson_id)
+    assert completed.json()["completion"]["lesson_version_id"] == str(lesson_version.id)
+    assert completed.json()["completion"]["completion_source"] == "employee"
+    assert completed.json()["assignment"]["status"] == "completed"
+    assert completed.json()["progress"] == {
+        "required_lesson_count": 1,
+        "completed_required_lesson_count": 1,
+        "percentage": 100,
+        "is_complete": True,
+    }
+    assert completed.json()["next_action"] == "review_training"
+    replayed = await auth_client.post(
+        f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete",
+        headers={
+            "X-CSRF-Token": employee_csrf,
+            "Idempotency-Key": "explicit-completion",
+        },
+    )
+    duplicate = await auth_client.post(
+        f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete",
+        headers={
+            "X-CSRF-Token": employee_csrf,
+            "Idempotency-Key": "explicit-completion-duplicate",
+        },
+    )
+    assert replayed.status_code == duplicate.status_code == 200
+    assert replayed.json() == duplicate.json() == completed.json()
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 1
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "training_lesson_completed")
+        )
+        == 1
+    )
+
+
+async def test_employee_completion_rejects_unassigned_foreign_paused_and_disabled_without_write(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    await publish_menu(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="completion-boundary-menu",
+    )
+    published = await publish_training(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="completion-boundary-training",
+    )
+    user_id = await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    session = await db_session.scalar(select(Session).where(Session.user_id == user_id))
+    membership = await db_session.scalar(
+        select(OrganizationMembership).where(OrganizationMembership.user_id == user_id)
+    )
+    assert session is not None
+    assert membership is not None
+    employee_csrf = "completion-boundary-csrf"
+    session.csrf_token_hash = hash_secret(employee_csrf)
+    await db_session.commit()
+    headers = {"X-CSRF-Token": employee_csrf, "Idempotency-Key": "completion-boundary"}
+
+    unassigned = await auth_client.post(
+        f"/api/v1/me/training/lessons/{uuid4()}/complete",
+        headers=headers,
+    )
+    assert unassigned.status_code == 404
+    assert unassigned.json()["code"] == "RESOURCE_NOT_FOUND"
+
+    assignment = await attach_training_assignment(
+        db_session,
+        user_id=user_id,
+        version_id=UUID(str(published["id"])),
+    )
+    lesson_version = await db_session.scalar(
+        select(LessonVersion)
+        .join(TrainingModuleVersion)
+        .where(TrainingModuleVersion.training_version_id == assignment.training_version_id)
+    )
+    assert lesson_version is not None
+    foreign = await auth_client.post(
+        f"/api/v1/me/training/lessons/{uuid4()}/complete",
+        headers={**headers, "Idempotency-Key": "completion-foreign"},
+    )
+    assert foreign.status_code == 404
+    assert foreign.json()["code"] == "RESOURCE_NOT_FOUND"
+
+    membership.training_participation_status = "paused"
+    await db_session.commit()
+    readable = await auth_client.get(f"/api/v1/me/training/lessons/{lesson_version.lesson_id}")
+    paused = await auth_client.post(
+        f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete",
+        headers={**headers, "Idempotency-Key": "completion-paused"},
+    )
+    assert readable.status_code == 200
+    assert paused.status_code == 409
+    assert paused.json()["code"] == "TRAINING_COMPLETION_NOT_ALLOWED"
+
+    membership.training_participation_status = "active"
+    membership.status = "disabled"
+    membership.disabled_at = FIXED_NOW
+    await db_session.commit()
+    disabled = await auth_client.post(
+        f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete",
+        headers={**headers, "Idempotency-Key": "completion-disabled"},
+    )
+    assert disabled.status_code == 403
+    assert disabled.json()["code"] == "FORBIDDEN"
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 0
+
+
+async def test_concurrent_employee_completion_returns_one_immutable_fact(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    await publish_menu(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="completion-race-menu",
+    )
+    published = await publish_training(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="completion-race-training",
+    )
+    user_id = await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    assignment = await attach_training_assignment(
+        db_session,
+        user_id=user_id,
+        version_id=UUID(str(published["id"])),
+    )
+    lesson_version = await db_session.scalar(
+        select(LessonVersion)
+        .join(TrainingModuleVersion)
+        .where(TrainingModuleVersion.training_version_id == assignment.training_version_id)
+    )
+    session = await db_session.scalar(select(Session).where(Session.user_id == user_id))
+    assert lesson_version is not None
+    assert session is not None
+    employee_csrf = "completion-race-csrf"
+    session.csrf_token_hash = hash_secret(employee_csrf)
+    await db_session.commit()
+    url = f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete"
+
+    first, second = await asyncio.gather(
+        auth_client.post(
+            url,
+            headers={
+                "X-CSRF-Token": employee_csrf,
+                "Idempotency-Key": "completion-race-one",
+            },
+        ),
+        auth_client.post(
+            url,
+            headers={
+                "X-CSRF-Token": employee_csrf,
+                "Idempotency-Key": "completion-race-two",
+            },
+        ),
+    )
+
+    assert first.status_code == second.status_code == 200, (first.json(), second.json())
+    assert first.json()["completion"]["id"] == second.json()["completion"]["id"]
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 1
+
+
+async def test_employee_completion_requires_csrf_and_idempotency_key(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    await publish_menu(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="completion-security-menu",
+    )
+    published = await publish_training(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="completion-security-training",
+    )
+    user_id = await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    assignment = await attach_training_assignment(
+        db_session,
+        user_id=user_id,
+        version_id=UUID(str(published["id"])),
+    )
+    lesson_version = await db_session.scalar(
+        select(LessonVersion)
+        .join(TrainingModuleVersion)
+        .where(TrainingModuleVersion.training_version_id == assignment.training_version_id)
+    )
+    session = await db_session.scalar(select(Session).where(Session.user_id == user_id))
+    assert lesson_version is not None
+    assert session is not None
+    employee_csrf = "completion-security-csrf"
+    session.csrf_token_hash = hash_secret(employee_csrf)
+    await db_session.commit()
+    url = f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete"
+
+    missing_csrf = await auth_client.post(
+        url,
+        headers={"Idempotency-Key": "completion-missing-csrf"},
+    )
+    missing_idempotency = await auth_client.post(
+        url,
+        headers={"X-CSRF-Token": employee_csrf},
+    )
+
+    assert missing_csrf.status_code == 403
+    assert missing_csrf.json()["code"] == "CSRF_INVALID"
+    assert missing_idempotency.status_code == 422
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 0
 
 
 async def test_employee_training_home_is_assignment_scoped_with_derived_progress(
@@ -419,7 +738,7 @@ async def test_employee_asset_access_requires_current_published_training_link(
     assert unlinked.status_code == foreign.status_code == 404
 
 
-async def test_employee_training_openapi_is_read_only_and_has_no_completion_route(
+async def test_employee_training_openapi_exposes_only_explicit_completion_mutation(
     auth_client: AsyncClient,
 ) -> None:
     document = (await auth_client.get("/openapi.json")).json()
@@ -428,7 +747,20 @@ async def test_employee_training_openapi_is_read_only_and_has_no_completion_rout
     assert set(paths["/api/v1/me/training/modules/{module_id}"]) == {"get"}
     assert set(paths["/api/v1/me/training/lessons/{lesson_id}"]) == {"get"}
     assert set(paths["/api/v1/me/training/assets/{asset_id}/access"]) == {"get"}
-    assert "/api/v1/me/training/lessons/{lesson_id}/complete" not in paths
+    completion_operation = paths["/api/v1/me/training/lessons/{lesson_id}/complete"]["post"]
+    assert set(paths["/api/v1/me/training/lessons/{lesson_id}/complete"]) == {"post"}
+    assert "requestBody" not in completion_operation
+    idempotency = next(
+        parameter
+        for parameter in completion_operation["parameters"]
+        if parameter["name"] == "Idempotency-Key"
+    )
+    assert idempotency["required"] is True
+    assert idempotency["in"] == "header"
+    completion_schema = completion_operation["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]
+    assert completion_schema["$ref"].endswith("/LessonCompletionResponse")
     home_schema = paths["/api/v1/me/training"]["get"]["responses"]["200"]["content"][
         "application/json"
     ]["schema"]
@@ -436,8 +768,16 @@ async def test_employee_training_openapi_is_read_only_and_has_no_completion_rout
     employee_schemas = {
         key: value
         for key, value in document["components"]["schemas"].items()
-        if key.startswith("EmployeeTraining")
+        if key.startswith("EmployeeTraining") or key.startswith("LessonCompletion")
     }
     serialized = str(employee_schemas)
-    for forbidden in ("revision", "object_key", "sha256", "base_version_id"):
+    for forbidden in (
+        "revision",
+        "object_key",
+        "sha256",
+        "base_version_id",
+        "score",
+        "answer_key",
+        "certification",
+    ):
         assert forbidden not in serialized

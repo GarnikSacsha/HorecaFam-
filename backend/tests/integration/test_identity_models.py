@@ -78,6 +78,32 @@ async def test_membership_rejects_noncanonical_states(
 
 
 @pytest.mark.integration
+async def test_training_participation_accepts_pause_and_rejects_unknown_state(
+    db_session: AsyncSession,
+) -> None:
+    organization = make_organization()
+    paused_user = make_user(email_normalized="paused-participation@example.com")
+    paused = make_membership(
+        organization,
+        paused_user,
+        training_participation_status="paused",
+    )
+    db_session.add_all([organization, paused_user, paused])
+    await db_session.commit()
+    assert paused.status == "active"
+    assert paused.training_participation_status == "paused"
+
+    invalid_user = make_user(email_normalized="invalid-participation@example.com")
+    invalid = make_membership(
+        organization,
+        invalid_user,
+        training_participation_status="stopped",
+    )
+    db_session.add_all([invalid_user, invalid])
+    await assert_integrity_error(db_session)
+
+
+@pytest.mark.integration
 @pytest.mark.parametrize(
     ("status", "activated_at", "disabled_at"),
     [

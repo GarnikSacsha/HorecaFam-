@@ -17,6 +17,11 @@ class MembershipStatus(StrEnum):
     DISABLED = "disabled"
 
 
+class TrainingParticipationStatus(StrEnum):
+    ACTIVE = "active"
+    PAUSED = "paused"
+
+
 class AuditActorType(StrEnum):
     USER = "user"
     SYSTEM = "system"

@@ -24,6 +24,7 @@ from app.schemas.training import (
     EmployeeTrainingHomeResponse,
     EmployeeTrainingLessonDetail,
     EmployeeTrainingModuleDetail,
+    LessonCompletionResponse,
     ReorderRequest,
     TrainingAssetResponse,
     TrainingAudienceResponse,
@@ -61,6 +62,7 @@ from app.services.training_assets import (
     prepare_asset_upload,
 )
 from app.services.training_audiences import update_training_audience
+from app.services.training_completion import complete_employee_training_lesson
 from app.services.training_content import (
     create_content_block,
     delete_content_block,
@@ -183,6 +185,41 @@ async def employee_training_lesson_route(
     )
     await db.commit()
     return response
+
+
+@router.post(
+    "/me/training/lessons/{lesson_id}/complete",
+    response_model=LessonCompletionResponse,
+)
+async def employee_training_lesson_complete_route(
+    lesson_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> LessonCompletionResponse:
+    if (
+        authorization.organization_id is None
+        or authorization.location_id is None
+        or authorization.employee_profile_id is None
+    ):
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    clock = cast(Clock, request.app.state.clock)
+    return await complete_employee_training_lesson(
+        db,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        employee_profile_id=authorization.employee_profile_id,
+        actor_user_id=authorization.user.id,
+        lesson_id=lesson_id,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
 
 
 @router.get(

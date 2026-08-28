@@ -26,6 +26,20 @@ def upgrade() -> None:
         type_=sa.String(length=64),
         existing_nullable=False,
     )
+    op.add_column(
+        "organization_memberships",
+        sa.Column(
+            "training_participation_status",
+            sa.String(length=16),
+            server_default=sa.text("'active'"),
+            nullable=False,
+        ),
+    )
+    op.create_check_constraint(
+        op.f("ck_organization_memberships_training_participation_allowed"),
+        "organization_memberships",
+        "training_participation_status IN ('active', 'paused')",
+    )
     op.create_unique_constraint(
         "uq_employee_profiles_id_organization_id",
         "employee_profiles",
@@ -736,4 +750,17 @@ def downgrade() -> None:
     op.drop_constraint("uq_lesson_versions_lesson_scope", "lesson_versions", type_="unique")
     op.drop_constraint(
         "uq_employee_profiles_id_organization_id", "employee_profiles", type_="unique"
+    )
+    # Дозволяє локально відкотити як первісну, так і уточнену ревізію 0009.
+    op.execute(
+        sa.text(
+            "ALTER TABLE organization_memberships DROP CONSTRAINT IF EXISTS "
+            "ck_organization_memberships_training_participation_allowed"
+        )
+    )
+    op.execute(
+        sa.text(
+            "ALTER TABLE organization_memberships DROP COLUMN IF EXISTS "
+            "training_participation_status"
+        )
     )

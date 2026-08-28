@@ -18,7 +18,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.core.email import normalize_email
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.enums import LifecycleStatus, Locale, MembershipStatus
+from app.models.enums import (
+    LifecycleStatus,
+    Locale,
+    MembershipStatus,
+    TrainingParticipationStatus,
+)
 
 if TYPE_CHECKING:
     from app.models.audit import AuditEvent
@@ -178,6 +183,10 @@ class OrganizationMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="status_allowed",
         ),
         CheckConstraint(
+            "training_participation_status IN ('active', 'paused')",
+            name="training_participation_allowed",
+        ),
+        CheckConstraint(
             "(status <> 'active' OR (activated_at IS NOT NULL AND disabled_at IS NULL))",
             name="active_timestamps",
         ),
@@ -208,6 +217,12 @@ class OrganizationMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
         default=MembershipStatus.PENDING.value,
         server_default=text("'pending'"),
+    )
+    training_participation_status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default=TrainingParticipationStatus.ACTIVE.value,
+        server_default=text("'active'"),
     )
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

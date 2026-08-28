@@ -521,3 +521,19 @@ class EmployeeTrainingModuleDetail(EmployeeTrainingModuleSummary):
 
 class EmployeeTrainingLessonDetail(EmployeeTrainingLessonSummary):
     content_blocks: list[EmployeeTrainingContentBlock]
+
+
+class LessonCompletionSummary(StrictTrainingSchema):
+    id: UUID
+    assignment_id: UUID
+    lesson_id: UUID
+    lesson_version_id: UUID
+    completion_source: Literal["employee", "rollout_preserved", "reassignment_preserved"]
+    completed_at: datetime
+
+
+class LessonCompletionResponse(StrictTrainingSchema):
+    completion: LessonCompletionSummary
+    assignment: EmployeeTrainingAssignmentSummary
+    progress: TrainingProgressResponse
+    next_action: Literal["open_lesson", "review_training", "none"]
