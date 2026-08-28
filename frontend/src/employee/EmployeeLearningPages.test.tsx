@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-import type { ApiClient } from "../api/client";
+import { ApiError } from "../api/client";
+import type { ApiClient, RequestOptions } from "../api/client";
 import type { SessionResponse } from "../api/contracts";
 import { SessionProvider } from "../session/SessionContext";
 import { EmployeeLearningLessonPage } from "./EmployeeLearningLessonPage";
@@ -48,6 +50,13 @@ describe("Employee Training reference", () => {
       request: <T,>(path: string) => {
         requests.push(path);
         return Promise.resolve({
+          assignment: {
+            id: "assignment-1",
+            status: "in_progress",
+            assigned_at: "2030-08-28T08:00:00Z",
+            started_at: "2030-08-28T09:00:00Z",
+            completed_at: null,
+          },
           training: { id: "training-1", version_number: 3, published_at: "2030-08-28T08:00:00Z" },
           modules: [
             {
@@ -62,6 +71,13 @@ describe("Employee Training reference", () => {
               translation_fallback: true,
             },
           ],
+          progress: {
+            required_lesson_count: 2,
+            completed_required_lesson_count: 1,
+            percentage: 50,
+            is_complete: false,
+          },
+          next_action: "open_lesson",
           content_locale: "uk",
           translation_fallback: true,
         } as T);
@@ -75,14 +91,19 @@ describe("Employee Training reference", () => {
       "/employee/learning/modules/module-1",
     );
     expect(screen.getByText("Показано українською")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Продовжити" })).toBeInTheDocument();
+    expect(screen.getByText("1 із 2 обов’язкових уроків завершено")).toBeInTheDocument();
     await waitFor(() => expect(requests.some((path) => path.includes("locale=en"))).toBe(true));
 
     const emptyClient: ApiClient = {
       getSession: () => Promise.resolve(session),
       request: <T,>() =>
         Promise.resolve({
+          assignment: null,
           training: null,
           modules: [],
+          progress: null,
+          next_action: "none",
           content_locale: "en",
           translation_fallback: false,
         } as T),
@@ -94,7 +115,7 @@ describe("Employee Training reference", () => {
       <EmployeeLearningPage />,
     );
     expect(
-      await screen.findByRole("heading", { name: "Навчальні матеріали ще не опубліковано" }),
+      await screen.findByRole("heading", { name: "Навчання ще не призначено" }),
     ).toBeInTheDocument();
   });
 
@@ -120,6 +141,7 @@ describe("Employee Training reference", () => {
               position: 0,
               required: true,
               estimated_minutes: 5,
+              completed: true,
               content_locale: "uk",
               translation_fallback: true,
             },
@@ -130,6 +152,7 @@ describe("Employee Training reference", () => {
               position: 1,
               required: false,
               estimated_minutes: null,
+              completed: false,
               content_locale: "en",
               translation_fallback: false,
             },
@@ -154,9 +177,68 @@ describe("Employee Training reference", () => {
       "href",
       "/employee/learning",
     );
+    expect(screen.getByText("1 із 2 уроків завершено")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Подача борщу/ })).toHaveTextContent("Завершено");
+    expect(screen.getByRole("link", { name: /Напої/ })).toHaveTextContent("Не завершено");
+    expect(document.body).not.toHaveTextContent(/заблоковано|спочатку завершіть/i);
   });
 
-  it("renders every approved lesson block safely without Slice 4 behavior", async () => {
+  it("keeps a completed assigned version available for retained review", async () => {
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>() =>
+        Promise.resolve({
+          assignment: {
+            id: "assignment-archived-1",
+            status: "completed",
+            assigned_at: "2030-08-20T08:00:00Z",
+            started_at: "2030-08-20T09:00:00Z",
+            completed_at: "2030-08-21T10:00:00Z",
+          },
+          training: {
+            id: "retained-version-2",
+            version_number: 2,
+            published_at: "2030-08-20T08:00:00Z",
+          },
+          modules: [
+            {
+              id: "module-retained",
+              domain_type: "menu",
+              title: "Призначений архівний модуль",
+              description: null,
+              position: 0,
+              required: true,
+              lesson_count: 1,
+              content_locale: "uk",
+              translation_fallback: false,
+            },
+          ],
+          progress: {
+            required_lesson_count: 1,
+            completed_required_lesson_count: 1,
+            percentage: 100,
+            is_complete: true,
+          },
+          next_action: "review_training",
+          content_locale: "uk",
+          translation_fallback: false,
+        } as T),
+    };
+
+    renderWithClient(client, "/employee/learning", "/employee/learning", <EmployeeLearningPage />);
+
+    expect(await screen.findByRole("heading", { name: "Завершено" })).toBeInTheDocument();
+    expect(screen.getByText("Призначена версія 2")).toBeInTheDocument();
+    expect(
+      screen.getByText("Матеріали призначеної версії доступні для повторення."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Призначений архівний модуль/ })).toHaveAttribute(
+      "href",
+      "/employee/learning/modules/module-retained",
+    );
+  });
+
+  it("renders every approved lesson block safely with completion separate from viewing", async () => {
     const requests: string[] = [];
     const client: ApiClient = {
       getSession: () => Promise.resolve(session),
@@ -175,6 +257,7 @@ describe("Employee Training reference", () => {
           position: 0,
           required: true,
           estimated_minutes: 5,
+          completed: false,
           content_locale: "uk",
           translation_fallback: true,
           content_blocks: [
@@ -268,11 +351,158 @@ describe("Employee Training reference", () => {
       "src",
       "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
     );
-    expect(document.body).not.toHaveTextContent(/завершити|прогрес|практика/i);
+    expect(screen.getByRole("button", { name: "Ознайомився" })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/практика/i);
     expect(screen.getByRole("link", { name: "Відкрити позицію в меню" })).toHaveAttribute(
       "href",
       "/employee/menu?item=menu-item-1",
     );
     expect(requests.some((path) => path.includes("/assets/asset-1/access"))).toBe(true);
+  });
+
+  it("announces completion pending and success while sending the protected idempotent mutation", async () => {
+    const user = userEvent.setup();
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    let resolveCompletion: ((value: unknown) => void) | undefined;
+    const completion = new Promise((resolve) => {
+      resolveCompletion = resolve;
+    });
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string, options?: RequestOptions) => {
+        requests.push({ path, options });
+        if (options?.method === "POST") return completion as Promise<T>;
+        return Promise.resolve({
+          id: "lesson-1",
+          title: "Подача борщу",
+          description: "Факти для гостя.",
+          position: 0,
+          required: true,
+          estimated_minutes: 5,
+          completed: false,
+          content_locale: "uk",
+          translation_fallback: false,
+          content_blocks: [],
+        } as T);
+      },
+    };
+    renderWithClient(
+      client,
+      "/employee/learning/lessons/lesson-1",
+      "/employee/learning/lessons/:lessonId",
+      <EmployeeLearningLessonPage />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Ознайомився" }));
+    expect(screen.getByRole("button", { name: "Зберігаємо…" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Зберігаємо завершення уроку");
+
+    resolveCompletion?.({
+      completion: {
+        id: "completion-1",
+        assignment_id: "assignment-1",
+        lesson_id: "lesson-1",
+        lesson_version_id: "lesson-version-1",
+        completion_source: "employee",
+        completed_at: "2030-08-28T10:00:00Z",
+      },
+      assignment: {
+        id: "assignment-1",
+        status: "completed",
+        assigned_at: "2030-08-28T08:00:00Z",
+        started_at: "2030-08-28T09:00:00Z",
+        completed_at: "2030-08-28T10:00:00Z",
+      },
+      progress: {
+        required_lesson_count: 1,
+        completed_required_lesson_count: 1,
+        percentage: 100,
+        is_complete: true,
+      },
+      next_action: "review_training",
+    });
+
+    expect(await screen.findByRole("button", { name: "Ознайомлено" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Урок завершено");
+    expect(screen.getByText("1 із 1 обов’язкових уроків завершено")).toBeInTheDocument();
+    const mutation = requests.find(({ options }) => options?.method === "POST");
+    expect(mutation?.path).toBe("/me/training/lessons/lesson-1/complete");
+    expect(mutation?.options?.body).toBeUndefined();
+    expect(mutation?.options?.csrfToken).toBe("csrf-safe");
+    expect(typeof mutation?.options?.idempotencyKey).toBe("string");
+  });
+
+  it("keeps the completion action retryable after an ordinary error", async () => {
+    const user = userEvent.setup();
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(_path: string, options?: RequestOptions) =>
+        options?.method === "POST"
+          ? Promise.reject(new ApiError(0, { code: "NETWORK_ERROR", message: "Немає мережі" }))
+          : Promise.resolve({
+              id: "lesson-1",
+              title: "Подача борщу",
+              description: null,
+              position: 0,
+              required: true,
+              estimated_minutes: 5,
+              completed: false,
+              content_locale: "uk",
+              translation_fallback: false,
+              content_blocks: [],
+            } as T),
+    };
+    renderWithClient(
+      client,
+      "/employee/learning/lessons/lesson-1",
+      "/employee/learning/lessons/:lessonId",
+      <EmployeeLearningLessonPage />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Ознайомився" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося зберегти завершення уроку",
+    );
+    expect(screen.getByRole("button", { name: "Спробувати ще раз" })).toBeEnabled();
+  });
+
+  it("keeps a paused employee in a calm read-only lesson state", async () => {
+    const user = userEvent.setup();
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(_path: string, options?: RequestOptions) =>
+        options?.method === "POST"
+          ? Promise.reject(
+              new ApiError(409, {
+                code: "TRAINING_COMPLETION_NOT_ALLOWED",
+                message: "Completion is not allowed",
+              }),
+            )
+          : Promise.resolve({
+              id: "lesson-1",
+              title: "Подача борщу",
+              description: null,
+              position: 0,
+              required: true,
+              estimated_minutes: 5,
+              completed: false,
+              content_locale: "uk",
+              translation_fallback: false,
+              content_blocks: [],
+            } as T),
+    };
+    renderWithClient(
+      client,
+      "/employee/learning/lessons/lesson-1",
+      "/employee/learning/lessons/:lessonId",
+      <EmployeeLearningLessonPage />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Ознайомився" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Навчання призупинено");
+    expect(screen.getByText("Матеріал залишається доступним для перегляду")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Навчання призупинено" })).toBeDisabled();
   });
 });

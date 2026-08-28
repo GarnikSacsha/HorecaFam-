@@ -255,6 +255,21 @@ test("admin invitation, pending setup, activation and active employee home", asy
       return;
     }
 
+    if (method === "GET" && pathname === "/me/training") {
+      await route.fulfill({
+        json: {
+          assignment: null,
+          training: null,
+          modules: [],
+          progress: null,
+          next_action: "none",
+          content_locale: "uk",
+          translation_fallback: false,
+        },
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 404,
       json: {

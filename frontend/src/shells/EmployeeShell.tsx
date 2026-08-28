@@ -2,7 +2,6 @@ import { NavLink } from "react-router-dom";
 
 const destinations = [
   { label: "Головна", to: "/employee", enabled: true },
-  { label: "Меню", to: "/employee/menu", enabled: true },
   { label: "Навчання", to: "/employee/learning", enabled: true },
   { label: "Практика", to: "/employee/practice", enabled: false },
   { label: "Профіль", to: "/employee/profile", enabled: false },

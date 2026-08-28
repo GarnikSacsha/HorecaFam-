@@ -501,6 +501,25 @@ export interface EmployeeTrainingSummary {
   published_at: string;
 }
 
+export type EmployeeTrainingAssignmentStatus = "assigned" | "in_progress" | "completed";
+
+export interface EmployeeTrainingAssignmentSummary {
+  id: string;
+  status: EmployeeTrainingAssignmentStatus;
+  assigned_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface TrainingProgressResponse {
+  required_lesson_count: number;
+  completed_required_lesson_count: number;
+  percentage: number;
+  is_complete: boolean;
+}
+
+export type EmployeeTrainingNextAction = "open_lesson" | "review_training" | "none";
+
 export interface EmployeeTrainingModuleSummary {
   id: string;
   domain_type: "menu";
@@ -520,6 +539,7 @@ export interface EmployeeTrainingLessonSummary {
   position: number;
   required: boolean;
   estimated_minutes: number | null;
+  completed: boolean;
   content_locale: "uk" | "en";
   translation_fallback: boolean;
 }
@@ -533,9 +553,12 @@ export interface EmployeeTrainingContentBlock {
   translation_fallback: boolean;
 }
 
-export interface EmployeeTrainingReferenceResponse {
+export interface EmployeeTrainingHomeResponse {
+  assignment: EmployeeTrainingAssignmentSummary | null;
   training: EmployeeTrainingSummary | null;
   modules: EmployeeTrainingModuleSummary[];
+  progress: TrainingProgressResponse | null;
+  next_action: EmployeeTrainingNextAction;
   content_locale: "uk" | "en";
   translation_fallback: boolean;
 }
@@ -546,6 +569,22 @@ export interface EmployeeTrainingModuleDetail extends EmployeeTrainingModuleSumm
 
 export interface EmployeeTrainingLessonDetail extends EmployeeTrainingLessonSummary {
   content_blocks: EmployeeTrainingContentBlock[];
+}
+
+export interface LessonCompletionSummary {
+  id: string;
+  assignment_id: string;
+  lesson_id: string;
+  lesson_version_id: string;
+  completion_source: "employee" | "rollout_preserved" | "reassignment_preserved";
+  completed_at: string;
+}
+
+export interface LessonCompletionResponse {
+  completion: LessonCompletionSummary;
+  assignment: EmployeeTrainingAssignmentSummary;
+  progress: TrainingProgressResponse;
+  next_action: EmployeeTrainingNextAction;
 }
 
 export interface EmployeeTrainingAssetAccessResponse {

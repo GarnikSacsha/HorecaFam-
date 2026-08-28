@@ -1,13 +1,42 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-import type { OwnEmployeeProfile, OwnEmployeeProfilesResponse } from "../api/contracts";
+import type {
+  EmployeeTrainingHomeResponse,
+  OwnEmployeeProfile,
+  OwnEmployeeProfilesResponse,
+} from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
+function assignmentCopy(response: EmployeeTrainingHomeResponse) {
+  if (response.assignment?.status === "completed") {
+    return {
+      heading: "Навчання завершено",
+      action: "Переглянути матеріали",
+      note: "Призначені матеріали залишаються доступними для повторення.",
+    };
+  }
+  if (response.assignment?.status === "in_progress") {
+    return {
+      heading: "Продовжуйте навчання",
+      action: "Продовжити навчання",
+      note: "Поверніться до призначеної версії з того місця, де зупинилися.",
+    };
+  }
+  return {
+    heading: "Розпочніть навчання",
+    action: "Розпочати навчання",
+    note: "Для вас уже підготовлено перший навчальний крок.",
+  };
+}
+
 export function ActiveHomePage() {
   const { client, session, status } = useSession();
   const [profile, setProfile] = useState<OwnEmployeeProfile | null>(null);
+  const [training, setTraining] = useState<EmployeeTrainingHomeResponse | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -15,21 +44,29 @@ export function ActiveHomePage() {
     const organizationId = session.organization_access.find(
       (access) => access.is_employee && access.membership_status === "active",
     )?.organization_id;
+    const locale = session.user.preferred_locale === "en" ? "en" : "uk";
     let active = true;
-    client
-      .request<OwnEmployeeProfilesResponse>("/me/profile")
-      .then((response) => {
+
+    Promise.all([
+      client.request<OwnEmployeeProfilesResponse>("/me/profile"),
+      client.request<EmployeeTrainingHomeResponse>(`/me/training?locale=${locale}`),
+    ])
+      .then(([profileResponse, trainingResponse]) => {
         if (!active) return;
         const current =
-          response.profiles.find(
+          profileResponse.profiles.find(
             (item) =>
               item.organization.id === organizationId && item.membership_status === "active",
           ) ?? null;
         setProfile(current);
+        setTraining(trainingResponse);
         if (!current) setError("Активний профіль працівника не знайдено.");
       })
       .catch(() => {
-        if (active) setError("Не вдалося завантажити профіль.");
+        if (active) setError("Не вдалося завантажити вашу головну сторінку.");
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
       });
     return () => {
       active = false;
@@ -42,7 +79,16 @@ export function ActiveHomePage() {
         {error}
       </p>
     );
-  if (!profile) return <p aria-live="polite">Завантажуємо вашу головну сторінку…</p>;
+  if (!loaded || !profile) return <p aria-live="polite">Завантажуємо вашу головну сторінку…</p>;
+
+  const assignedTraining =
+    training?.assignment && training.training && training.progress
+      ? {
+          training: training.training,
+          progress: training.progress,
+          copy: assignmentCopy(training),
+        }
+      : null;
 
   return (
     <section className="active-home" aria-labelledby="active-home-title">
@@ -61,15 +107,43 @@ export function ActiveHomePage() {
         <span>{profile.location?.name ?? "Локація не вказана"}</span>
       </div>
 
-      <section className="next-action-empty" aria-labelledby="assignment-title">
-        <p className="eyebrow">Наступний крок</p>
-        <h2 id="assignment-title">Навчання ще не призначено</h2>
-        <p>
-          Ваш профіль активний. Коли адміністратор опублікує відповідні матеріали, тут з’явиться
-          перша доступна дія.
-        </p>
-        <p className="quiet-note">Нічого додатково робити зараз не потрібно.</p>
-      </section>
+      {assignedTraining ? (
+        <section className="next-action-panel" aria-labelledby="assignment-title">
+          <p className="eyebrow">Наступний крок</p>
+          <h2 id="assignment-title">{assignedTraining.copy.heading}</h2>
+          <p className="assignment-version">
+            Призначена версія {assignedTraining.training.version_number}
+          </p>
+          <p>
+            {assignedTraining.progress.completed_required_lesson_count} із{" "}
+            {assignedTraining.progress.required_lesson_count} обов’язкових уроків завершено
+          </p>
+          <div
+            className="training-progress"
+            role="progressbar"
+            aria-label="Поточний прогрес"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={assignedTraining.progress.percentage}
+          >
+            <span style={{ width: `${assignedTraining.progress.percentage}%` }} />
+          </div>
+          <p className="quiet-note">{assignedTraining.copy.note}</p>
+          <Link className="button button-primary next-action-link" to="/employee/learning">
+            {assignedTraining.copy.action}
+          </Link>
+        </section>
+      ) : (
+        <section className="next-action-empty" aria-labelledby="assignment-title">
+          <p className="eyebrow">Наступний крок</p>
+          <h2 id="assignment-title">Навчання ще не призначено</h2>
+          <p>
+            Ваш профіль активний. Коли адміністратор призначить відповідні матеріали, тут з’явиться
+            перша доступна дія.
+          </p>
+          <p className="quiet-note">Нічого додатково робити зараз не потрібно.</p>
+        </section>
+      )}
     </section>
   );
 }

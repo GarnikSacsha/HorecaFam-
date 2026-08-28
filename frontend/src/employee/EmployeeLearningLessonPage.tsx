@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type {
   EmployeeTrainingAssetAccessResponse,
   EmployeeTrainingContentBlock,
   EmployeeTrainingLessonDetail,
+  LessonCompletionResponse,
 } from "../api/contracts";
+import { ApiError, createIdempotencyKey } from "../api/client";
 import type { ApiClient } from "../api/client";
 import { useSession } from "../session/SessionContext";
 
@@ -181,6 +183,13 @@ export function EmployeeLearningLessonPage() {
   const [lesson, setLesson] = useState<EmployeeTrainingLessonDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [completionState, setCompletionState] = useState<
+    "idle" | "saving" | "success" | "error" | "paused"
+  >("idle");
+  const [completionResponse, setCompletionResponse] = useState<LessonCompletionResponse | null>(
+    null,
+  );
+  const idempotencyKey = useRef(createIdempotencyKey());
   const locale = session?.user.preferred_locale === "en" ? "en" : "uk";
 
   const loadLesson = useCallback(async () => {
@@ -188,11 +197,11 @@ export function EmployeeLearningLessonPage() {
     setLoading(true);
     setError(null);
     try {
-      setLesson(
-        await client.request<EmployeeTrainingLessonDetail>(
-          `/me/training/lessons/${lessonId}?locale=${locale}`,
-        ),
+      const loadedLesson = await client.request<EmployeeTrainingLessonDetail>(
+        `/me/training/lessons/${lessonId}?locale=${locale}`,
       );
+      setLesson(loadedLesson);
+      setCompletionState(loadedLesson.completed ? "success" : "idle");
     } catch {
       setError("Не вдалося завантажити урок. Перевірте посилання або спробуйте ще раз.");
     } finally {
@@ -205,6 +214,31 @@ export function EmployeeLearningLessonPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadLesson();
   }, [loadLesson]);
+
+  const completeLesson = async () => {
+    if (!session || !lessonId || completionState === "saving" || completionState === "success")
+      return;
+    setCompletionState("saving");
+    try {
+      const response = await client.request<LessonCompletionResponse>(
+        `/me/training/lessons/${lessonId}/complete`,
+        {
+          method: "POST",
+          csrfToken: session.csrf_token,
+          idempotencyKey: idempotencyKey.current,
+        },
+      );
+      setCompletionResponse(response);
+      setLesson((current) => (current ? { ...current, completed: true } : current));
+      setCompletionState("success");
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.code === "TRAINING_COMPLETION_NOT_ALLOWED") {
+        setCompletionState("paused");
+      } else {
+        setCompletionState("error");
+      }
+    }
+  };
 
   return (
     <article className="employee-learning-page learning-reader lesson-reader">
@@ -236,6 +270,71 @@ export function EmployeeLearningLessonPage() {
               <TrainingBlock key={block.id} block={block} client={client} />
             ))}
           </div>
+          <section className="lesson-completion-panel" aria-labelledby="lesson-completion-title">
+            <p className="eyebrow">Завершення уроку</p>
+            <h2 id="lesson-completion-title">Підтвердьте ознайомлення</h2>
+            <p>
+              Перегляд матеріалу або відео не завершує урок автоматично. Підтвердьте дію, коли
+              ознайомитеся з матеріалом.
+            </p>
+
+            {completionState === "saving" ? (
+              <p className="completion-message" role="status" aria-live="polite">
+                Зберігаємо завершення уроку…
+              </p>
+            ) : null}
+            {completionState === "success" ? (
+              <div className="completion-message is-success" role="status" aria-live="polite">
+                <strong>Урок завершено</strong>
+                {completionResponse ? (
+                  <span>
+                    {completionResponse.progress.completed_required_lesson_count} із{" "}
+                    {completionResponse.progress.required_lesson_count} обов’язкових уроків
+                    завершено
+                  </span>
+                ) : (
+                  <span>Матеріал залишається доступним для повторення.</span>
+                )}
+              </div>
+            ) : null}
+            {completionState === "error" ? (
+              <p className="inline-error" role="alert">
+                Не вдалося зберегти завершення уроку. Перевірте мережу та спробуйте ще раз.
+              </p>
+            ) : null}
+            {completionState === "paused" ? (
+              <div className="completion-message is-paused" role="alert">
+                <strong>Навчання призупинено</strong>
+                <span>Матеріал залишається доступним для перегляду</span>
+              </div>
+            ) : null}
+
+            <button
+              className="button button-primary completion-button"
+              type="button"
+              disabled={
+                completionState === "saving" ||
+                completionState === "success" ||
+                completionState === "paused"
+              }
+              onClick={() => void completeLesson()}
+            >
+              {completionState === "saving"
+                ? "Зберігаємо…"
+                : completionState === "success"
+                  ? "Ознайомлено"
+                  : completionState === "paused"
+                    ? "Навчання призупинено"
+                    : completionState === "error"
+                      ? "Спробувати ще раз"
+                      : "Ознайомився"}
+            </button>
+            {completionState === "success" ? (
+              <Link className="completion-next-link" to="/employee/learning">
+                Повернутися до навчання
+              </Link>
+            ) : null}
+          </section>
         </>
       ) : null}
     </article>

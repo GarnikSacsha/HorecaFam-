@@ -25,7 +25,7 @@ describe("application shells", () => {
     expect(trigger).toHaveFocus();
   });
 
-  it("shows the approved Employee destinations with Menu and Learning enabled", () => {
+  it("shows the approved four Employee destinations with Learning enabled", () => {
     render(
       <MemoryRouter>
         <EmployeeShell>
@@ -35,9 +35,9 @@ describe("application shells", () => {
     );
 
     expect(screen.getByRole("navigation", { name: "Основна навігація" })).toHaveTextContent(
-      "ГоловнаМенюНавчанняПрактикаПрофіль",
+      "ГоловнаНавчанняПрактикаПрофіль",
     );
-    expect(screen.getByRole("link", { name: "Меню" })).toHaveAttribute("href", "/employee/menu");
+    expect(screen.queryByRole("link", { name: "Меню" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Навчання" })).toHaveAttribute(
       "href",
       "/employee/learning",

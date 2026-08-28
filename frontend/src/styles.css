@@ -260,6 +260,48 @@ h1 {
   font-weight: 650;
 }
 
+.next-action-panel {
+  display: grid;
+  gap: 1rem;
+  max-width: 42rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 2.5rem;
+}
+
+.next-action-panel h2,
+.next-action-panel p {
+  margin: 0;
+}
+
+.next-action-panel h2 {
+  font-size: clamp(1.65rem, 5vw, 2.5rem);
+  letter-spacing: -0.03em;
+}
+
+.assignment-version,
+.next-action-panel .quiet-note {
+  color: var(--text-muted);
+}
+
+.training-progress {
+  height: 0.65rem;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-raised);
+}
+
+.training-progress span {
+  display: block;
+  height: 100%;
+  background: var(--brand-provisional-strong);
+}
+
+.next-action-link {
+  width: fit-content;
+  min-height: 48px;
+}
+
 .page-heading-row {
   display: flex;
   align-items: flex-start;
@@ -1206,7 +1248,7 @@ h1 {
   z-index: 30;
   inset: auto 0 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid var(--border-subtle);
   padding: 0.45rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
@@ -1803,6 +1845,22 @@ h1 {
   color: var(--text-muted);
 }
 
+.learning-assignment-summary {
+  display: grid;
+  gap: 0.55rem;
+  border-block: 1px solid var(--border-subtle);
+  padding-block: 1.25rem;
+}
+
+.learning-assignment-summary h2,
+.learning-assignment-summary p {
+  margin: 0;
+}
+
+.learning-assignment-summary .quiet-note {
+  color: var(--text-muted);
+}
+
 .learning-card-list {
   display: grid;
   gap: 0.85rem;
@@ -1852,6 +1910,26 @@ h1 {
   color: var(--text-muted);
 }
 
+.module-progress-copy {
+  font-weight: 750;
+}
+
+.module-next-action {
+  width: fit-content;
+  min-height: 48px;
+}
+
+.lesson-completion-state {
+  width: fit-content;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.lesson-completion-state.is-complete {
+  color: var(--success);
+}
+
 .learning-fallback-note {
   width: fit-content;
   border-radius: 999px;
@@ -1892,6 +1970,48 @@ h1 {
   gap: 1.35rem;
   font-size: 1.05rem;
   line-height: 1.72;
+}
+
+.lesson-completion-panel {
+  display: grid;
+  gap: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.5rem;
+}
+
+.lesson-completion-panel h2,
+.lesson-completion-panel p {
+  margin: 0;
+}
+
+.completion-message {
+  display: grid;
+  gap: 0.3rem;
+  border-left: 3px solid var(--brand-provisional-strong);
+  padding: 0.75rem 0.9rem;
+  color: var(--text-primary);
+  background: var(--info-soft);
+}
+
+.completion-message.is-success {
+  border-left-color: var(--success);
+}
+
+.completion-message.is-paused {
+  border-left-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.completion-button {
+  width: 100%;
+  min-height: 48px;
+}
+
+.completion-next-link {
+  width: fit-content;
+  min-height: 44px;
+  color: var(--brand-provisional-strong);
+  font-weight: 800;
 }
 
 .lesson-content section,

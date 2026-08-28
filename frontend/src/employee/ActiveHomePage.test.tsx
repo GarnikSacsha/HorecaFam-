@@ -73,4 +73,102 @@ describe("Active Employee Home", () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /іспит|практик/i })).not.toBeInTheDocument();
   });
+
+  it("renders one assignment-aware next action with current progress", async () => {
+    const profiles: OwnEmployeeProfilesResponse = {
+      profiles: [
+        {
+          id: "employee-1",
+          organization: { id: "organization-1", name: "Bacara Kyiv" },
+          membership_status: "active",
+          first_name: "Анна",
+          last_name: "Коваль",
+          operational_role: {
+            id: "role-1",
+            organization_id: "organization-1",
+            code: "waiter",
+            name_uk: "Офіціант",
+            status: "active",
+          },
+          location: {
+            id: "location-1",
+            organization_id: "organization-1",
+            name: "Хрещатик",
+            status: "active",
+            address: null,
+            timezone: "Europe/Kyiv",
+          },
+          profile_complete: true,
+          updated_at: "2026-08-27T00:00:00Z",
+        },
+      ],
+    };
+    const requests: string[] = [];
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(activeSession),
+      request: <T,>(path: string) => {
+        requests.push(path);
+        if (path === "/me/profile") return Promise.resolve(profiles as T);
+        return Promise.resolve({
+          assignment: {
+            id: "assignment-1",
+            status: "in_progress",
+            assigned_at: "2026-08-28T08:00:00Z",
+            started_at: "2026-08-28T09:00:00Z",
+            completed_at: null,
+          },
+          training: {
+            id: "training-1",
+            version_number: 2,
+            published_at: "2026-08-28T08:00:00Z",
+          },
+          modules: [
+            {
+              id: "module-1",
+              domain_type: "menu",
+              title: "Меню та рекомендації",
+              description: null,
+              position: 0,
+              required: true,
+              lesson_count: 3,
+              content_locale: "uk",
+              translation_fallback: false,
+            },
+          ],
+          progress: {
+            required_lesson_count: 3,
+            completed_required_lesson_count: 1,
+            percentage: 33,
+            is_complete: false,
+          },
+          next_action: "open_lesson",
+          content_locale: "uk",
+          translation_fallback: false,
+        } as T);
+      },
+    };
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <ActiveHomePage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Продовжуйте навчання" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 із 3 обов’язкових уроків завершено")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Поточний прогрес" })).toHaveAttribute(
+      "aria-valuenow",
+      "33",
+    );
+    expect(screen.getByRole("link", { name: "Продовжити навчання" })).toHaveAttribute(
+      "href",
+      "/employee/learning",
+    );
+    expect(screen.queryByRole("link", { name: /іспит|практик/i })).not.toBeInTheDocument();
+    expect(requests).toContain("/me/training?locale=uk");
+  });
 });

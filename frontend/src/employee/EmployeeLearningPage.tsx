@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { EmployeeTrainingReferenceResponse } from "../api/contracts";
+import type { EmployeeTrainingHomeResponse } from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 
+const sectionCopy = {
+  assigned: {
+    heading: "Призначено",
+    note: "Почніть із першого модуля у вашій призначеній версії.",
+  },
+  in_progress: {
+    heading: "Продовжити",
+    note: "Ваш прогрес збережено. Оберіть модуль, щоб продовжити.",
+  },
+  completed: {
+    heading: "Завершено",
+    note: "Матеріали призначеної версії доступні для повторення.",
+  },
+};
+
 export function EmployeeLearningPage() {
   const { client, session } = useSession();
-  const [response, setResponse] = useState<EmployeeTrainingReferenceResponse | null>(null);
+  const [response, setResponse] = useState<EmployeeTrainingHomeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const locale = session?.user.preferred_locale === "en" ? "en" : "uk";
@@ -18,7 +33,7 @@ export function EmployeeLearningPage() {
     setError(null);
     try {
       setResponse(
-        await client.request<EmployeeTrainingReferenceResponse>(`/me/training?locale=${locale}`),
+        await client.request<EmployeeTrainingHomeResponse>(`/me/training?locale=${locale}`),
       );
     } catch {
       setError("Не вдалося завантажити навчальні матеріали. Спробуйте ще раз.");
@@ -33,6 +48,8 @@ export function EmployeeLearningPage() {
     void loadTraining();
   }, [loadTraining]);
 
+  const copy = response?.assignment ? sectionCopy[response.assignment.status] : null;
+
   return (
     <section className="employee-learning-page" aria-labelledby="employee-learning-title">
       <div className="employee-learning-heading">
@@ -41,7 +58,7 @@ export function EmployeeLearningPage() {
           <h1 id="employee-learning-title">Навчання</h1>
           {response?.training ? (
             <p className="learning-version-note">
-              Опублікована версія {response.training.version_number}
+              Призначена версія {response.training.version_number}
             </p>
           ) : null}
         </div>
@@ -57,11 +74,26 @@ export function EmployeeLearningPage() {
         </div>
       ) : null}
       {loading ? <p aria-live="polite">Завантажуємо навчальні матеріали…</p> : null}
-      {!loading && response && !response.training ? (
+      {!loading && response && !response.assignment ? (
         <div className="empty-state">
-          <h2>Навчальні матеріали ще не опубліковано</h2>
-          <p>Коли адміністратор опублікує матеріали вашої локації, вони з’являться тут.</p>
+          <h2>Навчання ще не призначено</h2>
+          <p>
+            Коли адміністратор призначить матеріали для вашої ролі й локації, вони з’являться тут.
+          </p>
         </div>
+      ) : null}
+      {response?.assignment && response.training && copy ? (
+        <section className="learning-assignment-summary" aria-labelledby="learning-section-title">
+          <p className="eyebrow">Поточне призначення</p>
+          <h2 id="learning-section-title">{copy.heading}</h2>
+          {response.progress ? (
+            <p>
+              {response.progress.completed_required_lesson_count} із{" "}
+              {response.progress.required_lesson_count} обов’язкових уроків завершено
+            </p>
+          ) : null}
+          <p className="quiet-note">{copy.note}</p>
+        </section>
       ) : null}
       {response?.training && response.modules.length === 0 ? (
         <div className="empty-state">
