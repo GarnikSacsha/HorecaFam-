@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID, uuid4
 
 import pytest
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
     AuditEvent,
+    BackgroundJob,
     LessonCompletion,
     Location,
     OperationalRole,
@@ -163,6 +165,34 @@ async def arrange_rollout_context(
         changed.id,
         unchanged.id,
     )
+
+
+async def prepare_confirmable_rollout(
+    client: AsyncClient,
+    *,
+    base: str,
+    csrf: str,
+    changed_lesson_id: UUID,
+    key_prefix: str,
+) -> None:
+    preview = await client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key=f"{key_prefix}-preview"),
+        json={"expected_revision": 0},
+    )
+    assert preview.status_code == 200
+    decision = await client.patch(
+        f"{base}/lesson-rules/{changed_lesson_id}",
+        headers=mutation_headers(csrf),
+        json={"expected_revision": 1, "rule": "preserve_completion"},
+    )
+    assert decision.status_code == 200
+    refreshed = await client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key=f"{key_prefix}-repreview"),
+        json={"expected_revision": 2},
+    )
+    assert refreshed.status_code == 200
 
 
 async def test_admin_creates_draft_training_rollout_idempotently(
@@ -367,6 +397,263 @@ async def test_rollout_preview_defaults_rule_decision_and_assignment_staleness(
     assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 3
 
 
+async def test_admin_confirms_previewed_rollout_with_lineage_and_carried_completions(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    (
+        organization_id,
+        location_id,
+        _admin_id,
+        csrf,
+        rollout,
+        changed_lesson_id,
+        _unchanged_lesson_id,
+    ) = await arrange_rollout_context(auth_client, auth_app, db_session)
+    base = (
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/"
+        f"training-rollouts/{rollout.id}"
+    )
+    preview = await auth_client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key="confirm-preview"),
+        json={"expected_revision": 0},
+    )
+    assert preview.status_code == 200
+    decision = await auth_client.patch(
+        f"{base}/lesson-rules/{changed_lesson_id}",
+        headers=mutation_headers(csrf),
+        json={"expected_revision": 1, "rule": "preserve_completion"},
+    )
+    assert decision.status_code == 200
+    refreshed = await auth_client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key="confirm-repreview"),
+        json={"expected_revision": 2},
+    )
+    assert refreshed.status_code == 200
+
+    confirmed = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="confirm-rollout"),
+        json={"expected_revision": 3},
+    )
+    replay = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="confirm-rollout"),
+        json={"expected_revision": 3},
+    )
+
+    assert confirmed.status_code == replay.status_code == 200, confirmed.json()
+    assert replay.json() == confirmed.json()
+    assert confirmed.json()["status"] == "completed"
+    assert confirmed.json()["revision"] == 4
+    assert confirmed.json()["is_stale"] is False
+    assert confirmed.json()["warning_codes"] == []
+    assert confirmed.json()["employee_impacts"][0]["target_assignment_id"] is not None
+    assignments = list(
+        (
+            await db_session.scalars(
+                select(TrainingAssignment).order_by(TrainingAssignment.created_at)
+            )
+        ).all()
+    )
+    assert len(assignments) == 2
+    source, target = assignments
+    assert source.status == "revoked"
+    assert source.revoke_reason == "rollout"
+    assert target.status == "in_progress"
+    assert target.source == "rollout"
+    assert target.previous_assignment_id == source.id
+    assert target.source_rollout_id == rollout.id
+    target_completions = list(
+        (
+            await db_session.scalars(
+                select(LessonCompletion).where(LessonCompletion.assignment_id == target.id)
+            )
+        ).all()
+    )
+    assert len(target_completions) == 2
+    assert {row.completion_source for row in target_completions} == {"rollout_preserved"}
+    assert all(row.source_completion_id is not None for row in target_completions)
+    assert all(row.source_rollout_id == rollout.id for row in target_completions)
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(BackgroundJob)
+            .where(BackgroundJob.job_type == "training_rollout_notification")
+        )
+        == 1
+    )
+    job = await db_session.scalar(
+        select(BackgroundJob).where(BackgroundJob.job_type == "training_rollout_notification")
+    )
+    assert job is not None
+    assert job.payload == {
+        "rollout_id": str(rollout.id),
+        "assignment_id": str(target.id),
+        "template_code": "training_rollout_completed",
+        "locale": "uk",
+    }
+    audit = await db_session.scalar(
+        select(AuditEvent).where(AuditEvent.action == "training_rollout_confirmed")
+    )
+    assert audit is not None
+    assert audit.new_values == {
+        "revision": 4,
+        "status": "completed",
+        "assignment_count": 1,
+        "completion_count": 2,
+        "notification_count": 1,
+    }
+    changed_reuse = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="confirm-rollout"),
+        json={"expected_revision": 2},
+    )
+    later_duplicate = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="confirm-rollout-later"),
+        json={"expected_revision": 4},
+    )
+    assert changed_reuse.status_code == 409
+    assert changed_reuse.json()["code"] == "IDEMPOTENCY_KEY_REUSED"
+    assert later_duplicate.status_code == 409
+    assert later_duplicate.json()["code"] == "TRAINING_ROLLOUT_NOT_READY"
+
+
+async def test_rollout_confirm_rejects_unresolved_and_stale_preview_without_effects(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    (
+        organization_id,
+        location_id,
+        _admin_id,
+        csrf,
+        rollout,
+        changed_lesson_id,
+        _unchanged_lesson_id,
+    ) = await arrange_rollout_context(auth_client, auth_app, db_session)
+    rollout_id = rollout.id
+    base = (
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/"
+        f"training-rollouts/{rollout_id}"
+    )
+    preview = await auth_client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key="unresolved-confirm-preview"),
+        json={"expected_revision": 0},
+    )
+    assert preview.status_code == 200
+    unresolved = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="unresolved-confirm"),
+        json={"expected_revision": 1},
+    )
+    assert unresolved.status_code == 409
+    assert unresolved.json()["code"] == "ROLLOUT_RULE_REQUIRED"
+    decision = await auth_client.patch(
+        f"{base}/lesson-rules/{changed_lesson_id}",
+        headers=mutation_headers(csrf),
+        json={"expected_revision": 1, "rule": "preserve_completion"},
+    )
+    assert decision.status_code == 200
+    refreshed = await auth_client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key="stale-confirm-repreview"),
+        json={"expected_revision": 2},
+    )
+    assert refreshed.status_code == 200
+    source_assignment = await db_session.scalar(
+        select(TrainingAssignment).where(TrainingAssignment.status != "revoked")
+    )
+    assert source_assignment is not None
+    source_assignment.status = "completed"
+    source_assignment.completed_at = FIXED_NOW
+    await db_session.commit()
+    stale = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="stale-confirm"),
+        json={"expected_revision": 3},
+    )
+
+    assert stale.status_code == 409
+    assert stale.json()["code"] == "TRAINING_ROLLOUT_STALE"
+    db_session.expire_all()
+    assert await db_session.scalar(select(func.count()).select_from(TrainingAssignment)) == 1
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 3
+    assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == 0
+    stored = await db_session.get_one(TrainingRollout, rollout_id)
+    assert stored.status == "preview_ready"
+    assert stored.revision == 3
+    assert stored.completed_at is None
+
+
+async def test_concurrent_rollout_confirm_has_one_winner_and_one_effect(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    (
+        organization_id,
+        location_id,
+        _admin_id,
+        csrf,
+        rollout,
+        changed_lesson_id,
+        _unchanged_lesson_id,
+    ) = await arrange_rollout_context(auth_client, auth_app, db_session)
+    base = (
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/"
+        f"training-rollouts/{rollout.id}"
+    )
+    await prepare_confirmable_rollout(
+        auth_client,
+        base=base,
+        csrf=csrf,
+        changed_lesson_id=changed_lesson_id,
+        key_prefix="concurrent-confirm",
+    )
+
+    first, second = await asyncio.gather(
+        auth_client.post(
+            f"{base}/confirm",
+            headers=mutation_headers(csrf, key="concurrent-confirm-a"),
+            json={"expected_revision": 3},
+        ),
+        auth_client.post(
+            f"{base}/confirm",
+            headers=mutation_headers(csrf, key="concurrent-confirm-b"),
+            json={"expected_revision": 3},
+        ),
+    )
+
+    assert sorted((first.status_code, second.status_code)) == [200, 409]
+    loser = first if first.status_code == 409 else second
+    assert loser.json()["code"] == "TRAINING_ROLLOUT_NOT_READY"
+    assert await db_session.scalar(select(func.count()).select_from(TrainingAssignment)) == 2
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 5
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(BackgroundJob)
+            .where(BackgroundJob.job_type == "training_rollout_notification")
+        )
+        == 1
+    )
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "training_rollout_confirmed")
+        )
+        == 1
+    )
+
+
 async def test_replacement_publish_previews_rollout_without_migrating_assignment(
     auth_client: AsyncClient,
     auth_app: FastAPI,
@@ -507,6 +794,83 @@ async def test_rollout_preview_forced_failure_rolls_back_every_preview_effect(
     )
 
 
+async def test_rollout_confirm_forced_failure_rolls_back_lineage_and_notifications(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (
+        organization_id,
+        location_id,
+        admin_id,
+        csrf,
+        rollout,
+        changed_lesson_id,
+        _unchanged_lesson_id,
+    ) = await arrange_rollout_context(auth_client, auth_app, db_session)
+    rollout_id = rollout.id
+    base = (
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/"
+        f"training-rollouts/{rollout_id}"
+    )
+    await prepare_confirmable_rollout(
+        auth_client,
+        base=base,
+        csrf=csrf,
+        changed_lesson_id=changed_lesson_id,
+        key_prefix="forced-confirm",
+    )
+
+    async def fail_reservation(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("forced rollout confirmation failure")
+
+    db_session.expire_all()
+    monkeypatch.setattr(training_rollouts, "reserve_idempotency", fail_reservation)
+    with pytest.raises(RuntimeError, match="forced rollout confirmation failure"):
+        await training_rollouts.confirm_training_rollout(
+            db_session,
+            organization_id=organization_id,
+            location_id=location_id,
+            rollout_id=rollout_id,
+            actor_user_id=admin_id,
+            request_id=uuid4(),
+            expected_revision=3,
+            idempotency_key="forced-confirm-rollback",
+            now=FIXED_NOW,
+        )
+
+    db_session.expire_all()
+    assignments = list((await db_session.scalars(select(TrainingAssignment))).all())
+    assert len(assignments) == 1
+    assert assignments[0].status == "in_progress"
+    assert assignments[0].revoked_at is None
+    assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 3
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(BackgroundJob)
+            .where(BackgroundJob.job_type == "training_rollout_notification")
+        )
+        == 0
+    )
+    stored = await db_session.get_one(TrainingRollout, rollout_id)
+    assert stored.status == "preview_ready"
+    assert stored.revision == 3
+    assert stored.confirmed_at is None
+    impacts = list((await db_session.scalars(select(RolloutEmployeeImpact))).all())
+    assert len(impacts) == 1
+    assert impacts[0].target_assignment_id is None
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(AuditEvent)
+            .where(AuditEvent.action == "training_rollout_confirmed")
+        )
+        == 0
+    )
+
+
 async def test_rollout_mutation_requires_completed_admin_mfa(
     auth_client: AsyncClient,
     auth_app: FastAPI,
@@ -553,24 +917,26 @@ async def test_rollout_mutation_requires_completed_admin_mfa(
     assert await db_session.scalar(select(func.count()).select_from(TrainingRollout)) == 0
 
 
-def test_rollout_openapi_exposes_preview_boundary_without_confirm_or_assessment(
+def test_rollout_openapi_exposes_preview_and_confirm_without_assessment(
     auth_app: FastAPI,
 ) -> None:
     document = auth_app.openapi()
     base = "/api/v1/organizations/{organization_id}/locations/{location_id}/training-rollouts"
     detail = f"{base}/{{rollout_id}}"
     preview = f"{detail}/preview"
+    confirm = f"{detail}/confirm"
     lesson_rule = f"{detail}/lesson-rules/{{lesson_id}}"
 
     assert set(document["paths"][base]) == {"post"}
     assert set(document["paths"][detail]) == {"get"}
     assert set(document["paths"][preview]) == {"post"}
+    assert set(document["paths"][confirm]) == {"post"}
     assert set(document["paths"][lesson_rule]) == {"patch"}
-    assert f"{detail}/confirm" not in document["paths"]
     serialized = str(
         {
             "paths": {
-                path: document["paths"][path] for path in (base, detail, preview, lesson_rule)
+                path: document["paths"][path]
+                for path in (base, detail, preview, confirm, lesson_rule)
             },
             "schemas": {
                 name: schema

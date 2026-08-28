@@ -5,16 +5,19 @@ from datetime import datetime
 from typing import Literal, cast
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
     AuditEvent,
+    BackgroundJob,
+    EmployeeProfile,
     LessonCompletion,
     LessonContentBlock,
     LessonTranslation,
     LessonVersion,
+    OrganizationMembership,
     RolloutEmployeeImpact,
     RolloutLessonRuleRecord,
     Training,
@@ -22,6 +25,7 @@ from app.models import (
     TrainingModuleVersion,
     TrainingRollout,
     TrainingVersion,
+    User,
 )
 from app.schemas.training import (
     TrainingRolloutEmployeeImpactResponse,
@@ -100,6 +104,30 @@ def _rollout_exists() -> APIError:
         status_code=409,
         code="TRAINING_ROLLOUT_EXISTS",
         message="Активний Rollout для цих версій уже існує.",
+    )
+
+
+def _rollout_not_ready() -> APIError:
+    return APIError(
+        status_code=409,
+        code="TRAINING_ROLLOUT_NOT_READY",
+        message="Rollout не готовий до підтвердження.",
+    )
+
+
+def _rollout_stale() -> APIError:
+    return APIError(
+        status_code=409,
+        code="TRAINING_ROLLOUT_STALE",
+        message="Попередній перегляд Rollout застарів. Оновіть його перед підтвердженням.",
+    )
+
+
+def _rule_required() -> APIError:
+    return APIError(
+        status_code=409,
+        code="ROLLOUT_RULE_REQUIRED",
+        message="Оберіть правило для кожного матеріально зміненого Lesson.",
     )
 
 
@@ -349,6 +377,7 @@ def _impact_response(impact: RolloutEmployeeImpact) -> TrainingRolloutEmployeeIm
     return TrainingRolloutEmployeeImpactResponse(
         employee_profile_id=impact.employee_profile_id,
         source_assignment_id=impact.source_assignment_id,
+        target_assignment_id=impact.target_assignment_id,
         current_required_count=impact.current_required_count,
         current_completed_count=impact.current_completed_count,
         current_progress_percentage=impact.current_progress_percentage,
@@ -365,6 +394,8 @@ def _impact_response(impact: RolloutEmployeeImpact) -> TrainingRolloutEmployeeIm
 
 
 async def _rollout_is_stale(db: AsyncSession, rollout: TrainingRollout) -> bool:
+    if rollout.status in ("confirmed", "processing", "completed", "failed", "cancelled"):
+        return False
     if rollout.status == "stale":
         return True
     if rollout.previewed_at is None:
@@ -855,6 +886,290 @@ async def update_training_rollout_lesson_rule(
                 target_id=rollout.id,
                 old_values={"lesson_id": str(lesson_id), "rule": previous},
                 new_values={"lesson_id": str(lesson_id), "rule": rule_value},
+                request_id=request_id,
+                outcome="success",
+            )
+        )
+        await db.commit()
+        return await _response(db, rollout)
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def _employee_locales(
+    db: AsyncSession,
+    employee_profile_ids: list[UUID],
+) -> dict[UUID, str]:
+    if not employee_profile_ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(EmployeeProfile.id, User.preferred_locale)
+            .join(
+                OrganizationMembership,
+                and_(
+                    OrganizationMembership.id == EmployeeProfile.membership_id,
+                    OrganizationMembership.organization_id == EmployeeProfile.organization_id,
+                ),
+            )
+            .join(User, User.id == OrganizationMembership.user_id)
+            .where(EmployeeProfile.id.in_(employee_profile_ids))
+        )
+    ).tuples()
+    return {employee_id: "en" if locale == "en" else "uk" for employee_id, locale in rows}
+
+
+def _rollout_notification_job(
+    *,
+    organization_id: UUID,
+    rollout_id: UUID,
+    assignment_id: UUID,
+    locale: str,
+) -> BackgroundJob:
+    return BackgroundJob(
+        organization_id=organization_id,
+        job_type="training_rollout_notification",
+        status="pending",
+        payload={
+            "rollout_id": str(rollout_id),
+            "assignment_id": str(assignment_id),
+            "template_code": "training_rollout_completed",
+            "locale": "en" if locale == "en" else "uk",
+        },
+        idempotency_key=f"rollout:{rollout_id}:assignment:{assignment_id}",
+    )
+
+
+async def confirm_training_rollout(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    rollout_id: UUID,
+    actor_user_id: UUID,
+    request_id: UUID,
+    expected_revision: int,
+    idempotency_key: str,
+    now: datetime,
+) -> TrainingRolloutResponse:
+    fingerprint = request_fingerprint(
+        {"rollout_id": str(rollout_id), "expected_revision": expected_revision}
+    )
+    try:
+        replay = await find_idempotency_replay(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="training_rollout.confirm",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            now=now,
+        )
+        rollout = await _scoped_rollout(
+            db,
+            organization_id=organization_id,
+            location_id=location_id,
+            rollout_id=rollout_id,
+            lock=replay is None,
+        )
+        if replay is None:
+            replay = await find_idempotency_replay(
+                db,
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                action="training_rollout.confirm",
+                key=idempotency_key,
+                fingerprint=fingerprint,
+                now=now,
+            )
+        if replay is not None:
+            if replay.resource_id != rollout.id:
+                raise RuntimeError("Idempotent Rollout confirmation target is inconsistent")
+            return await _response(db, rollout)
+        if rollout.status == "stale":
+            raise _rollout_stale()
+        if rollout.status != "preview_ready":
+            raise _rollout_not_ready()
+        if rollout.revision != expected_revision:
+            raise _revision_conflict()
+        source_version, target_version = await _validated_versions(
+            db,
+            organization_id=organization_id,
+            location_id=location_id,
+            from_version_id=rollout.from_version_id,
+            to_version_id=rollout.to_version_id,
+            lock=True,
+        )
+        assignments = await _source_assignments(db, rollout=rollout, lock=True)
+        completion_sets = await _completions_by_assignment(db, assignments)
+        if (
+            source_version.revision != rollout.from_version_revision
+            or target_version.revision != rollout.to_version_revision
+            or rollout.source_assignment_set_fingerprint
+            != _source_fingerprint(assignments, completion_sets)
+        ):
+            raise _rollout_stale()
+        rules = list(
+            (
+                await db.scalars(
+                    select(RolloutLessonRuleRecord)
+                    .where(RolloutLessonRuleRecord.rollout_id == rollout.id)
+                    .order_by(RolloutLessonRuleRecord.lesson_id)
+                    .with_for_update()
+                )
+            ).all()
+        )
+        if any(rule.requires_admin_decision and rule.rule is None for rule in rules):
+            raise _rule_required()
+        impacts = list(
+            (
+                await db.scalars(
+                    select(RolloutEmployeeImpact)
+                    .where(RolloutEmployeeImpact.rollout_id == rollout.id)
+                    .order_by(RolloutEmployeeImpact.source_assignment_id)
+                    .with_for_update()
+                )
+            ).all()
+        )
+        if {impact.source_assignment_id for impact in impacts} != {
+            assignment.id for assignment in assignments
+        }:
+            raise _rollout_stale()
+        assignment_by_id = {assignment.id: assignment for assignment in assignments}
+        source_completion_rows: dict[UUID, list[LessonCompletion]] = {
+            assignment.id: [] for assignment in assignments
+        }
+        if assignments:
+            for completion in (
+                await db.scalars(
+                    select(LessonCompletion)
+                    .where(LessonCompletion.assignment_id.in_(assignment_by_id))
+                    .order_by(LessonCompletion.assignment_id, LessonCompletion.lesson_id)
+                    .with_for_update()
+                )
+            ).all():
+                source_completion_rows[completion.assignment_id].append(completion)
+        target_lessons = await _lesson_snapshots(
+            db,
+            training_version_id=target_version.id,
+        )
+        target_required_ids = {
+            lesson_id for lesson_id, lesson in target_lessons.items() if lesson.required
+        }
+        rule_by_lesson = {rule.lesson_id: rule for rule in rules}
+        locales = await _employee_locales(
+            db,
+            [assignment.employee_profile_id for assignment in assignments],
+        )
+        carried_count = 0
+        target_assignments: list[TrainingAssignment] = []
+        for impact in impacts:
+            source_assignment = assignment_by_id[impact.source_assignment_id]
+            preserved = [
+                completion
+                for completion in source_completion_rows[source_assignment.id]
+                if completion.lesson_id in target_lessons
+                and rule_by_lesson[completion.lesson_id].rule == "preserve_completion"
+            ]
+            preserved_ids = {completion.lesson_id for completion in preserved}
+            completed_required_ids = target_required_ids & preserved_ids
+            target_status = "assigned"
+            started_at = None
+            completed_at = None
+            if preserved:
+                target_status = "in_progress"
+                started_at = now
+            if target_required_ids and completed_required_ids == target_required_ids:
+                target_status = "completed"
+                started_at = now
+                completed_at = now
+            target_assignment = TrainingAssignment(
+                id=uuid4(),
+                organization_id=organization_id,
+                location_id=location_id,
+                training_id=rollout.training_id,
+                employee_profile_id=source_assignment.employee_profile_id,
+                training_version_id=target_version.id,
+                status=target_status,
+                source="rollout",
+                previous_assignment_id=source_assignment.id,
+                source_rollout_id=rollout.id,
+                assigned_by_user_id=actor_user_id,
+                assigned_at=now,
+                started_at=started_at,
+                completed_at=completed_at,
+            )
+            source_assignment.status = "revoked"
+            source_assignment.revoked_at = now
+            source_assignment.revoke_reason = "rollout"
+            source_assignment.revoke_note = None
+            await db.flush()
+            db.add(target_assignment)
+            await db.flush()
+            for source_completion in preserved:
+                target_lesson = target_lessons[source_completion.lesson_id]
+                db.add(
+                    LessonCompletion(
+                        id=uuid4(),
+                        organization_id=organization_id,
+                        location_id=location_id,
+                        training_id=rollout.training_id,
+                        assignment_id=target_assignment.id,
+                        lesson_id=source_completion.lesson_id,
+                        lesson_version_id=target_lesson.version_id,
+                        completion_source="rollout_preserved",
+                        source_completion_id=source_completion.id,
+                        source_rollout_id=rollout.id,
+                        completed_by_user_id=None,
+                        completed_at=source_completion.completed_at,
+                    )
+                )
+            carried_count += len(preserved)
+            impact.target_assignment_id = target_assignment.id
+            db.add(
+                _rollout_notification_job(
+                    organization_id=organization_id,
+                    rollout_id=rollout.id,
+                    assignment_id=target_assignment.id,
+                    locale=locales[source_assignment.employee_profile_id],
+                )
+            )
+            target_assignments.append(target_assignment)
+        rollout.status = "completed"
+        rollout.revision += 1
+        rollout.confirmed_by_user_id = actor_user_id
+        rollout.confirmed_at = now
+        rollout.processing_at = now
+        rollout.completed_at = now
+        await reserve_idempotency(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="training_rollout.confirm",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            resource_type="training_rollout",
+            resource_id=rollout.id,
+            response_status=200,
+            now=now,
+        )
+        db.add(
+            AuditEvent(
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                actor_type="user",
+                action="training_rollout_confirmed",
+                target_type="training_rollout",
+                target_id=rollout.id,
+                old_values={"revision": expected_revision, "status": "preview_ready"},
+                new_values={
+                    "revision": rollout.revision,
+                    "status": "completed",
+                    "assignment_count": len(target_assignments),
+                    "completion_count": carried_count,
+                    "notification_count": len(target_assignments),
+                },
                 request_id=request_id,
                 outcome="success",
             )

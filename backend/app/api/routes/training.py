@@ -43,6 +43,7 @@ from app.schemas.training import (
     TrainingReadinessResponse,
     TrainingReorderResponse,
     TrainingRevisionResponse,
+    TrainingRolloutConfirmRequest,
     TrainingRolloutCreate,
     TrainingRolloutLessonRuleUpdate,
     TrainingRolloutPreviewRequest,
@@ -91,6 +92,7 @@ from app.services.training_queries import (
     training_asset_response,
 )
 from app.services.training_rollouts import (
+    confirm_training_rollout,
     create_training_rollout,
     get_training_rollout,
     preview_training_rollout,
@@ -511,6 +513,39 @@ async def training_rollout_preview_route(
 ) -> TrainingRolloutResponse:
     clock = cast(Clock, request.app.state.clock)
     return await preview_training_rollout(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        rollout_id=rollout_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-rollouts/"
+    "{rollout_id}/confirm",
+    response_model=TrainingRolloutResponse,
+)
+async def training_rollout_confirm_route(
+    organization_id: UUID,
+    location_id: UUID,
+    rollout_id: UUID,
+    payload: TrainingRolloutConfirmRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingRolloutResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await confirm_training_rollout(
         db,
         organization_id=organization_id,
         location_id=location_id,

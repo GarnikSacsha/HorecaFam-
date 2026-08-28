@@ -548,6 +548,10 @@ class TrainingRolloutPreviewRequest(StrictTrainingSchema):
     expected_revision: int = Field(ge=0)
 
 
+class TrainingRolloutConfirmRequest(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+
+
 class TrainingRolloutLessonRuleUpdate(StrictTrainingSchema):
     expected_revision: int = Field(ge=0)
     rule: Literal["preserve_completion", "needs_repeat"]
@@ -581,6 +585,7 @@ class TrainingRolloutLessonRuleResponse(StrictTrainingSchema):
 class TrainingRolloutEmployeeImpactResponse(StrictTrainingSchema):
     employee_profile_id: UUID
     source_assignment_id: UUID
+    target_assignment_id: UUID | None
     current_required_count: int = Field(ge=0)
     current_completed_count: int = Field(ge=0)
     current_progress_percentage: int = Field(ge=0, le=100)
