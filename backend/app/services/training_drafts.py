@@ -9,14 +9,18 @@ from app.models import (
     AuditEvent,
     Lesson,
     LessonContentBlock,
+    LessonContentBlockTranslation,
     LessonTranslation,
     LessonVersion,
     Location,
+    Menu,
+    MenuVersion,
     Training,
     TrainingModule,
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingVersion,
+    TrainingVersionMenuDependency,
 )
 
 
@@ -233,6 +237,53 @@ async def _copy_version_graph(
         ]
     )
 
+    source_blocks = list(
+        (
+            await db.scalars(
+                select(LessonContentBlock)
+                .where(LessonContentBlock.lesson_version_id.in_(lesson_version_map))
+                .order_by(LessonContentBlock.position, LessonContentBlock.id)
+            )
+        ).all()
+    )
+    block_map: dict[UUID, LessonContentBlock] = {}
+    for block_row in source_blocks:
+        copied_block = LessonContentBlock(
+            id=uuid4(),
+            lesson_version_id=lesson_version_map[block_row.lesson_version_id].id,
+            type=block_row.type,
+            position=block_row.position,
+            payload=block_row.payload,
+            menu_item_id=block_row.menu_item_id,
+            asset_id=block_row.asset_id,
+        )
+        block_map[block_row.id] = copied_block
+        db.add(copied_block)
+    await db.flush()
+    if block_map:
+        source_block_translations = list(
+            (
+                await db.scalars(
+                    select(LessonContentBlockTranslation).where(
+                        LessonContentBlockTranslation.lesson_content_block_id.in_(block_map)
+                    )
+                )
+            ).all()
+        )
+        db.add_all(
+            [
+                LessonContentBlockTranslation(
+                    id=uuid4(),
+                    lesson_content_block_id=block_map[row.lesson_content_block_id].id,
+                    locale=row.locale,
+                    status=row.status,
+                    translated_payload=row.translated_payload,
+                    source_revision=row.source_revision,
+                )
+                for row in source_block_translations
+            ]
+        )
+
 
 async def create_training_draft(
     db: AsyncSession,
@@ -339,6 +390,24 @@ async def create_training_draft(
             )
         else:
             await _copy_version_graph(db, source=published, target=draft)
+
+        current_menu_version = await db.scalar(
+            select(MenuVersion)
+            .join(Menu, Menu.id == MenuVersion.menu_id)
+            .where(
+                Menu.organization_id == organization_id,
+                Menu.location_id == location_id,
+                MenuVersion.status == "published",
+            )
+        )
+        if current_menu_version is not None:
+            db.add(
+                TrainingVersionMenuDependency(
+                    id=uuid4(),
+                    training_version_id=draft.id,
+                    menu_version_id=current_menu_version.id,
+                )
+            )
 
         _audit(
             db,

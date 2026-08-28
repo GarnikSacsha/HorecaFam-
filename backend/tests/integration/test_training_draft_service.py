@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
+    LessonContentBlock,
+    LessonContentBlockTranslation,
     LessonTranslation,
     LessonVersion,
     Location,
@@ -26,6 +28,7 @@ from app.services.training_drafts import (
 )
 from tests.factories.identity import make_location, make_organization, make_user
 from tests.factories.training import (
+    make_content_block,
     make_lesson,
     make_lesson_translation,
     make_lesson_version,
@@ -201,7 +204,18 @@ async def test_draft_copies_published_stable_lesson_identity(
         ]
     )
     await db_session.flush()
-    db_session.add(make_lesson_translation(lesson_version))
+    block = make_content_block(lesson_version)
+    db_session.add_all([make_lesson_translation(lesson_version), block])
+    await db_session.flush()
+    db_session.add(
+        LessonContentBlockTranslation(
+            lesson_content_block_id=block.id,
+            locale="en",
+            status="ready",
+            translated_payload={"text_uk": "Serve warm."},
+            source_revision=0,
+        )
+    )
     await db_session.commit()
 
     draft = await create_training_draft(
@@ -225,10 +239,22 @@ async def test_draft_copies_published_stable_lesson_identity(
     copied_translation = await db_session.scalar(
         select(LessonTranslation).where(LessonTranslation.lesson_version_id == copied_lesson.id)
     )
+    copied_block = await db_session.scalar(
+        select(LessonContentBlock).where(LessonContentBlock.lesson_version_id == copied_lesson.id)
+    )
+    assert copied_block is not None
+    copied_block_translation = await db_session.scalar(
+        select(LessonContentBlockTranslation).where(
+            LessonContentBlockTranslation.lesson_content_block_id == copied_block.id
+        )
+    )
 
     assert copied_lesson.lesson_id == lesson.id
     assert copied_lesson.id != lesson_version.id
     assert copied_translation is not None and copied_translation.title == "Основи меню"
+    assert copied_block.id != block.id and copied_block.payload == block.payload
+    assert copied_block_translation is not None
+    assert copied_block_translation.translated_payload == {"text_uk": "Serve warm."}
 
 
 @pytest.mark.integration
