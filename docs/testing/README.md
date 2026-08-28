@@ -8,8 +8,8 @@ maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`. CRA-43
 test evidence remains anchored to `fa30a1f`. CRA-47 planning and CRA-48 documentation are Done.
 CRA-49 is accepted and fast-forward published through corrective checkpoint `8028d6e`; its runtime
-evidence is recorded below. CRA-53 planning is accepted and Done. CRA-54 has a complete local
-Training Content candidate awaiting Denys acceptance and publication.
+evidence is recorded below. CRA-53 planning and CRA-54 implementation are accepted and Done.
+CRA-54 is fast-forward published through `d955f6a`.
 
 ## Current test layout
 
@@ -178,9 +178,9 @@ RED/GREEN evidence, security review, exact browser path, limitations, and exclus
 implementation checkpoints end at `22927f7`; the corrective acceptance tail is published through
 `8028d6e`.
 
-## CRA-54 local acceptance candidate
+## Accepted CRA-54 checkpoint
 
-The complete local gate reports Python 3.12.10 and native PostgreSQL 16:
+The accepted gate reports Python 3.12.10 and native PostgreSQL 16:
 
 - 318 passed, 0 failed, 0 skipped;
 - 88% overall statement/branch coverage and 80% aggregate coverage across the predeclared
@@ -194,5 +194,6 @@ The complete local gate reports Python 3.12.10 and native PostgreSQL 16:
 
 See [`training-slice-3-acceptance.md`](training-slice-3-acceptance.md) for the implemented boundary,
 requirement matrix, RED/GREEN evidence, critical-file declaration, browser path, security review,
-limitations, and explicit Slice 4 exclusions. This is candidate evidence only: CRA-54 awaits Denys
-acceptance and no push, Railway/provider smoke, deployment, PR, or merge is claimed.
+limitations, and explicit Slice 4 exclusions. Denys accepted the checkpoint and authorized
+fast-forward publication through `d955f6a`; Railway/provider smoke, deployment, PR, and merge were
+not performed.

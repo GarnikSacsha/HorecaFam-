@@ -1,8 +1,7 @@
 # Current Architecture
 
-This document describes the verified accepted implementation published through CRA-49 and the
-complete local CRA-54 Training candidate awaiting acceptance. Canonical product behavior and
-contracts remain in Linear.
+This document describes the verified accepted implementation published through CRA-54 at
+`d955f6a`. Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -46,7 +45,7 @@ required environment configuration
   `0002_identity_persistence.py` creates Stage 1; `0003_auth_security.py` creates Stage 2;
   `0004_invitation_lifecycle.py` and `0005_invitation_email_outbox.py` create Stage 3;
   `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the accepted CRA-49 Menu
-  schema; `0008_training_content.py` creates the local CRA-54 Training content schema.
+  schema; `0008_training_content.py` creates the accepted CRA-54 Training content schema.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -161,7 +160,7 @@ version and presentation-safe facts—never Drafts, import state, source checksu
 IDs, or a caller-selected tenant. Slice 2 applicability remains explicitly zero for Training
 content, Assignments, and notifications.
 
-## CRA-54 Training Content local candidate
+## Accepted CRA-54 Training Content
 
 ```text
 Admin Session + MFA + Organization/Location scope + CSRF
@@ -173,8 +172,9 @@ Admin Session + MFA + Organization/Location scope + CSRF
 → Active Employee own Profile/Location → current Published Training only
 ```
 
-The candidate stores one Training root per Location with immutable version snapshots, one fixed
-Menu-domain Module per version, stable Lesson identity, canonical Ukrainian copy, optional English
+The accepted implementation stores one Training root per Location with immutable version
+snapshots, one fixed Menu-domain Module per version, stable Lesson identity, canonical Ukrainian
+copy, optional English
 translation state, ordered typed content blocks, and private image assets. Only Draft versions are
 mutable. Readiness blocks invalid canonical content, stale dependency/revision state, invalid Menu
 Item links, unready images, missing alt text, and invalid external video identifiers; incomplete
@@ -182,7 +182,7 @@ English remains warning-only.
 
 Admin routes derive and enforce Organization/Location scope, MFA, CSRF, optimistic revisions, and
 idempotency where the operation can be retried. Publication locks and revalidates the Training root,
-candidate, current Published version, and exact current Published Menu dependency before atomically
+Draft, current Published version, and exact current Published Menu dependency before atomically
 switching the Employee reference.
 
 `GET /api/v1/me/training`, Module/Lesson detail routes, and private asset access derive Organization
@@ -208,5 +208,5 @@ There is no invitation list/detail workflow, password recovery, MFA enrollment, 
 reference CRUD, Employee disable/reactivate lifecycle administration, Training assignment,
 completion/progress, Practice/exam workflow, provider integration, or deployed worker/resource. The
 frontend lives in [`../../frontend/`](../../frontend/) and includes the accepted CRA-49
-Admin/Employee Menu experience plus the local CRA-54 Training candidate. Adding any absent
+Admin/Employee Menu experience plus accepted CRA-54 Training. Adding any absent
 capability requires a new bounded Linear issue and approval.

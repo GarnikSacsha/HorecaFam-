@@ -3,8 +3,8 @@
 CRA-43 is accepted, Done, and published through `fa30a1f`. Accepted CRA-49 extends that frontend
 with Menu administration, explicit JSON review/publication, and an Active Employee published-menu
 reference; CRA-49 and its corrective acceptance tail are fast-forward published through `8028d6e`.
-The local CRA-54 candidate adds the Admin Training authoring workspace and Active Employee
-Module/Lesson reference reader; it awaits acceptance and is not published.
+Accepted CRA-54 adds the Admin Training authoring workspace and Active Employee Module/Lesson
+reference reader; its nine-checkpoint implementation is published through `d955f6a`.
 The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
 server-session driven, responsive, keyboard accessible, and reduced-motion aware.
@@ -55,9 +55,9 @@ responsive presentation, and the frontend-to-contract request boundary.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
 Assignments, completions, progress, practice, exams, notifications, password reset, provider
-integrations, deployment, and production environment configuration remain outside the candidate.
+integrations, deployment, and production environment configuration remain outside Slice 3.
 
 Fresh CRA-49 backend/frontend/browser evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
-Fresh local CRA-54 evidence is recorded in
+Accepted CRA-54 evidence is recorded in
 [`../docs/testing/training-slice-3-acceptance.md`](../docs/testing/training-slice-3-acceptance.md).

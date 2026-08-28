@@ -1,13 +1,13 @@
-# MVP Vertical Slice 3 — Training Content acceptance candidate
+# MVP Vertical Slice 3 — Training Content acceptance evidence
 
 **Bounded issue:** [CRA-54](https://linear.app/craftspacee/issue/CRA-54)  
 **Planning authority:** accepted CRA-53  
 **Evidence date:** 2026-08-28  
-**State:** complete local candidate awaiting Denys acceptance and separate publication approval
+**State:** accepted, Done, and fast-forward published through `d955f6a`
 
 Linear remains canonical for product, API, data, RBAC, and acceptance contracts. This document
-records the repository evidence that actually ran; it does not mark CRA-54 Done and does not claim
-Railway, provider, deployment, or production smoke evidence.
+records the repository evidence that actually ran. Denys accepted CRA-54 and authorized publication
+of its nine checkpoints. Railway, provider, deployment, and production smoke were not executed.
 
 ## Implemented boundary
 
@@ -122,12 +122,14 @@ Module and Lesson, including private image alt text, Menu Item card, and reduced
   are excluded from staging.
 - Protected untracked `Photos/` and local untracked `outputs/` were not modified or staged.
 
-## Limitations and next gate
+## Acceptance, publication, and next gate
 
 - Browser acceptance uses deterministic API route mocks. Real persistence, tenant isolation,
   concurrency, rollback, and migrations are proved separately by the PostgreSQL backend gate.
 - Storage behavior is tested with the fake private adapter; no paid or external provider was called.
-- No Railway/runtime smoke, deployment, production configuration, push, PR, merge, or history
-  rewrite was performed by this local candidate.
-- The safe next step is Denys review and acceptance of CRA-54. Publication and any runtime/provider
-  validation require their own explicit approval before CRA-54 can be recorded as Done.
+- Denys accepted CRA-54 and authorized fast-forward publication of the nine-checkpoint range
+  `8e15bd2..d955f6a`; remote verification confirmed `origin/main` at `d955f6a`.
+- No Railway/runtime smoke, deployment, production configuration, PR, merge, or history rewrite
+  was performed.
+- The next product step is a separate bounded Slice 4 planning issue. Runtime/provider validation
+  remains separately gated.

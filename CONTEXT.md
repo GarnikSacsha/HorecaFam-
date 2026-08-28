@@ -8,11 +8,13 @@ published on `origin/main`. The CRA-43 implementation series ends at `fa30a1f`; 
 documentation advances the published `origin/main` baseline to `586f8c5`. CRA-47 planning for Menu
 Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and its corrective
 publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is accepted and
-fast-forward published on `origin/main` through corrective checkpoint `8028d6e`. CRA-53 is the
-active planning-only issue for MVP Vertical Slice 3 — Training Content. CRA-42 is unrelated Backlog
-work. Slice 3 implementation, broader production administration, providers/workers, later pushes,
-PR, merge, deployment, and production configuration require separate approval or later bounded
-issues.
+fast-forward published on `origin/main` through corrective checkpoint `8028d6e`. CRA-53 planning
+and CRA-54 implementation for MVP Vertical Slice 3 — Training Content are accepted and Done.
+CRA-54 is fast-forward published through `d955f6a`. CRA-55 is the active bounded
+documentation-only checkpoint for post-CRA-54 state synchronization. CRA-42 is unrelated Backlog
+work. Slice 4 planning and implementation, broader production administration, providers/workers,
+later commits and pushes, PR, merge, deployment, and production configuration require separate
+approval or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -102,15 +104,24 @@ detail. The corrective full gate is `270 passed / 0 failed / 0 skipped` with 89%
 at `22927f7`; the corrective acceptance tail is fast-forward published through `8028d6e`. See
 [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
 
+[CRA-54](https://linear.app/craftspacee/issue/CRA-54/implement-mvp-vertical-slice-3-training-content)
+is accepted, Done, and published through `d955f6a`. It adds Location-owned versioned Training
+content, typed lesson blocks, private assets, atomic publication, protected Admin authoring, and
+Active Employee own-Location current-Published read-only Learning. The accepted gate reports 318
+backend tests, 88% overall statement/branch coverage, 80% aggregate critical Training coverage, 27
+Vitest tests, 9 Playwright tests, Alembic head `0008_training_content`, and no metadata drift. See
+[`docs/testing/training-slice-3-acceptance.md`](docs/testing/training-slice-3-acceptance.md).
+
 ## Repository map
 
-- [`backend/app`](backend/app): accepted Stage 0–6 runtime plus accepted CRA-49 Menu behavior.
+- [`backend/app`](backend/app): accepted Stage 0–6 runtime plus accepted CRA-49 Menu and CRA-54
+  Training behavior.
 - [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
-  CRA-49 head `0007_menu_import_review`.
+  CRA-54 head `0008_training_content`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted CRA-43 React frontend plus the accepted CRA-49 Menu experience,
-  unit/component tests, and Playwright acceptance.
+- [`frontend`](frontend): accepted CRA-43 React frontend plus the accepted CRA-49 Menu and CRA-54
+  Training experiences, unit/component tests, and Playwright acceptance.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

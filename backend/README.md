@@ -5,9 +5,9 @@ plus the accepted CRA-49 Menu Source of Truth runtime and corrective acceptance 
 through `8028d6e`. CRA-49 adds
 Location-owned versioned Menu persistence, Draft/import/publication administration, and a
 published-only Employee reference API. Python 3.12 and PostgreSQL 16 are the approved runtime
-versions. The complete local CRA-54 candidate additionally implements Location-owned versioned
+versions. Accepted CRA-54 additionally implements Location-owned versioned
 Training Drafts, typed lesson content, private images, atomic publication, and a published-only
-Employee Training reference API. CRA-54 awaits acceptance and is not yet published.
+Employee Training reference API. Its nine checkpoints are published through `d955f6a`.
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository
 [`../AGENTS.md`](../AGENTS.md). Linear remains canonical for product/API/data/test-stage
@@ -74,7 +74,7 @@ proves same-key/different-key Draft, Import Resolution/Confirm, and Publish conc
 Employee Component search/cursor pagination. See
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
 
-The complete local CRA-54 gate reports 318 passed, 0 failed, 0 skipped, 88% overall
+The accepted CRA-54 gate reports 318 passed, 0 failed, 0 skipped, 88% overall
 statement/branch coverage, 80% aggregate coverage across the predeclared seven-file critical
 Training set, Alembic head `0008_training_content`, and no metadata drift. It proves Draft and
 publication races, replay, rollback, current Published Menu dependency, private storage boundaries,

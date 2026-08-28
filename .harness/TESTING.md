@@ -14,8 +14,8 @@ CRA-43 runtime acceptance evidence remains anchored to its implementation endpoi
 CRA-47 planning and CRA-48 documentation are Done. CRA-49 is accepted and fast-forward published
 through corrective checkpoint `8028d6e`; its evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
-CRA-53 planning is accepted and Done. CRA-54 has a complete local Training Content candidate; its
-evidence is recorded in
+CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54 is published through
+`d955f6a`; its evidence is recorded in
 [`../docs/testing/training-slice-3-acceptance.md`](../docs/testing/training-slice-3-acceptance.md).
 
 ## Environment setup
@@ -202,14 +202,15 @@ metadata no-drift all pass. The frontend reports 19 Vitest tests and 6 Playwrigh
 with Prettier, ESLint, TypeScript, and production build green. The ten-part implementation ends at
 `22927f7`; the corrective acceptance tail is published through `8028d6e`.
 
-## CRA-54 local candidate evidence
+## Accepted CRA-54 evidence
 
-The 2026-08-28 local candidate gate reports 318 passed, 0 failed, 0 skipped with 88% overall
+The accepted 2026-08-28 gate reports 318 passed, 0 failed, 0 skipped with 88% overall
 statement/branch coverage and 80% aggregate coverage across the predeclared seven-file critical
 Training set on Python 3.12.10 and native PostgreSQL 16. Ruff format/check and strict mypy pass.
 Alembic head is `0008_training_content`; empty-database upgrade, the Training migration round-trip,
 current-head validation, and metadata no-drift pass. The frontend reports 27 Vitest tests and
 9 Playwright tests passing, with Prettier, ESLint, TypeScript, and production build green.
 
-This evidence is local and awaiting Denys acceptance. It does not claim push, Railway/provider
-smoke, deployment, PR, merge, or production configuration.
+Denys accepted the candidate and authorized fast-forward publication of its nine checkpoints to
+`origin/main` through `d955f6a`. Railway/provider smoke, deployment, PR, merge, and production
+configuration were not performed.
