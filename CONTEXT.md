@@ -8,10 +8,11 @@ published on `origin/main`. The CRA-43 implementation series ends at `fa30a1f`; 
 documentation advances the published `origin/main` baseline to `586f8c5`. CRA-47 planning for Menu
 Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and its corrective
 publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is accepted and
-fast-forward published on `origin/main` through `22927f7`. CRA-42 is unrelated Backlog work.
-Training-domain expansion,
-broader production administration, providers/workers, push, PR, merge, deployment, and production
-configuration require separate approval or later bounded issues.
+fast-forward published on `origin/main` through corrective checkpoint `8028d6e`. CRA-53 is the
+active planning-only issue for MVP Vertical Slice 3 — Training Content. CRA-42 is unrelated Backlog
+work. Slice 3 implementation, broader production administration, providers/workers, later pushes,
+PR, merge, deployment, and production configuration require separate approval or later bounded
+issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -97,9 +98,8 @@ is accepted and published. It adds Menu persistence and migrations through
 `0007_menu_import_review`, revision-guarded Draft hierarchy/facts, protected JSON review and atomic
 publication, published-only Employee API reads, Admin lifecycle UI, and Employee mobile search/
 detail. The corrective full gate is `270 passed / 0 failed / 0 skipped` with 89% backend coverage,
-19 Vitest tests, 6 Playwright tests, and no Alembic drift. The ten implementation checkpoints are
-fast-forward published through `22927f7`; the corrective acceptance tail is local until separately
-published. See
+19 Vitest tests, 6 Playwright tests, and no Alembic drift. The ten implementation checkpoints end
+at `22927f7`; the corrective acceptance tail is fast-forward published through `8028d6e`. See
 [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
 
 ## Repository map

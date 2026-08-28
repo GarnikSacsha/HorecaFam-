@@ -1,7 +1,8 @@
 # Backend Foundation
 
 This directory contains the accepted and published backend MVP Vertical Slice 1 through CRA-40
-plus the accepted CRA-49 Menu Source of Truth runtime, published through `22927f7`. CRA-49 adds
+plus the accepted CRA-49 Menu Source of Truth runtime and corrective acceptance tail, published
+through `8028d6e`. CRA-49 adds
 Location-owned versioned Menu persistence, Draft/import/publication administration, and a
 published-only Employee reference API. Python 3.12 and PostgreSQL 16 are the approved runtime
 versions.

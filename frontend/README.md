@@ -2,7 +2,8 @@
 
 CRA-43 is accepted, Done, and published through `fa30a1f`. Accepted CRA-49 extends that frontend
 with Menu administration, explicit JSON review/publication, and an Active Employee published-menu
-reference; it is fast-forward published through `22927f7`. The application uses React 19, TypeScript 6,
+reference; CRA-49 and its corrective acceptance tail are fast-forward published through `8028d6e`.
+The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
 server-session driven, responsive, keyboard accessible, and reduced-motion aware.
 

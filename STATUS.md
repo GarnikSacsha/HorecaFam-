@@ -11,11 +11,11 @@ Slice 2 planning is accepted and Done. The completed bounded implementation is
 through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
-CRA-48 is Done. Denys accepted CRA-49 on 2026-08-28; its ten implementation checkpoints are
-fast-forward published on `origin/main` through `22927f7`. The corrective acceptance tail fixes
-same-key Import Confirm concurrency and completes the previously missing Draft/Import/Employee
-acceptance scenarios locally; its separate push remains gated. Every later product slice, push,
-PR, merge, deployment, provider, and production-configuration action remains separately gated.
+CRA-48 is Done. Denys accepted CRA-49 on 2026-08-28; its ten implementation checkpoints end at
+`22927f7`, and the corrective acceptance tail is fast-forward published on `origin/main` through
+`8028d6e`. CRA-53 is the active planning-only issue for MVP Vertical Slice 3 — Training Content.
+Slice 3 implementation and every later push, PR, merge, deployment, provider, and
+production-configuration action remain separately gated.
 CRA-42 is unrelated Backlog work.
 
 ## Accepted implementation and planning checkpoints
@@ -53,7 +53,8 @@ CRA-42 is unrelated Backlog work.
 - CRA-48 published-baseline documentation synchronization is accepted, Done, and published. Its
   primary checkpoint is `3b95b3c`; the corrective publication record removes temporary pre-push
   wording, and no CRA-48 push remains pending.
-- CRA-49 Menu Source of Truth implementation is accepted and published through `22927f7`.
+- CRA-49 Menu Source of Truth implementation and corrective acceptance tail are accepted and
+  published through `8028d6e`.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -190,14 +191,15 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; the accepted CRA-49 implementation baseline is published through `22927f7`.
+- Branch: `main`; the accepted CRA-49 baseline is published through corrective checkpoint
+  `8028d6e`.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, followed by the accepted CRA-46 documentation
   checkpoint at `586f8c5`, the CRA-48 checkpoint at `3b95b3c`, and its corrective publication record.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
-- Published branch: the CRA-49 implementation was fast-forward published to `origin/main` through
-  `22927f7`. This corrective documentation checkpoint is local until separately published; resolve
-  exact tips and ahead count through Git. No force-push or history rewriting was performed.
+- Published branch: the CRA-49 implementation ends at `22927f7`, and its corrective acceptance tail
+  was fast-forward published to `origin/main` through `8028d6e`. Resolve exact tips and ahead count
+  through Git. No force-push or history rewriting was performed.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
@@ -252,10 +254,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   Git evidence remains in Linear.
 - CRA-37 through CRA-48 are accepted and Done. The CRA-43 implementation series ends at `fa30a1f`,
   and the published repository baseline includes the CRA-46 documentation checkpoint at `586f8c5`.
-  CRA-48 and CRA-49 are accepted and published; the CRA-49 implementation endpoint is `22927f7`.
-  This corrective documentation commit and every later push, PR, merge, deploy, provider,
-  non-test mutation, architecture change, migration, history rewrite, or product slice remains
-  separately gated.
+  CRA-48 and CRA-49 are accepted and published; the CRA-49 corrective endpoint is `8028d6e`.
+  CRA-53 is active as planning-only. Slice 3 implementation and every later push, PR, merge, deploy,
+  provider, non-test mutation, architecture change, migration, or history rewrite remain separately
+  gated.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

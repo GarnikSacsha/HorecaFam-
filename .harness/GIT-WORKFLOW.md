@@ -8,10 +8,10 @@ the backend and frontend slice history was fast-forward published without rewrit
 the CRA-43 endpoint `fa30a1f`. CRA-46 is Done, and its documentation checkpoint advances the
 published `origin/main` baseline to `586f8c5`. CRA-47 Menu Slice 2 planning is accepted and Done.
 The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
-CRA-48 is Done. CRA-49 is accepted and its ten implementation checkpoints are fast-forward
-published on `origin/main` through `22927f7`. This corrective documentation checkpoint is local
-until separately published. CRA-42 is unrelated Backlog work. `origin` points to the approved
-HoReCa GitHub repository, and local `main` has upstream tracking.
+CRA-48 is Done. CRA-49 is accepted: its original ten implementation checkpoints end at `22927f7`,
+and its corrective acceptance tail is fast-forward published on `origin/main` through `8028d6e`.
+CRA-53 is the active planning-only Slice 3 issue. CRA-42 is unrelated Backlog work. `origin` points
+to the approved HoReCa GitHub repository, and local `main` has upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -112,5 +112,6 @@ local-commit and remote-action approvals. Backend Stages 1–7 and Frontend MVP 
 accepted and published through `fa30a1f`; CRA-41 and CRA-43 are Done. No product implementation
 issue is active. CRA-46 is Done and published as the repository documentation checkpoint at
 `586f8c5`; CRA-47 planning is accepted and Done. CRA-48 is Done and published with no pending push.
-CRA-49 implementation is accepted and published through `22927f7`. This corrective documentation
-commit and every later remote or product action remain separately gated.
+CRA-49 implementation and corrective acceptance tail are accepted and published through `8028d6e`.
+CRA-53 planning is active; its implementation and every later remote or product action remain
+separately gated.

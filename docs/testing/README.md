@@ -7,8 +7,8 @@ maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`. CRA-43
 test evidence remains anchored to `fa30a1f`. CRA-47 planning and CRA-48 documentation are Done.
-CRA-49 is accepted and fast-forward published through `22927f7`; its runtime evidence is recorded
-below.
+CRA-49 is accepted and fast-forward published through corrective checkpoint `8028d6e`; its runtime
+evidence is recorded below.
 
 ## Current test layout
 
@@ -173,5 +173,5 @@ The accepted gate reports Python 3.12.10 and native PostgreSQL 16:
 
 See [`menu-slice-2-acceptance.md`](menu-slice-2-acceptance.md) for the requirement matrix,
 RED/GREEN evidence, security review, exact browser path, limitations, and exclusions. The ten
-implementation checkpoints are published through `22927f7`; the corrective acceptance tail is
-local until separately published.
+implementation checkpoints end at `22927f7`; the corrective acceptance tail is published through
+`8028d6e`.

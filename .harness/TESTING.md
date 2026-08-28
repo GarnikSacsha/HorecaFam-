@@ -12,7 +12,7 @@
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`.
 CRA-43 runtime acceptance evidence remains anchored to its implementation endpoint `fa30a1f`.
 CRA-47 planning and CRA-48 documentation are Done. CRA-49 is accepted and fast-forward published
-through `22927f7`; its evidence is recorded in
+through corrective checkpoint `8028d6e`; its evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
 
 ## Environment setup
@@ -196,5 +196,5 @@ mapping, and explicit concurrency/security proof; no undeclared critical file se
 retroactively. Ruff format/check, strict
 mypy, Alembic head `0007_menu_import_review`, current-head validation, migration round-trips, and
 metadata no-drift all pass. The frontend reports 19 Vitest tests and 6 Playwright tests passing,
-with Prettier, ESLint, TypeScript, and production build green. The ten-part implementation is
-published through `22927f7`; the corrective acceptance tail is local until separately published.
+with Prettier, ESLint, TypeScript, and production build green. The ten-part implementation ends at
+`22927f7`; the corrective acceptance tail is published through `8028d6e`.

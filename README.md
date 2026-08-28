@@ -6,8 +6,10 @@ Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forwar
 documentation publication advances the published `origin/main` baseline to `586f8c5`. CRA-47
 planning for Menu Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and
 its corrective publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is
-accepted and fast-forward published on `origin/main` through `22927f7`. CRA-42 is unrelated Backlog
-work. PR, merge, deployment, providers, and production configuration remain separate gates.
+accepted and fast-forward published on `origin/main` through corrective checkpoint `8028d6e`.
+CRA-53 is the active planning-only issue for MVP Vertical Slice 3 — Training Content. CRA-42 is
+unrelated Backlog work. Slice 3 implementation, PR, merge, deployment, providers, and production
+configuration remain separate gates.
 
 ## Start here
 

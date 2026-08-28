@@ -2,8 +2,9 @@
 
 ## Status and boundary
 
-This document records the CRA-49 implementation accepted by Denys on 2026-08-28 and fast-forward
-published on `origin/main` through `22927f7`. No PR, merge, deployment, provider call, production
+This document records the CRA-49 implementation accepted by Denys on 2026-08-28. Its original ten
+implementation checkpoints end at `22927f7`, and the corrective acceptance tail is fast-forward
+published on `origin/main` through `8028d6e`. No PR, merge, deployment, provider call, production
 configuration, force-push, or history rewrite was performed.
 
 The accepted implementation provides one Location-owned, versioned Menu Source of Truth; explicit
