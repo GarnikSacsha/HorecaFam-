@@ -1,10 +1,14 @@
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
+from app.api.dependencies.auth import (
+    AuthorizationContext,
+    require_current_active_employee,
+    require_organization_admin,
+)
 from app.api.dependencies.session import AuthenticatedSession, get_csrf_protected_session
 from app.core.clock import Clock
 from app.core.config import Settings
@@ -17,6 +21,9 @@ from app.schemas.training import (
     AssetUploadIntentResponse,
     ContentBlockUpdate,
     ContentBlockWrite,
+    EmployeeTrainingLessonDetail,
+    EmployeeTrainingModuleDetail,
+    EmployeeTrainingReferenceResponse,
     ReorderRequest,
     TrainingAssetResponse,
     TrainingContentBlockMutationResponse,
@@ -36,6 +43,12 @@ from app.schemas.training import (
     TrainingVersionCollection,
     TrainingVersionCreate,
     TrainingVersionDetail,
+)
+from app.services.employee_training import (
+    get_employee_training_asset_access,
+    get_employee_training_lesson,
+    get_employee_training_module,
+    list_employee_training,
 )
 from app.services.private_storage import PrivateStorage, build_private_storage
 from app.services.training_assets import (
@@ -79,6 +92,102 @@ def get_private_storage(request: Request) -> PrivateStorage:
         configured = build_private_storage(settings)
         request.app.state.private_storage = configured
     return cast(PrivateStorage, configured)
+
+
+def _employee_locale(
+    authorization: AuthorizationContext,
+    requested: Literal["uk", "en"] | None,
+) -> Literal["uk", "en"]:
+    if requested is not None:
+        return requested
+    return "en" if authorization.user.preferred_locale == "en" else "uk"
+
+
+@router.get("/me/training", response_model=EmployeeTrainingReferenceResponse)
+async def employee_training_route(
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    locale: Literal["uk", "en"] | None = None,
+) -> EmployeeTrainingReferenceResponse:
+    if authorization.organization_id is None or authorization.location_id is None:
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    response = await list_employee_training(
+        db,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        requested_locale=_employee_locale(authorization, locale),
+    )
+    await db.commit()
+    return response
+
+
+@router.get(
+    "/me/training/modules/{module_id}",
+    response_model=EmployeeTrainingModuleDetail,
+)
+async def employee_training_module_route(
+    module_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    locale: Literal["uk", "en"] | None = None,
+) -> EmployeeTrainingModuleDetail:
+    if authorization.organization_id is None or authorization.location_id is None:
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    response = await get_employee_training_module(
+        db,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        module_id=module_id,
+        requested_locale=_employee_locale(authorization, locale),
+    )
+    await db.commit()
+    return response
+
+
+@router.get(
+    "/me/training/lessons/{lesson_id}",
+    response_model=EmployeeTrainingLessonDetail,
+)
+async def employee_training_lesson_route(
+    lesson_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    locale: Literal["uk", "en"] | None = None,
+) -> EmployeeTrainingLessonDetail:
+    if authorization.organization_id is None or authorization.location_id is None:
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    response = await get_employee_training_lesson(
+        db,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        lesson_id=lesson_id,
+        requested_locale=_employee_locale(authorization, locale),
+    )
+    await db.commit()
+    return response
+
+
+@router.get(
+    "/me/training/assets/{asset_id}/access",
+    response_model=AssetAccessResponse,
+)
+async def employee_training_asset_access_route(
+    asset_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    storage: Annotated[PrivateStorage, Depends(get_private_storage)],
+) -> AssetAccessResponse:
+    if authorization.organization_id is None or authorization.location_id is None:
+        raise RuntimeError("Active Employee authorization has no Organization or Location")
+    url = await get_employee_training_asset_access(
+        db,
+        storage=storage,
+        organization_id=authorization.organization_id,
+        location_id=authorization.location_id,
+        asset_id=asset_id,
+    )
+    await db.commit()
+    return AssetAccessResponse(url=url, expires_in=ACCESS_EXPIRES_SECONDS)
 
 
 def _module(detail: TrainingVersionDetail, module_id: UUID) -> TrainingModuleResponse:

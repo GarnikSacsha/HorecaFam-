@@ -379,3 +379,56 @@ class TrainingPublishResponse(StrictTrainingSchema):
     progress_count: Literal[0] = 0
     rollout_count: Literal[0] = 0
     notification_count: Literal[0] = 0
+
+
+class EmployeeTrainingSummary(StrictTrainingSchema):
+    id: UUID
+    version_number: int
+    published_at: datetime
+
+
+class EmployeeTrainingModuleSummary(StrictTrainingSchema):
+    id: UUID
+    domain_type: Literal["menu"]
+    title: str
+    description: str | None
+    position: int
+    required: bool
+    lesson_count: int
+    content_locale: Literal["uk", "en"]
+    translation_fallback: bool
+
+
+class EmployeeTrainingLessonSummary(StrictTrainingSchema):
+    id: UUID
+    title: str
+    description: str | None
+    position: int
+    required: bool
+    estimated_minutes: int | None
+    content_locale: Literal["uk", "en"]
+    translation_fallback: bool
+
+
+class EmployeeTrainingContentBlock(StrictTrainingSchema):
+    id: UUID
+    type: ContentBlockType
+    position: int
+    payload: dict[str, object]
+    content_locale: Literal["uk", "en"]
+    translation_fallback: bool
+
+
+class EmployeeTrainingReferenceResponse(StrictTrainingSchema):
+    training: EmployeeTrainingSummary | None
+    modules: list[EmployeeTrainingModuleSummary]
+    content_locale: Literal["uk", "en"]
+    translation_fallback: bool
+
+
+class EmployeeTrainingModuleDetail(EmployeeTrainingModuleSummary):
+    lessons: list[EmployeeTrainingLessonSummary]
+
+
+class EmployeeTrainingLessonDetail(EmployeeTrainingLessonSummary):
+    content_blocks: list[EmployeeTrainingContentBlock]
