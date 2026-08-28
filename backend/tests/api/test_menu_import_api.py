@@ -1,3 +1,5 @@
+import asyncio
+from copy import deepcopy
 from typing import Any, cast
 from uuid import UUID, uuid4
 
@@ -8,10 +10,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
-from app.models import MenuImport, MenuVersion
+from app.models import MenuImport, MenuVersion, Organization
 from app.schemas.menu import MenuImportCreate
 from app.services.menu_imports import _canonical_payload
 from tests.api.test_menu_admin_api import arrange_admin, mutation_headers
+from tests.factories.identity import make_location
 
 
 def import_payload(*, allergen_codes: list[str] | None = None) -> dict[str, object]:
@@ -57,6 +60,59 @@ def import_payload(*, allergen_codes: list[str] | None = None) -> dict[str, obje
             }
         ],
     }
+
+
+async def arrange_review_import(
+    client: AsyncClient,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    csrf: str,
+    key_prefix: str,
+) -> tuple[str, dict[str, object]]:
+    imports_url = f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-imports"
+    baseline = await client.post(
+        imports_url,
+        headers=mutation_headers(csrf, key=f"{key_prefix}-baseline-preview"),
+        json=import_payload(),
+    )
+    assert baseline.status_code == 201
+    confirmed = await client.post(
+        f"{imports_url}/{baseline.json()['id']}/confirm",
+        headers=mutation_headers(csrf, key=f"{key_prefix}-baseline-confirm"),
+        json={"expected_revision": 0, "acknowledge_warnings": False},
+    )
+    assert confirmed.status_code == 200
+    draft = confirmed.json()["draft"]
+    published = await client.post(
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-versions/"
+        f"{draft['id']}/publish",
+        headers=mutation_headers(csrf, key=f"{key_prefix}-baseline-publish"),
+        json={"expected_revision": draft["revision"]},
+    )
+    assert published.status_code == 200
+
+    changed_payload = deepcopy(import_payload())
+    sections = cast(list[dict[str, Any]], changed_payload["sections"])
+    item = cast(dict[str, Any], sections[0]["categories"][0]["items"][0])
+    item["component_data_status"] = "confirmed_present"
+    item["components"] = [
+        {
+            "stable_code": f"component-{key_prefix}",
+            "name_uk": "Новий компонент",
+            "optional": False,
+            "position": 0,
+        }
+    ]
+    review = await client.post(
+        imports_url,
+        headers=mutation_headers(csrf, key=f"{key_prefix}-review-preview"),
+        json=changed_payload,
+    )
+    assert review.status_code == 201
+    assert review.json()["review_count"] == 1
+    assert review.json()["findings"][0]["code"] == "CRITICAL_FACT_CHANGE"
+    return imports_url, cast(dict[str, object], review.json())
 
 
 async def test_admin_json_import_preview_replay_and_confirm_create_only_draft(
@@ -147,6 +203,94 @@ async def test_import_blocker_cannot_be_resolved_or_confirmed(
     assert confirmed.status_code == 409
     assert confirmed.json()["code"] == "IMPORT_NOT_READY"
     assert await db_session.scalar(select(func.count()).select_from(MenuVersion)) == 0
+
+
+async def test_import_resolution_and_confirm_concurrency_are_retry_safe(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, first_location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    organization = await db_session.get_one(Organization, organization_id)
+    second_location = make_location(organization, name="Second import concurrency location")
+    db_session.add(second_location)
+    await db_session.commit()
+
+    first_url, first_review = await arrange_review_import(
+        auth_client,
+        organization_id=organization_id,
+        location_id=first_location_id,
+        csrf=csrf,
+        key_prefix="same-key",
+    )
+    second_url, second_review = await arrange_review_import(
+        auth_client,
+        organization_id=organization_id,
+        location_id=second_location.id,
+        csrf=csrf,
+        key_prefix="different-key",
+    )
+
+    async def resolve(
+        url: str,
+        review: dict[str, object],
+        *,
+        key: str,
+    ) -> Any:
+        findings = cast(list[dict[str, object]], review["findings"])
+        return await auth_client.post(
+            f"{url}/{review['id']}/findings/{findings[0]['id']}/resolve",
+            headers=mutation_headers(csrf, key=key),
+            json={
+                "action": "confirm_critical_change",
+                "target_entity_id": None,
+                "comment": "Reviewed",
+                "expected_revision": 0,
+            },
+        )
+
+    same_key_resolutions = await asyncio.gather(
+        resolve(first_url, first_review, key="resolve-same-key"),
+        resolve(first_url, first_review, key="resolve-same-key"),
+    )
+    assert [response.status_code for response in same_key_resolutions] == [200, 200]
+    assert {response.json()["review_revision"] for response in same_key_resolutions} == {1}
+
+    different_key_resolutions = await asyncio.gather(
+        resolve(second_url, second_review, key="resolve-key-a"),
+        resolve(second_url, second_review, key="resolve-key-b"),
+    )
+    assert sorted(response.status_code for response in different_key_resolutions) == [200, 409]
+    resolution_loser = next(
+        response for response in different_key_resolutions if response.status_code == 409
+    )
+    assert resolution_loser.json()["code"] == "REVISION_CONFLICT"
+
+    async def confirm(url: str, review: dict[str, object], *, key: str) -> Any:
+        return await auth_client.post(
+            f"{url}/{review['id']}/confirm",
+            headers=mutation_headers(csrf, key=key),
+            json={"expected_revision": 1, "acknowledge_warnings": False},
+        )
+
+    same_key_confirms = await asyncio.gather(
+        confirm(first_url, first_review, key="confirm-same-key"),
+        confirm(first_url, first_review, key="confirm-same-key"),
+    )
+    assert [response.status_code for response in same_key_confirms] == [200, 200]
+    assert len({response.json()["draft"]["id"] for response in same_key_confirms}) == 1
+
+    different_key_confirms = await asyncio.gather(
+        confirm(second_url, second_review, key="confirm-key-a"),
+        confirm(second_url, second_review, key="confirm-key-b"),
+    )
+    assert sorted(response.status_code for response in different_key_confirms) == [200, 409]
+    confirm_loser = next(
+        response for response in different_key_confirms if response.status_code == 409
+    )
+    assert confirm_loser.json()["code"] == "IMPORT_NOT_READY"
 
 
 async def test_import_requires_mfa_csrf_and_tenant_scope(

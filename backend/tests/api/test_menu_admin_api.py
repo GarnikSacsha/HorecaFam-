@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -6,7 +7,7 @@ from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import MenuVersion, Session
+from app.models import MenuVersion, Organization, Session
 from app.security.tokens import hash_secret
 from tests.factories.auth import make_admin_access
 from tests.factories.identity import make_location, make_organization, make_user
@@ -162,6 +163,86 @@ async def test_admin_menu_api_supports_draft_hierarchy_and_item_workflow(
     assert listing.json()["revision"] == 4
     assert listing.json()["items"][0]["price_minor"] == 35000
     assert navigation.json()["draft"]["id"] == str(version_id)
+
+
+async def test_draft_create_and_revision_mutation_concurrency_are_deterministic(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client,
+        auth_app,
+        db_session,
+    )
+    versions_url = f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-versions"
+
+    same_key_results = await asyncio.gather(
+        auth_client.post(
+            versions_url,
+            headers=mutation_headers(csrf, key="draft-create-same-key"),
+            json={"copy_from_version_id": None},
+        ),
+        auth_client.post(
+            versions_url,
+            headers=mutation_headers(csrf, key="draft-create-same-key"),
+            json={"copy_from_version_id": None},
+        ),
+    )
+    assert [response.status_code for response in same_key_results] == [201, 201]
+    assert len({response.json()["id"] for response in same_key_results}) == 1
+
+    version_id = UUID(same_key_results[0].json()["id"])
+    mutation_results = await asyncio.gather(
+        auth_client.post(
+            f"{versions_url}/{version_id}/sections",
+            headers=mutation_headers(csrf),
+            json={
+                "name_uk": "Кухня",
+                "stable_code": "kitchen",
+                "position": 0,
+                "expected_revision": 0,
+            },
+        ),
+        auth_client.post(
+            f"{versions_url}/{version_id}/sections",
+            headers=mutation_headers(csrf),
+            json={
+                "name_uk": "Бар",
+                "stable_code": "bar",
+                "position": 0,
+                "expected_revision": 0,
+            },
+        ),
+    )
+    assert sorted(response.status_code for response in mutation_results) == [200, 409]
+    loser = next(response for response in mutation_results if response.status_code == 409)
+    assert loser.json()["code"] == "REVISION_CONFLICT"
+
+    organization = await db_session.get_one(Organization, organization_id)
+    second_location = make_location(organization, name="Concurrency location")
+    db_session.add(second_location)
+    await db_session.commit()
+    second_url = (
+        f"/api/v1/organizations/{organization_id}/locations/{second_location.id}/menu-versions"
+    )
+    different_key_results = await asyncio.gather(
+        auth_client.post(
+            second_url,
+            headers=mutation_headers(csrf, key="draft-create-key-a"),
+            json={"copy_from_version_id": None},
+        ),
+        auth_client.post(
+            second_url,
+            headers=mutation_headers(csrf, key="draft-create-key-b"),
+            json={"copy_from_version_id": None},
+        ),
+    )
+    assert sorted(response.status_code for response in different_key_results) == [201, 409]
+    different_key_loser = next(
+        response for response in different_key_results if response.status_code == 409
+    )
+    assert different_key_loser.json()["code"] == "MENU_DRAFT_EXISTS"
 
 
 async def test_admin_menu_mutations_require_csrf_mfa_and_same_tenant(

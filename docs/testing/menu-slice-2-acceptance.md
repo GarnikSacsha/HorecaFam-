@@ -40,6 +40,24 @@ The first combined GREEN run found only a test-fixture omission: `LogoutButton` 
 a Router, while the new page fixture had not supplied one. Adding `MemoryRouter` corrected the
 fixture without changing product behavior. The final component and browser gates are green.
 
+The corrective closure added the missing real concurrency and Employee query evidence. Concurrent
+same-key Import Confirm first reproduced `[200, 409]` in three of three controlled PostgreSQL runs:
+the waiting request checked replay before the winner committed, then treated the confirmed Import
+as non-ready after acquiring its lock. GREEN rechecks the idempotency record after the row lock in
+Finding Resolution and Confirm. The identical reproducer then returned replay-safe `[200, 200]` in
+three of three runs, while different keys retained one success and one conflict. Draft create and
+revision mutation concurrency, verified Component search, deterministic cursor replay, second-page
+ordering, and invalid-cursor rejection are also covered.
+
+## Corrective coverage decision
+
+Denys accepted the precise CRA-49 corrective gate on 2026-08-28: at least 80% overall backend
+coverage with branch tracking, every mandatory Slice 2 scenario mapped, and explicit
+concurrency/security proof. The earlier phrase requiring 90% branch coverage for a "declared
+critical Slice 2 set" did not actually declare such a set before implementation. No file list is
+selected retroactively from the completed coverage result. The corrective gate is therefore
+reported transparently through the complete overall measurement and scenario evidence below.
+
 ## Backend gate
 
 The complete gate ran against the guarded native PostgreSQL 16 test database with Python 3.12.10:
@@ -47,8 +65,8 @@ The complete gate ran against the guarded native PostgreSQL 16 test database wit
 - Ruff format check: passed, 113 files already formatted;
 - Ruff check: passed;
 - strict mypy: passed, 103 source files checked;
-- pytest: 267 passed, 0 failed, 0 skipped;
-- overall statement/branch coverage: 87%;
+- pytest: 270 passed, 0 failed, 0 skipped;
+- overall statement/branch coverage: 89%;
 - Alembic: single current head `0007_menu_import_review`;
 - empty-database upgrade, `current --check-heads`, migration downgrade/upgrade coverage, and
   metadata no-drift: passed.

@@ -12,7 +12,9 @@ through the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
 CRA-48 is Done. Denys accepted CRA-49 on 2026-08-28; its ten implementation checkpoints are
-fast-forward published on `origin/main` through `22927f7`. Every later product slice, push,
+fast-forward published on `origin/main` through `22927f7`. The corrective acceptance tail fixes
+same-key Import Confirm concurrency and completes the previously missing Draft/Import/Employee
+acceptance scenarios locally; its separate push remains gated. Every later product slice, push,
 PR, merge, deployment, provider, and production-configuration action remains separately gated.
 CRA-42 is unrelated Backlog work.
 
@@ -202,10 +204,16 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - `frontend/`: accepted CRA-43 implementation plus the accepted CRA-49 Admin/Employee Menu
   experience and automated acceptance boundary.
 
-## Accepted CRA-49 checkpoint
+## Accepted CRA-49 checkpoint and corrective closure
 
-- Backend: 267 passed, 0 failed, 0 skipped on Python 3.12.10 and native PostgreSQL 16; 87% overall
+- Backend: 270 passed, 0 failed, 0 skipped on Python 3.12.10 and native PostgreSQL 16; 89% overall
   statement/branch coverage; Ruff format/check and strict mypy passed.
+- Corrective RED → GREEN evidence: concurrent same-key Import Confirm reproduced `[200, 409]`
+  in three of three runs, then returned replay-safe `[200, 200]` in three of three runs after a
+  post-lock idempotency recheck. Different-key conflicts remain one-winner/one-conflict.
+- Denys accepted the corrective coverage gate on 2026-08-28: at least 80% overall backend coverage
+  with branch tracking, every mandatory Slice 2 scenario mapped, and explicit concurrency/security
+  proof. No undeclared critical file set is selected retroactively.
 - Migrations: head `0007_menu_import_review`; current-head, empty-database/round-trip coverage, and
   metadata no-drift passed.
 - Frontend: Prettier, ESLint, TypeScript, and production build passed; Vitest reports 19 passed,

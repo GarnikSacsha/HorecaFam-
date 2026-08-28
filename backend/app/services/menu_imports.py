@@ -528,6 +528,16 @@ async def resolve_menu_import_finding(
             import_id=import_id,
             lock=True,
         )
+        if replay is None:
+            replay = await find_idempotency_replay(
+                db,
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                action="menu_import_finding_resolve",
+                key=idempotency_key,
+                fingerprint=fingerprint,
+                now=now,
+            )
         finding = await db.scalar(
             select(MenuImportFinding)
             .where(
@@ -872,6 +882,16 @@ async def confirm_menu_import(
             import_id=import_id,
             lock=True,
         )
+        if replay is None:
+            replay = await find_idempotency_replay(
+                db,
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                action="menu_import_confirm",
+                key=idempotency_key,
+                fingerprint=fingerprint,
+                now=now,
+            )
         if replay is not None:
             if menu_import.confirmed_menu_version_id is None:
                 raise RuntimeError("Confirmed import has no Draft resource")

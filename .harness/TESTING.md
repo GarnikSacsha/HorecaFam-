@@ -189,9 +189,12 @@ crosses greenlet contexts. Without it, executed post-database branches are under
 
 ## Accepted CRA-49 evidence
 
-The accepted 2026-08-28 gate reports 267 passed, 0 failed, 0 skipped with 87% overall
-statement/branch coverage on Python 3.12.10 and native PostgreSQL 16. Ruff format/check, strict
+The corrective accepted 2026-08-28 gate reports 270 passed, 0 failed, 0 skipped with 89% overall
+statement/branch coverage on Python 3.12.10 and native PostgreSQL 16. Denys accepted the precise
+coverage closure as at least 80% overall coverage with branch tracking, complete mandatory-scenario
+mapping, and explicit concurrency/security proof; no undeclared critical file set is selected
+retroactively. Ruff format/check, strict
 mypy, Alembic head `0007_menu_import_review`, current-head validation, migration round-trips, and
 metadata no-drift all pass. The frontend reports 19 Vitest tests and 6 Playwright tests passing,
-with Prettier, ESLint, TypeScript, and production build green. The implementation is published
-through `22927f7`.
+with Prettier, ESLint, TypeScript, and production build green. The ten-part implementation is
+published through `22927f7`; the corrective acceptance tail is local until separately published.

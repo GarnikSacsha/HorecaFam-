@@ -96,9 +96,10 @@ evidence for the frontend slice.
 is accepted and published. It adds Menu persistence and migrations through
 `0007_menu_import_review`, revision-guarded Draft hierarchy/facts, protected JSON review and atomic
 publication, published-only Employee API reads, Admin lifecycle UI, and Employee mobile search/
-detail. The fresh full gate is `267 passed / 0 failed / 0 skipped` with 87% backend coverage,
+detail. The corrective full gate is `270 passed / 0 failed / 0 skipped` with 89% backend coverage,
 19 Vitest tests, 6 Playwright tests, and no Alembic drift. The ten implementation checkpoints are
-fast-forward published through `22927f7`; see
+fast-forward published through `22927f7`; the corrective acceptance tail is local until separately
+published. See
 [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
 
 ## Repository map

@@ -63,6 +63,8 @@ rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini check
 The complete no-skip gate and CRA-20/CRA-28/CRA-30/CRA-32 evidence index are documented in
 [`../docs/testing/README.md`](../docs/testing/README.md).
 
-The accepted CRA-49 gate reports 267 passed, 0 failed, 0 skipped, 87% overall
-statement/branch coverage, Alembic head `0007_menu_import_review`, and no metadata drift. See
+The corrective accepted CRA-49 gate reports 270 passed, 0 failed, 0 skipped, 89% overall
+statement/branch coverage, Alembic head `0007_menu_import_review`, and no metadata drift. It also
+proves same-key/different-key Draft, Import Resolution/Confirm, and Publish concurrency plus stable
+Employee Component search/cursor pagination. See
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).

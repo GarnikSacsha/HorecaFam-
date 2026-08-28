@@ -160,8 +160,10 @@ matrix, commands, results, and exclusions.
 
 The accepted gate reports Python 3.12.10 and native PostgreSQL 16:
 
-- 267 passed, 0 failed, 0 skipped;
-- 87% overall statement/branch coverage;
+- 270 passed, 0 failed, 0 skipped;
+- 89% overall statement/branch coverage;
+- accepted corrective coverage gate: at least 80% overall with branch tracking, every mandatory
+  Slice 2 scenario mapped, and explicit concurrency/security proof; no post-hoc critical file set;
 - Ruff format/check and strict mypy passing;
 - Alembic head `0007_menu_import_review`, current head, migration round-trips, and no metadata
   drift;
@@ -171,4 +173,5 @@ The accepted gate reports Python 3.12.10 and native PostgreSQL 16:
 
 See [`menu-slice-2-acceptance.md`](menu-slice-2-acceptance.md) for the requirement matrix,
 RED/GREEN evidence, security review, exact browser path, limitations, and exclusions. The ten
-implementation checkpoints are published through `22927f7`.
+implementation checkpoints are published through `22927f7`; the corrective acceptance tail is
+local until separately published.

@@ -1,4 +1,6 @@
+from copy import deepcopy
 from datetime import timedelta
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI
@@ -8,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import EmployeeProfile, Organization, Session
 from app.security.tokens import hash_secret
 from tests.api.test_menu_admin_api import FIXED_NOW, arrange_admin, mutation_headers
+from tests.api.test_menu_import_api import import_payload
 from tests.api.test_menu_publication_api import arrange_ready_draft
 from tests.factories.identity import make_membership, make_role, make_user
 
@@ -168,6 +171,91 @@ async def test_employee_menu_empty_state_and_active_profile_boundary(
     denied = await auth_client.get("/api/v1/me/menu")
     assert denied.status_code == 403
     assert denied.json()["code"] == "FORBIDDEN"
+
+
+async def test_employee_menu_component_search_and_cursor_pagination_are_stable(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization_id, location_id, _admin_id, csrf = await arrange_admin(
+        auth_client, auth_app, db_session
+    )
+    payload = deepcopy(import_payload())
+    sections = cast(list[dict[str, Any]], payload["sections"])
+    items = cast(list[dict[str, Any]], sections[0]["categories"][0]["items"])
+    items[0]["component_data_status"] = "confirmed_present"
+    items[0]["components"] = [
+        {
+            "stable_code": "beetroot",
+            "name_uk": "Буряк",
+            "optional": False,
+            "position": 0,
+        }
+    ]
+    for position, (stable_code, name_uk) in enumerate(
+        (("varenyky", "Вареники"), ("uzvar", "Узвар")),
+        start=1,
+    ):
+        item = deepcopy(items[0])
+        item.update(
+            {
+                "source_key": f"item-{stable_code}",
+                "stable_code": stable_code,
+                "name_uk": name_uk,
+                "position": position,
+                "component_data_status": "confirmed_none",
+                "components": [],
+            }
+        )
+        items.append(item)
+
+    imports_url = f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-imports"
+    preview = await auth_client.post(
+        imports_url,
+        headers=mutation_headers(csrf, key="employee-pagination-preview"),
+        json=payload,
+    )
+    assert preview.status_code == 201
+    confirm = await auth_client.post(
+        f"{imports_url}/{preview.json()['id']}/confirm",
+        headers=mutation_headers(csrf, key="employee-pagination-confirm"),
+        json={"expected_revision": 0, "acknowledge_warnings": False},
+    )
+    assert confirm.status_code == 200
+    draft = confirm.json()["draft"]
+    publish = await auth_client.post(
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-versions/"
+        f"{draft['id']}/publish",
+        headers=mutation_headers(csrf, key="employee-pagination-publish"),
+        json={"expected_revision": draft["revision"]},
+    )
+    assert publish.status_code == 200
+
+    await attach_employee(
+        auth_client,
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+    )
+    component_match = await auth_client.get("/api/v1/me/menu", params={"q": "буряк"})
+    first_page = await auth_client.get("/api/v1/me/menu", params={"limit": 1})
+    first_page_replay = await auth_client.get("/api/v1/me/menu", params={"limit": 1})
+    second_page = await auth_client.get(
+        "/api/v1/me/menu",
+        params={"limit": 1, "cursor": first_page.json()["next_cursor"]},
+    )
+    invalid_cursor = await auth_client.get(
+        "/api/v1/me/menu", params={"cursor": "not-a-valid-cursor"}
+    )
+
+    assert component_match.status_code == 200
+    assert [item["name"] for item in component_match.json()["items"]] == ["Борщ"]
+    assert first_page.status_code == first_page_replay.status_code == second_page.status_code == 200
+    assert first_page.json()["next_cursor"] == first_page_replay.json()["next_cursor"]
+    assert first_page.json()["items"][0]["item_id"] != second_page.json()["items"][0]["item_id"]
+    assert invalid_cursor.status_code == 422
+    assert invalid_cursor.json()["code"] == "VALIDATION_ERROR"
 
 
 async def test_employee_menu_openapi_has_no_tenant_selector_or_internal_provenance(
