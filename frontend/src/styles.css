@@ -1774,3 +1774,227 @@ h1 {
     text-align: left;
   }
 }
+
+.employee-learning-page {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 48rem);
+  margin: 0 auto;
+}
+
+.employee-learning-heading,
+.learning-reader-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.employee-learning-heading h1,
+.learning-reader-heading h1 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  line-height: 0.98;
+}
+
+.learning-version-note,
+.learning-time-note {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.learning-card-list {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learning-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  padding: 1rem;
+  color: inherit;
+  text-decoration: none;
+  background: var(--surface-raised);
+  box-shadow: 0 10px 30px rgb(24 24 22 / 6%);
+}
+
+.learning-card:hover {
+  border-color: var(--brand-provisional);
+  transform: translateY(-1px);
+}
+
+.learning-card:focus-visible,
+.learning-back-link:focus-visible,
+.learning-menu-card a:focus-visible {
+  border-radius: 8px;
+  outline: 3px solid var(--brand-provisional);
+  outline-offset: 3px;
+}
+
+.learning-card-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.learning-card-copy strong {
+  font-size: 1.1rem;
+}
+
+.learning-card-copy small {
+  color: var(--text-muted);
+}
+
+.learning-fallback-note {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  color: var(--brand-provisional-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: var(--info-soft);
+}
+
+.learning-reader {
+  align-content: start;
+}
+
+.learning-reader-heading {
+  display: grid;
+  justify-content: stretch;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1.25rem;
+}
+
+.learning-reader-heading > p:not(.eyebrow) {
+  max-width: 40rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+.learning-back-link {
+  width: fit-content;
+  color: var(--brand-provisional-strong);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.lesson-content {
+  display: grid;
+  gap: 1.35rem;
+  font-size: 1.05rem;
+  line-height: 1.72;
+}
+
+.lesson-content section,
+.lesson-content aside,
+.lesson-content figure {
+  margin: 0;
+}
+
+.lesson-content h2,
+.lesson-content h3 {
+  margin: 0 0 0.5rem;
+  line-height: 1.15;
+}
+
+.lesson-content p,
+.lesson-content ol,
+.lesson-content ul {
+  margin: 0;
+}
+
+.learning-prose {
+  white-space: pre-line;
+}
+
+.learning-callout,
+.learning-menu-card {
+  display: grid;
+  gap: 0.6rem;
+  border-left: 4px solid var(--brand-provisional-strong);
+  border-radius: 0 14px 14px 0;
+  padding: 1rem;
+  background: var(--info-soft);
+}
+
+.learning-callout.is-warning,
+.learning-callout.is-critical {
+  border-left-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.learning-menu-card a {
+  width: fit-content;
+  color: var(--brand-provisional-strong);
+  font-weight: 800;
+}
+
+.learning-media {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.learning-media img {
+  width: 100%;
+  max-height: 34rem;
+  border-radius: 18px;
+  object-fit: contain;
+  background: var(--surface-page);
+}
+
+.learning-media figcaption {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.learning-video {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.learning-video-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  padding-top: 56.25%;
+  background: #111;
+}
+
+.learning-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learning-card {
+    transition: none;
+  }
+
+  .learning-card:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 38rem) {
+  .employee-learning-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .employee-learning-heading > button {
+    align-self: flex-start;
+  }
+}

@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 const destinations = [
   { label: "Головна", to: "/employee", enabled: true },
   { label: "Меню", to: "/employee/menu", enabled: true },
-  { label: "Навчання", to: "/employee/learning", enabled: false },
+  { label: "Навчання", to: "/employee/learning", enabled: true },
   { label: "Практика", to: "/employee/practice", enabled: false },
   { label: "Профіль", to: "/employee/profile", enabled: false },
 ];
@@ -23,7 +23,7 @@ export function EmployeeShell({ children }: { children: React.ReactNode }) {
             <NavLink
               key={destination.to}
               to={destination.to}
-              end
+              end={destination.to === "/employee"}
               className={({ isActive }) => `employee-nav-link${isActive ? " is-active" : ""}`}
             >
               <span className="nav-dot" aria-hidden="true" />

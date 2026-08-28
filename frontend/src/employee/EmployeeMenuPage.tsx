@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import type {
   EmployeeMenuItemDetail,
@@ -135,6 +136,7 @@ function MenuDetail({
 
 export function EmployeeMenuPage() {
   const { client } = useSession();
+  const [searchParams] = useSearchParams();
   const [response, setResponse] = useState<EmployeeMenuResponse | null>(null);
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
@@ -146,6 +148,7 @@ export function EmployeeMenuPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const linkedItemOpenedRef = useRef(false);
 
   const loadMenu = useCallback(async () => {
     setLoading(true);
@@ -175,20 +178,30 @@ export function EmployeeMenuPage() {
     window.requestAnimationFrame(() => returnFocusRef.current?.focus());
   }, []);
 
-  const openDetail = async (itemId: string) => {
-    returnFocusRef.current = document.activeElement as HTMLElement | null;
-    setDetailOpen(true);
-    setDetailLoading(true);
-    setSelected(null);
-    try {
-      setSelected(await client.request<EmployeeMenuItemDetail>(`/me/menu/items/${itemId}`));
-    } catch {
-      setError("Не вдалося завантажити деталі позиції.");
-      setDetailOpen(false);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
+  const openDetail = useCallback(
+    async (itemId: string) => {
+      returnFocusRef.current = document.activeElement as HTMLElement | null;
+      setDetailOpen(true);
+      setDetailLoading(true);
+      setSelected(null);
+      try {
+        setSelected(await client.request<EmployeeMenuItemDetail>(`/me/menu/items/${itemId}`));
+      } catch {
+        setError("Не вдалося завантажити деталі позиції.");
+        setDetailOpen(false);
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [client],
+  );
+
+  useEffect(() => {
+    const linkedItemId = searchParams.get("item");
+    if (!linkedItemId || linkedItemOpenedRef.current) return;
+    linkedItemOpenedRef.current = true;
+    void openDetail(linkedItemId);
+  }, [openDetail, searchParams]);
 
   const sections = response?.menu?.sections ?? [];
   const categories = sectionId

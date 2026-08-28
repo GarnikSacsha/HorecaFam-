@@ -3,6 +3,8 @@
 CRA-43 is accepted, Done, and published through `fa30a1f`. Accepted CRA-49 extends that frontend
 with Menu administration, explicit JSON review/publication, and an Active Employee published-menu
 reference; CRA-49 and its corrective acceptance tail are fast-forward published through `8028d6e`.
+The local CRA-54 candidate adds the Admin Training authoring workspace and Active Employee
+Module/Lesson reference reader; it awaits acceptance and is not published.
 The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
 server-session driven, responsive, keyboard accessible, and reduced-motion aware.
@@ -46,10 +48,16 @@ responsive presentation, and the frontend-to-contract request boundary.
 - Location-scoped Admin Menu Draft editing, JSON preview/review/confirm, readiness, and publication.
 - Active Employee published Menu search, section/category filters, locale fallback, and safe item
   detail with components and allergens.
+- Location-scoped Admin Training Draft editing, typed lesson blocks, private image upload,
+  readiness, conflict recovery, reorder actions, and confirmed atomic publication.
+- Active Employee published Training Module/Lesson reading with locale fallback, signed images,
+  Menu Item cards, and allowlisted privacy-safe YouTube embeds.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
-Training content, assignments, progress, practice, exams, password reset, provider integrations,
-deployment, and production environment configuration remain outside the accepted boundary.
+Assignments, completions, progress, practice, exams, notifications, password reset, provider
+integrations, deployment, and production environment configuration remain outside the candidate.
 
 Fresh CRA-49 backend/frontend/browser evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
+Fresh local CRA-54 evidence is recorded in
+[`../docs/testing/training-slice-3-acceptance.md`](../docs/testing/training-slice-3-acceptance.md).

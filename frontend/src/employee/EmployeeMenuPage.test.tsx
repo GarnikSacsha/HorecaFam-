@@ -137,4 +137,23 @@ describe("Employee published Menu", () => {
       await screen.findByRole("heading", { name: "Меню ще не опубліковано" }),
     ).toBeInTheDocument();
   });
+
+  it("opens the exact Menu Item linked from a Training content card", async () => {
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) =>
+        Promise.resolve((path === "/me/menu/items/item-1" ? detail : menu) as T),
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter initialEntries={["/employee/menu?item=item-1"]}>
+          <EmployeeMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(await screen.findByRole("dialog", { name: "Борщ" })).toHaveTextContent(
+      "Борщ на яловичому бульйоні.",
+    );
+  });
 });

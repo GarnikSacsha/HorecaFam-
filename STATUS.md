@@ -1,7 +1,9 @@
 # HoReCa Repository Status
 
 **Snapshot date:** 2026-08-28
-**Current product implementation:** CRA-49 accepted and published. Backend MVP Vertical Slice 1
+**Current product implementation:** CRA-49 accepted and published. CRA-54 MVP Vertical Slice 3 —
+Training Content is a complete nine-checkpoint local candidate awaiting Denys acceptance; it is not
+yet published. Backend MVP Vertical Slice 1
 through CRA-40 and Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and
 fast-forward published on `origin/main`
 with the CRA-43 implementation series ending at `fa30a1f`. CRA-46 is Done, and its accepted
@@ -13,9 +15,10 @@ through the Linear
 The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
 CRA-48 is Done. Denys accepted CRA-49 on 2026-08-28; its ten implementation checkpoints end at
 `22927f7`, and the corrective acceptance tail is fast-forward published on `origin/main` through
-`8028d6e`. CRA-53 is the active planning-only issue for MVP Vertical Slice 3 — Training Content.
-Slice 3 implementation and every later push, PR, merge, deployment, provider, and
-production-configuration action remain separately gated.
+`8028d6e`. CRA-53 planning is accepted and Done. CRA-54 is the active bounded implementation issue
+for MVP Vertical Slice 3 — Training Content. Its local implementation and acceptance gate are
+complete; every push, PR, merge, deployment, provider, and production-configuration action remains
+separately gated.
 CRA-42 is unrelated Backlog work.
 
 ## Accepted implementation and planning checkpoints
@@ -55,6 +58,10 @@ CRA-42 is unrelated Backlog work.
   wording, and no CRA-48 push remains pending.
 - CRA-49 Menu Source of Truth implementation and corrective acceptance tail are accepted and
   published through `8028d6e`.
+- CRA-53 Training Content planning and its nine-checkpoint implementation map are accepted and
+  Done.
+- CRA-54 Training Content has a complete local nine-checkpoint candidate on `main`. It awaits Denys
+  acceptance and remains unpublished.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -192,7 +199,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 ## Repository and runtime state
 
 - Branch: `main`; the accepted CRA-49 baseline is published through corrective checkpoint
-  `8028d6e`.
+  `8028d6e`, with the complete local CRA-54 candidate ahead of `origin/main`.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, followed by the accepted CRA-46 documentation
   checkpoint at `586f8c5`, the CRA-48 checkpoint at `3b95b3c`, and its corrective publication record.
@@ -203,8 +210,28 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted CRA-43 implementation plus the accepted CRA-49 Admin/Employee Menu
-  experience and automated acceptance boundary.
+- `frontend/`: accepted CRA-43/CRA-49 implementation plus the local CRA-54 Admin Training workspace,
+  Employee Learning reader, and automated acceptance boundary.
+
+## CRA-54 local acceptance candidate
+
+- Backend: 318 passed, 0 failed, 0 skipped on Python 3.12.10 and native PostgreSQL 16; 88% overall
+  statement/branch coverage and 80% aggregate coverage across the predeclared seven-file critical
+  Training set. Ruff format/check and strict mypy passed.
+- Migrations: head `0008_training_content`; empty-database upgrade, Training migration round-trip,
+  current-head validation, and metadata no-drift passed.
+- Frontend: Prettier, ESLint, TypeScript, and production build passed; Vitest reports 27 passed,
+  0 failed, 0 skipped across 14 files.
+- Browser: Playwright reports 9 passed, 0 failed, 0 skipped across 1440×1000, 768×1024, and
+  375×812 projects. The CRA-54 path covers Admin readiness/publication through Active Employee
+  Module/Lesson reading.
+- Scope: versioned Draft/Published Training content, seven strict block types, private images,
+  atomic publication, and published-only Employee reference are implemented. Assignments,
+  completions, progress, rollout, notifications, Practice, exams, and providers remain absent.
+- Exact evidence and limitations:
+  [`docs/testing/training-slice-3-acceptance.md`](docs/testing/training-slice-3-acceptance.md).
+- This is local candidate evidence, not acceptance or publication evidence. No Railway/provider
+  smoke, push, PR, merge, deploy, or production configuration was performed.
 
 ## Accepted CRA-49 checkpoint and corrective closure
 
@@ -255,9 +282,9 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - CRA-37 through CRA-48 are accepted and Done. The CRA-43 implementation series ends at `fa30a1f`,
   and the published repository baseline includes the CRA-46 documentation checkpoint at `586f8c5`.
   CRA-48 and CRA-49 are accepted and published; the CRA-49 corrective endpoint is `8028d6e`.
-  CRA-53 is active as planning-only. Slice 3 implementation and every later push, PR, merge, deploy,
-  provider, non-test mutation, architecture change, migration, or history rewrite remain separately
-  gated.
+  CRA-53 planning is accepted and Done. CRA-54 is the active bounded issue with a complete local
+  candidate awaiting Denys acceptance. Every push, PR, merge, deploy, provider call, non-test
+  mutation, production configuration, or history rewrite remains separately gated.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

@@ -494,3 +494,61 @@ export interface AssetUploadIntentResponse {
   upload_fields: Record<string, string>;
   expires_at: string;
 }
+
+export interface EmployeeTrainingSummary {
+  id: string;
+  version_number: number;
+  published_at: string;
+}
+
+export interface EmployeeTrainingModuleSummary {
+  id: string;
+  domain_type: "menu";
+  title: string;
+  description: string | null;
+  position: number;
+  required: boolean;
+  lesson_count: number;
+  content_locale: "uk" | "en";
+  translation_fallback: boolean;
+}
+
+export interface EmployeeTrainingLessonSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  required: boolean;
+  estimated_minutes: number | null;
+  content_locale: "uk" | "en";
+  translation_fallback: boolean;
+}
+
+export interface EmployeeTrainingContentBlock {
+  id: string;
+  type: TrainingContentBlockType;
+  position: number;
+  payload: Record<string, unknown>;
+  content_locale: "uk" | "en";
+  translation_fallback: boolean;
+}
+
+export interface EmployeeTrainingReferenceResponse {
+  training: EmployeeTrainingSummary | null;
+  modules: EmployeeTrainingModuleSummary[];
+  content_locale: "uk" | "en";
+  translation_fallback: boolean;
+}
+
+export interface EmployeeTrainingModuleDetail extends EmployeeTrainingModuleSummary {
+  lessons: EmployeeTrainingLessonSummary[];
+}
+
+export interface EmployeeTrainingLessonDetail extends EmployeeTrainingLessonSummary {
+  content_blocks: EmployeeTrainingContentBlock[];
+}
+
+export interface EmployeeTrainingAssetAccessResponse {
+  url: string;
+  expires_in: 300;
+}

@@ -9,6 +9,9 @@ import { MfaPage } from "../auth/MfaPage";
 import { PendingPage } from "../employee/PendingPage";
 import { ActiveHomePage } from "../employee/ActiveHomePage";
 import { EmployeeMenuPage } from "../employee/EmployeeMenuPage";
+import { EmployeeLearningLessonPage } from "../employee/EmployeeLearningLessonPage";
+import { EmployeeLearningModulePage } from "../employee/EmployeeLearningModulePage";
+import { EmployeeLearningPage } from "../employee/EmployeeLearningPage";
 import { InvitationAcceptPage } from "../invitations/InvitationAcceptPage";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
@@ -99,6 +102,36 @@ export function App() {
               <ProtectedRoute audience="active-employee">
                 <EmployeeShell>
                   <EmployeeMenuPage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/learning"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeLearningPage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/learning/modules/:moduleId"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeLearningModulePage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/learning/lessons/:lessonId"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeLearningLessonPage />
                 </EmployeeShell>
               </ProtectedRoute>
             }

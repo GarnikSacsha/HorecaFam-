@@ -1,7 +1,8 @@
 # Current Architecture
 
-This document describes the verified accepted implementation published through CRA-49. Canonical
-product behavior and contracts remain in Linear.
+This document describes the verified accepted implementation published through CRA-49 and the
+complete local CRA-54 Training candidate awaiting acceptance. Canonical product behavior and
+contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -45,7 +46,7 @@ required environment configuration
   `0002_identity_persistence.py` creates Stage 1; `0003_auth_security.py` creates Stage 2;
   `0004_invitation_lifecycle.py` and `0005_invitation_email_outbox.py` create Stage 3;
   `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the accepted CRA-49 Menu
-  schema.
+  schema; `0008_training_content.py` creates the local CRA-54 Training content schema.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -160,6 +161,41 @@ version and presentation-safe facts—never Drafts, import state, source checksu
 IDs, or a caller-selected tenant. Slice 2 applicability remains explicitly zero for Training
 content, Assignments, and notifications.
 
+## CRA-54 Training Content local candidate
+
+```text
+Admin Session + MFA + Organization/Location scope + CSRF
+→ revision-guarded Training Draft with fixed Menu Module
+→ typed Lessons and seven safe content block variants
+→ private image intent + verification + short-lived signed access
+→ readiness + current Published Menu dependency revalidation
+→ idempotent locked publication + previous Published archive in one transaction
+→ Active Employee own Profile/Location → current Published Training only
+```
+
+The candidate stores one Training root per Location with immutable version snapshots, one fixed
+Menu-domain Module per version, stable Lesson identity, canonical Ukrainian copy, optional English
+translation state, ordered typed content blocks, and private image assets. Only Draft versions are
+mutable. Readiness blocks invalid canonical content, stale dependency/revision state, invalid Menu
+Item links, unready images, missing alt text, and invalid external video identifiers; incomplete
+English remains warning-only.
+
+Admin routes derive and enforce Organization/Location scope, MFA, CSRF, optimistic revisions, and
+idempotency where the operation can be retried. Publication locks and revalidates the Training root,
+candidate, current Published version, and exact current Published Menu dependency before atomically
+switching the Employee reference.
+
+`GET /api/v1/me/training`, Module/Lesson detail routes, and private asset access derive Organization
+and Location from the authenticated user's own Active Profile. They expose only the current
+Published Training presentation, with entity/block locale fallback and no Draft, revision,
+translation workflow, storage key, checksum, audit actor, or caller-selected tenant state.
+
+The React frontend adds `/admin/content`, `/employee/learning`, Module detail, and Lesson detail.
+React renders escaped editorial copy; image access uses the protected signed endpoint; external
+video URLs are reconstructed only from validated YouTube identifiers and a fixed privacy origin.
+Assignments, completions, progress, rollout, notifications, Practice, exams, and analytics remain
+absent and publication reports zero Slice 4 counts.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -169,7 +205,8 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 ## Explicitly absent
 
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
-reference CRUD, Employee disable/reactivate lifecycle administration, Training content workflow,
-provider integration, or deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/)
-and includes the accepted CRA-49 Admin/Employee Menu experience. Adding any absent capability requires
-a new bounded Linear issue and approval.
+reference CRUD, Employee disable/reactivate lifecycle administration, Training assignment,
+completion/progress, Practice/exam workflow, provider integration, or deployed worker/resource. The
+frontend lives in [`../../frontend/`](../../frontend/) and includes the accepted CRA-49
+Admin/Employee Menu experience plus the local CRA-54 Training candidate. Adding any absent
+capability requires a new bounded Linear issue and approval.

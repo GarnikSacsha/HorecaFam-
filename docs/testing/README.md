@@ -8,18 +8,20 @@ maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`. CRA-43
 test evidence remains anchored to `fa30a1f`. CRA-47 planning and CRA-48 documentation are Done.
 CRA-49 is accepted and fast-forward published through corrective checkpoint `8028d6e`; its runtime
-evidence is recorded below.
+evidence is recorded below. CRA-53 planning is accepted and Done. CRA-54 has a complete local
+Training Content candidate awaiting Denys acceptance and publication.
 
 ## Current test layout
 
 - `backend/tests/api`: application factory, health/errors, auth/session/CSRF/logout/MFA/RBAC,
-  invitation lifecycle, Admin Menu/import/publication, and Employee published-Menu behavior through
-  the ASGI path with real PostgreSQL state.
+  invitation lifecycle, Admin Menu/import/publication, Employee published-Menu behavior, Admin
+  Training/publication, and Employee published-Training behavior through the ASGI path with real
+  PostgreSQL state.
 - `backend/tests/unit`: required configuration, fail-closed test database rules, canonical email
   normalization, and deterministic versioned invitation tokens.
 - `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip, persistence constraints,
-  idempotency concurrency, transactional invitation delivery, and Menu draft/facts/publication
-  state against PostgreSQL 16.
+  idempotency concurrency, transactional invitation delivery, Menu draft/facts/publication, and
+  Training draft/content/assets/publication state against PostgreSQL 16.
 - `backend/tests/migration`: Alembic head/schema/drift checks and the prohibition on runtime
   `create_all`.
 - `backend/tests/factories` and `backend/tests/conftest.py`: deterministic identity objects and
@@ -175,3 +177,22 @@ See [`menu-slice-2-acceptance.md`](menu-slice-2-acceptance.md) for the requireme
 RED/GREEN evidence, security review, exact browser path, limitations, and exclusions. The ten
 implementation checkpoints end at `22927f7`; the corrective acceptance tail is published through
 `8028d6e`.
+
+## CRA-54 local acceptance candidate
+
+The complete local gate reports Python 3.12.10 and native PostgreSQL 16:
+
+- 318 passed, 0 failed, 0 skipped;
+- 88% overall statement/branch coverage and 80% aggregate coverage across the predeclared
+  seven-file critical Training set;
+- Ruff format/check and strict mypy passing;
+- Alembic head `0008_training_content`, current head, migration round-trip coverage, and no
+  metadata drift;
+- frontend Prettier/ESLint/TypeScript/build passing;
+- 27 Vitest tests passing across 14 files;
+- 9 Playwright tests passing across the desktop, compact, and mobile projects.
+
+See [`training-slice-3-acceptance.md`](training-slice-3-acceptance.md) for the implemented boundary,
+requirement matrix, RED/GREEN evidence, critical-file declaration, browser path, security review,
+limitations, and explicit Slice 4 exclusions. This is candidate evidence only: CRA-54 awaits Denys
+acceptance and no push, Railway/provider smoke, deployment, PR, or merge is claimed.
