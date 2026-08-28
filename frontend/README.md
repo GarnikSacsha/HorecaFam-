@@ -1,8 +1,8 @@
 # HoReCa Frontend
 
-CRA-43 is accepted, Done, and published through `fa30a1f`. The local CRA-49 candidate extends that
-frontend with Menu administration, explicit JSON review/publication, and an Active Employee
-published-menu reference. It is not yet published. The application uses React 19, TypeScript 6,
+CRA-43 is accepted, Done, and published through `fa30a1f`. Accepted CRA-49 extends that frontend
+with Menu administration, explicit JSON review/publication, and an Active Employee published-menu
+reference; it is fast-forward published through `22927f7`. The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
 server-session driven, responsive, keyboard accessible, and reduced-motion aware.
 
@@ -48,7 +48,7 @@ responsive presentation, and the frontend-to-contract request boundary.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
 Training content, assignments, progress, practice, exams, password reset, provider integrations,
-deployment, and production environment configuration remain outside the current candidate.
+deployment, and production environment configuration remain outside the accepted boundary.
 
 Fresh CRA-49 backend/frontend/browser evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).

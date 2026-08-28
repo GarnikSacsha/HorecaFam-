@@ -1,7 +1,7 @@
 # Current Architecture
 
-This document describes the verified implementation, distinguishing accepted published baselines
-from the local CRA-49 candidate. Canonical product behavior and contracts remain in Linear.
+This document describes the verified accepted implementation published through CRA-49. Canonical
+product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -44,8 +44,8 @@ required environment configuration
 - `backend/migrations/versions/0001_stage0_empty_schema.py` establishes the base history;
   `0002_identity_persistence.py` creates Stage 1; `0003_auth_security.py` creates Stage 2;
   `0004_invitation_lifecycle.py` and `0005_invitation_email_outbox.py` create Stage 3;
-  `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the local CRA-49 Menu
-  candidate schema.
+  `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the accepted CRA-49 Menu
+  schema.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -137,7 +137,7 @@ real-HTTP/PostgreSQL chain now proves Admin login/MFA through invitation deliver
 Pending profile setup, explicit Activation, and Active employee authorization without introducing
 another application path.
 
-## CRA-49 Menu Source of Truth candidate
+## CRA-49 Menu Source of Truth
 
 ```text
 Admin Session + MFA + Organization/Location scope + CSRF
@@ -148,7 +148,7 @@ Admin Session + MFA + Organization/Location scope + CSRF
 → Active Employee own Profile/Location → current Published Menu only
 ```
 
-The local candidate stores one Menu per Location and immutable version snapshots with stable
+The accepted implementation stores one Menu per Location and immutable version snapshots with stable
 section/category/item identity, Ukrainian canonical copy, optional English presentation fallback,
 components, allergens, provenance, deltas, and Training-impact classification. Only a Draft is
 mutable. Import confirmation never publishes; publication revalidates readiness and atomically
@@ -171,5 +171,5 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
 reference CRUD, Employee disable/reactivate lifecycle administration, Training content workflow,
 provider integration, or deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/)
-and includes the local CRA-49 Admin/Employee Menu experience. Adding any absent capability requires
+and includes the accepted CRA-49 Admin/Employee Menu experience. Adding any absent capability requires
 a new bounded Linear issue and approval.

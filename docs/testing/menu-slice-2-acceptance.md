@@ -1,15 +1,15 @@
-# Menu Source of Truth Slice 2 — CRA-49 Candidate Evidence
+# Menu Source of Truth Slice 2 — CRA-49 Acceptance Evidence
 
 ## Status and boundary
 
-This document records the verified local CRA-49 implementation candidate completed on 2026-08-28.
-It is not an acceptance or publication record: CRA-49 remains awaiting Denys review, and no push,
-PR, merge, deployment, provider call, or production configuration was performed.
+This document records the CRA-49 implementation accepted by Denys on 2026-08-28 and fast-forward
+published on `origin/main` through `22927f7`. No PR, merge, deployment, provider call, production
+configuration, force-push, or history rewrite was performed.
 
-The candidate implements one Location-owned, versioned Menu Source of Truth; explicit Draft
-editing; bounded JSON preview/review/confirm; atomic publication; and a published-only Employee
-reference experience. Linear remains canonical for exact product, API, data, RBAC, and acceptance
-contracts.
+The accepted implementation provides one Location-owned, versioned Menu Source of Truth; explicit
+Draft editing; bounded JSON preview/review/confirm; atomic publication; and a published-only
+Employee reference experience. Linear remains canonical for exact product, API, data, RBAC, and
+acceptance contracts.
 
 ## Requirement-to-evidence matrix
 
@@ -75,7 +75,7 @@ publication, Active Employee published Menu search, and safe detail facts.
 - Employee endpoints derive Organization and Location only from the single own Active Profile;
   the public contract exposes no tenant selector or internal provenance.
 - Raw import payloads, checksums, actor IDs, internal review state, credentials, `.env*`, local
-  paths, caches, and runtime output are excluded from the candidate inventory.
+  paths, caches, and runtime output are excluded from the published inventory.
 - Publication archives the previous current version and commits version, diff, audit, and
   idempotency state atomically.
 - Training content, Assignments, and notifications remain explicit zero-applicability outputs.

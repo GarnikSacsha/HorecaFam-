@@ -7,8 +7,8 @@ maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`. CRA-43
 test evidence remains anchored to `fa30a1f`. CRA-47 planning and CRA-48 documentation are Done.
-The authorized CRA-49 candidate is complete locally, not yet accepted or pushed; its fresh runtime
-evidence is recorded below.
+CRA-49 is accepted and fast-forward published through `22927f7`; its runtime evidence is recorded
+below.
 
 ## Current test layout
 
@@ -156,9 +156,9 @@ business path on desktop, compact, and mobile viewports. See
 [`frontend-vertical-slice-1-acceptance.md`](frontend-vertical-slice-1-acceptance.md) for the exact
 matrix, commands, results, and exclusions.
 
-## Verified local CRA-49 candidate
+## Accepted CRA-49 checkpoint
 
-The complete local candidate gate reports Python 3.12.10 and native PostgreSQL 16:
+The accepted gate reports Python 3.12.10 and native PostgreSQL 16:
 
 - 267 passed, 0 failed, 0 skipped;
 - 87% overall statement/branch coverage;
@@ -170,5 +170,5 @@ The complete local candidate gate reports Python 3.12.10 and native PostgreSQL 1
 - 6 Playwright tests passing across the desktop, compact, and mobile projects.
 
 See [`menu-slice-2-acceptance.md`](menu-slice-2-acceptance.md) for the requirement matrix,
-RED/GREEN evidence, security review, exact browser path, limitations, and exclusions. This is a
-candidate record, not acceptance or publication evidence.
+RED/GREEN evidence, security review, exact browser path, limitations, and exclusions. The ten
+implementation checkpoints are published through `22927f7`.

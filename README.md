@@ -5,10 +5,9 @@ Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forwar
 `origin/main`; the CRA-43 implementation series ends at `fa30a1f`, while the accepted CRA-46
 documentation publication advances the published `origin/main` baseline to `586f8c5`. CRA-47
 planning for Menu Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and
-its corrective publication record are published; CRA-48 is Done. The authorized CRA-49 Menu
-Source of Truth implementation candidate is complete locally and awaiting review/publication; no
-CRA-49 push has been performed. CRA-42 is unrelated Backlog work. PR, merge, deployment,
-providers, and production configuration remain separate gates.
+its corrective publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is
+accepted and fast-forward published on `origin/main` through `22927f7`. CRA-42 is unrelated Backlog
+work. PR, merge, deployment, providers, and production configuration remain separate gates.
 
 ## Start here
 
@@ -24,9 +23,9 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed first-slice
-  foundations, and the local CRA-49 Menu Source of Truth candidate.
+  foundations, and the accepted CRA-49 Menu Source of Truth runtime.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright implementation through the local CRA-49 candidate.
+  Playwright implementation through accepted CRA-49.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -61,6 +60,6 @@ references and Employee list/detail reads, own read-only operational profiles, a
 Pending profile setup. Accepted CRA-38 adds explicit, idempotent Pending-to-Active
 activation with locked reference revalidation, a safe audit, and an explicit zero-applicability
 boundary. It creates no Session, Assignment, notification, content, provider call, or migration.
-The local CRA-49 candidate adds Location-owned versioned Menu persistence, guarded Draft/import/
+Accepted CRA-49 adds Location-owned versioned Menu persistence, guarded Draft/import/
 publication administration, and a published-only Active Employee reference UI. Its fresh evidence
 is recorded in [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).

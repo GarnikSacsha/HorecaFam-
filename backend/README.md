@@ -1,9 +1,10 @@
 # Backend Foundation
 
 This directory contains the accepted and published backend MVP Vertical Slice 1 through CRA-40
-plus the verified local CRA-49 Menu Source of Truth candidate. CRA-49 adds Location-owned versioned
-Menu persistence, Draft/import/publication administration, and a published-only Employee reference
-API; it is not yet published. Python 3.12 and PostgreSQL 16 are the approved runtime versions.
+plus the accepted CRA-49 Menu Source of Truth runtime, published through `22927f7`. CRA-49 adds
+Location-owned versioned Menu persistence, Draft/import/publication administration, and a
+published-only Employee reference API. Python 3.12 and PostgreSQL 16 are the approved runtime
+versions.
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository
 [`../AGENTS.md`](../AGENTS.md). Linear remains canonical for product/API/data/test-stage
@@ -62,6 +63,6 @@ rtk ..\.venv\Scripts\python.exe -m alembic -c alembic.ini check
 The complete no-skip gate and CRA-20/CRA-28/CRA-30/CRA-32 evidence index are documented in
 [`../docs/testing/README.md`](../docs/testing/README.md).
 
-The fresh CRA-49 candidate gate reports 267 passed, 0 failed, 0 skipped, 87% overall
+The accepted CRA-49 gate reports 267 passed, 0 failed, 0 skipped, 87% overall
 statement/branch coverage, Alembic head `0007_menu_import_review`, and no metadata drift. See
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).

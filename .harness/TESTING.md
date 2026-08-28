@@ -11,8 +11,8 @@
 
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`.
 CRA-43 runtime acceptance evidence remains anchored to its implementation endpoint `fa30a1f`.
-CRA-47 planning and CRA-48 documentation are Done. The authorized CRA-49 implementation candidate
-is complete locally, not yet accepted or pushed; its fresh evidence is recorded in
+CRA-47 planning and CRA-48 documentation are Done. CRA-49 is accepted and fast-forward published
+through `22927f7`; its evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
 
 ## Environment setup
@@ -187,11 +187,11 @@ and 375×812 employee mobile. Exact scope, RED/GREEN evidence, and limitations a
 Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
 crosses greenlet contexts. Without it, executed post-database branches are under-reported.
 
-## Verified local CRA-49 candidate evidence
+## Accepted CRA-49 evidence
 
-The 2026-08-28 complete candidate gate reports 267 passed, 0 failed, 0 skipped with 87% overall
+The accepted 2026-08-28 gate reports 267 passed, 0 failed, 0 skipped with 87% overall
 statement/branch coverage on Python 3.12.10 and native PostgreSQL 16. Ruff format/check, strict
 mypy, Alembic head `0007_menu_import_review`, current-head validation, migration round-trips, and
 metadata no-drift all pass. The frontend reports 19 Vitest tests and 6 Playwright tests passing,
-with Prettier, ESLint, TypeScript, and production build green. This evidence does not claim CRA-49
-acceptance or publication.
+with Prettier, ESLint, TypeScript, and production build green. The implementation is published
+through `22927f7`.
