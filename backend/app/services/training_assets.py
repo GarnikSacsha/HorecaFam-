@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
-from app.models import Asset, AuditEvent, Location
+from app.models import Asset, AuditEvent, LessonContentBlock, Location
 from app.services.idempotency import (
     find_idempotency_replay,
     request_fingerprint,
@@ -325,3 +325,49 @@ async def get_admin_asset_access(
         object_key=asset.object_key,
         expires_seconds=ACCESS_EXPIRES_SECONDS,
     )
+
+
+async def archive_unlinked_asset(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    asset_id: UUID,
+    actor_user_id: UUID,
+    request_id: UUID,
+    now: datetime,
+) -> Asset:
+    try:
+        asset = await db.scalar(
+            select(Asset)
+            .where(
+                Asset.id == asset_id,
+                Asset.organization_id == organization_id,
+                Asset.location_id == location_id,
+            )
+            .with_for_update()
+        )
+        if asset is None:
+            raise _resource_not_found()
+        if asset.status == "archived":
+            await db.commit()
+            return asset
+        linked_block = await db.scalar(
+            select(LessonContentBlock.id).where(LessonContentBlock.asset_id == asset.id)
+        )
+        if linked_block is not None:
+            raise _asset_not_ready()
+        asset.status = "archived"
+        asset.archived_at = now
+        _audit(
+            db,
+            asset=asset,
+            actor_user_id=actor_user_id,
+            request_id=request_id,
+            action="training_asset_archived",
+        )
+        await db.commit()
+        return asset
+    except Exception:
+        await db.rollback()
+        raise

@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from datetime import datetime
+from typing import cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select
@@ -21,6 +23,11 @@ from app.models import (
     TrainingModuleVersion,
     TrainingVersion,
     TrainingVersionMenuDependency,
+)
+from app.services.idempotency import (
+    find_idempotency_replay,
+    request_fingerprint,
+    reserve_idempotency,
 )
 
 
@@ -293,6 +300,7 @@ async def create_training_draft(
     actor_user_id: UUID,
     request_id: UUID,
     base_version_id: UUID | None,
+    _commit: bool = True,
 ) -> TrainingVersion:
     try:
         location = await db.scalar(
@@ -418,6 +426,107 @@ async def create_training_draft(
             target_type="training_version",
             target_id=draft.id,
         )
+        if _commit:
+            await db.commit()
+        else:
+            await db.flush()
+        return draft
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def create_training_draft_idempotent(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    actor_user_id: UUID,
+    request_id: UUID,
+    base_version_id: UUID | None,
+    idempotency_key: str,
+    now: datetime,
+) -> TrainingVersion:
+    fingerprint = request_fingerprint(
+        {
+            "location_id": str(location_id),
+            "base_version_id": str(base_version_id) if base_version_id is not None else None,
+        }
+    )
+    try:
+        replay = await find_idempotency_replay(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="training_draft_create",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            now=now,
+        )
+        if replay is not None:
+            version = await db.scalar(
+                select(TrainingVersion).where(
+                    TrainingVersion.id == replay.resource_id,
+                    TrainingVersion.organization_id == organization_id,
+                    TrainingVersion.location_id == location_id,
+                )
+            )
+            if version is None:
+                raise RuntimeError("Idempotent Training Version resource is unavailable")
+            await db.commit()
+            return version
+
+        try:
+            draft = await create_training_draft(
+                db,
+                organization_id=organization_id,
+                location_id=location_id,
+                actor_user_id=actor_user_id,
+                request_id=request_id,
+                base_version_id=base_version_id,
+                _commit=False,
+            )
+        except APIError as exc:
+            if exc.code != "TRAINING_DRAFT_EXISTS":
+                raise
+            await db.rollback()
+            replay = await find_idempotency_replay(
+                db,
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                action="training_draft_create",
+                key=idempotency_key,
+                fingerprint=fingerprint,
+                now=now,
+            )
+            if replay is None:
+                raise
+            version = await db.scalar(
+                select(TrainingVersion).where(
+                    TrainingVersion.id == replay.resource_id,
+                    TrainingVersion.organization_id == organization_id,
+                    TrainingVersion.location_id == location_id,
+                )
+            )
+            if version is None:
+                raise RuntimeError("Idempotent Training Version resource is unavailable") from exc
+            await db.commit()
+            return cast(TrainingVersion, version)
+
+        decision = await reserve_idempotency(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="training_draft_create",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            resource_type="training_version",
+            resource_id=draft.id,
+            response_status=201,
+            now=now,
+        )
+        if decision.replayed and decision.record.resource_id != draft.id:
+            raise RuntimeError("Concurrent Training Draft replay selected another resource")
         await db.commit()
         return draft
     except Exception:

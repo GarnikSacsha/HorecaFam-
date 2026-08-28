@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Literal, Self
 from urllib.parse import parse_qs, urlparse
 from uuid import UUID
@@ -197,3 +198,140 @@ class ReorderRequest(StrictTrainingSchema):
         if len(self.ordered_ids) != len(set(self.ordered_ids)):
             raise ValueError("Ordered IDs must be unique")
         return self
+
+
+class TrainingVersionCreate(StrictTrainingSchema):
+    base_version_id: UUID | None = None
+
+
+class TrainingModulePatch(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+    title_uk: str = Field(min_length=1, max_length=200)
+    description_uk: str | None = Field(default=None, max_length=2000)
+    required: bool
+
+
+class TrainingLessonCreate(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+    title_uk: str = Field(min_length=1, max_length=200)
+    description_uk: str | None = Field(default=None, max_length=2000)
+    required: bool
+    estimated_minutes: int | None = Field(default=None, ge=1, le=240)
+
+
+class TrainingLessonPatch(TrainingLessonCreate):
+    pass
+
+
+class AssetUploadIntentCreate(StrictTrainingSchema):
+    file_name: str = Field(min_length=1, max_length=255)
+    mime_type: Literal["image/jpeg", "image/png", "image/webp"]
+    size_bytes: int = Field(ge=1, le=5 * 1024 * 1024)
+    sha256: str = Field(pattern=r"^[0-9a-fA-F]{64}$")
+
+
+class AssetUploadComplete(StrictTrainingSchema):
+    sha256: str = Field(pattern=r"^[0-9a-fA-F]{64}$")
+
+
+class TrainingAssetResponse(StrictTrainingSchema):
+    id: UUID
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    status: str
+    ready_at: datetime | None
+    created_at: datetime
+
+
+class AssetUploadIntentResponse(StrictTrainingSchema):
+    asset_id: UUID
+    upload_url: str
+    upload_fields: dict[str, str]
+    expires_at: datetime
+
+
+class AssetAccessResponse(StrictTrainingSchema):
+    url: str
+    expires_in: Literal[300] = 300
+
+
+class TrainingContentBlockResponse(StrictTrainingSchema):
+    id: UUID
+    type: ContentBlockType
+    position: int
+    payload: dict[str, object]
+    menu_item_id: UUID | None
+    asset: TrainingAssetResponse | None
+
+
+class TrainingLessonResponse(StrictTrainingSchema):
+    id: UUID
+    position: int
+    title_uk: str
+    description_uk: str | None
+    required: bool
+    estimated_minutes: int | None
+    translation_status_en: str | None
+    content_blocks: list[TrainingContentBlockResponse]
+
+
+class TrainingModuleResponse(StrictTrainingSchema):
+    id: UUID
+    domain_type: Literal["menu"]
+    position: int
+    title_uk: str
+    description_uk: str | None
+    required: bool
+    translation_status_en: str | None
+    lessons: list[TrainingLessonResponse]
+
+
+class TrainingVersionSummary(StrictTrainingSchema):
+    id: UUID
+    training_id: UUID
+    location_id: UUID
+    version_number: int
+    status: Literal["draft", "published", "archived"]
+    revision: int
+    base_version_id: UUID | None
+    module_count: int
+    lesson_count: int
+    created_at: datetime
+    published_at: datetime | None
+    archived_at: datetime | None
+
+
+class TrainingVersionDetail(TrainingVersionSummary):
+    modules: list[TrainingModuleResponse]
+    menu_version_id: UUID | None
+
+
+class TrainingVersionCollection(StrictTrainingSchema):
+    published: TrainingVersionSummary | None
+    draft: TrainingVersionSummary | None
+    archived: list[TrainingVersionSummary]
+
+
+class TrainingModuleMutationResponse(StrictTrainingSchema):
+    module: TrainingModuleResponse
+    revision: int
+
+
+class TrainingLessonMutationResponse(StrictTrainingSchema):
+    lesson: TrainingLessonResponse
+    revision: int
+
+
+class TrainingContentBlockMutationResponse(StrictTrainingSchema):
+    content_block: TrainingContentBlockResponse
+    revision: int
+
+
+class TrainingRevisionResponse(StrictTrainingSchema):
+    revision: int
+
+
+class TrainingReorderResponse(StrictTrainingSchema):
+    ordered_ids: list[UUID]
+    revision: int

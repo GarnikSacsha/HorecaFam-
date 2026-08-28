@@ -16,13 +16,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = resolved_settings
     application.state.clock = utc_now
     application.state.password_manager = PasswordManager()
+    application.state.private_storage = None
     application.state.engine = create_engine(resolved_settings)
     application.state.session_factory = create_session_factory(application.state.engine)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=resolved_settings.cors_allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Idempotency-Key", "X-CSRF-Token", "X-Request-ID"],
     )
     application.add_middleware(RequestIDMiddleware)
