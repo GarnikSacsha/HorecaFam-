@@ -9,17 +9,20 @@ from app.models import (
     Asset,
     AuditEvent,
     ContentBlockType,
+    EmployeeProfile,
     LessonContentBlock,
     LessonContentBlockTranslation,
     LessonTranslation,
     LessonVersion,
     MenuItemVersion,
     MenuVersion,
+    OrganizationMembership,
     Training,
     TrainingModule,
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingVersion,
+    TrainingVersionAudience,
     TrainingVersionMenuDependency,
 )
 from app.schemas.training import (
@@ -30,6 +33,7 @@ from app.schemas.training import (
     TrainingReadinessResponse,
     validate_content_payload,
 )
+from app.services.applicability import evaluate_activation_applicability
 from app.services.idempotency import (
     find_idempotency_replay,
     request_fingerprint,
@@ -130,6 +134,27 @@ async def _readiness_for_version(
             _issue(
                 "VERSION_IMMUTABLE",
                 "Лише чернетку навчання можна опублікувати.",
+                "training_version",
+                version.id,
+            )
+        )
+
+    audience_count = len(
+        list(
+            (
+                await db.scalars(
+                    select(TrainingVersionAudience.id).where(
+                        TrainingVersionAudience.training_version_id == version.id
+                    )
+                )
+            ).all()
+        )
+    )
+    if audience_count == 0:
+        blockers.append(
+            _issue(
+                "TRAINING_AUDIENCE_REQUIRED",
+                "Оберіть щонайменше одну активну операційну роль.",
                 "training_version",
                 version.id,
             )
@@ -422,16 +447,32 @@ async def get_training_readiness(
 async def _publication_response(
     db: AsyncSession,
     version: TrainingVersion,
+    *,
+    assignment_count: int | None = None,
+    notification_count: int | None = None,
 ) -> TrainingPublishResponse:
+    if assignment_count is None or notification_count is None:
+        audit = await db.scalar(
+            select(AuditEvent)
+            .where(
+                AuditEvent.action == "training_published",
+                AuditEvent.target_id == version.id,
+            )
+            .order_by(AuditEvent.created_at.desc())
+        )
+        values = audit.new_values if audit is not None and audit.new_values is not None else {}
+        assignment_count = int(values.get("assignment_count", 0))
+        notification_count = int(values.get("notification_count", 0))
     return TrainingPublishResponse(
         published=await training_version_summary(db, version),
         previous_published_version_id=version.base_version_id,
         employee_reference_switched=True,
-        assignment_count=0,
+        assignment_count=assignment_count,
         completion_count=0,
         progress_count=0,
         rollout_count=0,
-        notification_count=0,
+        notification_count=notification_count,
+        rollout_id=None,
     )
 
 
@@ -515,6 +556,40 @@ async def publish_training_version(
         version.published_by_user_id = actor_user_id
         version.published_at = now
         await db.flush()
+        employee_ids = list(
+            (
+                await db.scalars(
+                    select(EmployeeProfile.id)
+                    .join(
+                        OrganizationMembership,
+                        OrganizationMembership.id == EmployeeProfile.membership_id,
+                    )
+                    .join(
+                        TrainingVersionAudience,
+                        TrainingVersionAudience.operational_role_id
+                        == EmployeeProfile.operational_role_id,
+                    )
+                    .where(
+                        EmployeeProfile.organization_id == organization_id,
+                        EmployeeProfile.location_id == location_id,
+                        OrganizationMembership.status == "active",
+                        TrainingVersionAudience.training_version_id == version.id,
+                    )
+                    .order_by(EmployeeProfile.id)
+                )
+            ).all()
+        )
+        assignment_count = 0
+        notification_count = 0
+        for employee_id in employee_ids:
+            applicability = await evaluate_activation_applicability(
+                db,
+                organization_id=organization_id,
+                employee_profile_id=employee_id,
+                now=now,
+            )
+            assignment_count += applicability.assignment_count
+            notification_count += applicability.notification_count
         await reserve_idempotency(
             db,
             organization_id=organization_id,
@@ -542,18 +617,23 @@ async def publish_training_version(
                         str(previous.id) if previous is not None else None
                     ),
                     "employee_reference_switched": True,
-                    "assignment_count": 0,
+                    "assignment_count": assignment_count,
                     "completion_count": 0,
                     "progress_count": 0,
                     "rollout_count": 0,
-                    "notification_count": 0,
+                    "notification_count": notification_count,
                 },
                 request_id=request_id,
                 outcome="success",
             )
         )
         await db.commit()
-        return await _publication_response(db, version)
+        return await _publication_response(
+            db,
+            version,
+            assignment_count=assignment_count,
+            notification_count=notification_count,
+        )
     except Exception:
         await db.rollback()
         raise

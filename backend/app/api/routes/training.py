@@ -26,6 +26,8 @@ from app.schemas.training import (
     EmployeeTrainingReferenceResponse,
     ReorderRequest,
     TrainingAssetResponse,
+    TrainingAudienceResponse,
+    TrainingAudienceUpdate,
     TrainingContentBlockMutationResponse,
     TrainingContentBlockResponse,
     TrainingLessonCreate,
@@ -58,6 +60,7 @@ from app.services.training_assets import (
     get_admin_asset_access,
     prepare_asset_upload,
 )
+from app.services.training_audiences import update_training_audience
 from app.services.training_content import (
     create_content_block,
     delete_content_block,
@@ -287,6 +290,32 @@ async def training_version_detail_route(
         organization_id=organization_id,
         location_id=location_id,
         version_id=version_id,
+    )
+
+
+@router.put(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/audiences",
+    response_model=TrainingAudienceResponse,
+)
+async def training_version_audience_update_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: TrainingAudienceUpdate,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingAudienceResponse:
+    return await update_training_audience(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        operational_role_ids=payload.operational_role_ids,
     )
 
 

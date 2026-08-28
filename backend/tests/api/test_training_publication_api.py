@@ -84,6 +84,16 @@ async def arrange_ready_training(
         },
     )
     assert block.status_code == 200
+    roles = await client.get(f"/api/v1/organizations/{organization_id}/operational-roles")
+    assert roles.status_code == 200
+    role_ids = [role["id"] for role in roles.json()]
+    assert role_ids
+    audience = await client.put(
+        f"{versions_url}/{version_id}/audiences",
+        headers=mutation_headers(csrf),
+        json={"expected_revision": 2, "operational_role_ids": role_ids},
+    )
+    assert audience.status_code == 200
     return cast(
         dict[str, object],
         (await client.get(f"{versions_url}/{version_id}")).json(),
@@ -192,7 +202,7 @@ async def test_training_publish_blocks_invalid_readiness_without_partial_effect(
     assert readiness.status_code == 200
     assert readiness.json()["can_publish"] is False
     assert [issue["code"] for issue in readiness.json()["blocking_errors"]] == sorted(
-        ["MENU_DEPENDENCY_INVALID", "REQUIRED_LESSON_MISSING"]
+        ["MENU_DEPENDENCY_INVALID", "REQUIRED_LESSON_MISSING"] + ["TRAINING_AUDIENCE_REQUIRED"]
     )
     assert blocked.status_code == 409
     assert blocked.json()["code"] == "TRAINING_NOT_READY"

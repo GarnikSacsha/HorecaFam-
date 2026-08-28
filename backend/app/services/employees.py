@@ -1,6 +1,6 @@
 import base64
 import binascii
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import Select, and_, func, or_, select
@@ -442,9 +442,6 @@ async def _update_pending_employee_profile(
     if locked is None:
         raise _resource_not_found()
     profile, membership = locked
-    if membership.status != "pending":
-        raise _profile_not_editable()
-
     supplied = payload.model_fields_set
     old_values: dict[str, bool | str | None] = {}
     new_values: dict[str, bool | str | None] = {}
@@ -486,6 +483,12 @@ async def _update_pending_employee_profile(
         )
 
     await db.flush()
+    applicability = await evaluate_activation_applicability(
+        db,
+        organization_id=organization_id,
+        employee_profile_id=employee_id,
+        now=datetime.now(UTC),
+    )
     detail = await get_employee_detail(
         db,
         organization_id=organization_id,
@@ -500,7 +503,13 @@ async def _update_pending_employee_profile(
             target_type="employee_profile",
             target_id=employee_id,
             old_values=old_values,
-            new_values=new_values,
+            new_values={
+                **new_values,
+                "training_applicability_effects": list(applicability.effects),
+                "assignment_count": applicability.assignment_count,
+                "revoked_assignment_count": applicability.revoked_assignment_count,
+                "notification_count": applicability.notification_count,
+            },
             request_id=request_id,
             outcome="success",
         )
@@ -674,10 +683,12 @@ async def _activate_employee(
         organization_id=organization_id,
         location_id=profile.location_id,
     )
-    await evaluate_activation_applicability(
+    applicability = await evaluate_activation_applicability(
         db,
         organization_id=organization_id,
         employee_profile_id=employee_id,
+        effective_membership_status="active",
+        now=now,
     )
 
     membership.status = "active"
@@ -692,7 +703,12 @@ async def _activate_employee(
             target_type="employee_profile",
             target_id=employee_id,
             old_values={"membership_status": "pending"},
-            new_values={"membership_status": "active"},
+            new_values={
+                "membership_status": "active",
+                "training_applicability_effects": list(applicability.effects),
+                "assignment_count": applicability.assignment_count,
+                "notification_count": applicability.notification_count,
+            },
             request_id=request_id,
             outcome="success",
         )

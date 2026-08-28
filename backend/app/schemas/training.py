@@ -370,15 +370,34 @@ class TrainingPublishRequest(StrictTrainingSchema):
     expected_revision: int = Field(ge=0)
 
 
+class TrainingAudienceUpdate(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+    operational_role_ids: list[UUID]
+
+    @field_validator("operational_role_ids")
+    @classmethod
+    def require_unique_roles(cls, value: list[UUID]) -> list[UUID]:
+        if len(value) != len(set(value)):
+            raise ValueError("Operational Role ids must be unique")
+        return value
+
+
+class TrainingAudienceResponse(StrictTrainingSchema):
+    training_version_id: UUID
+    revision: int
+    operational_role_ids: list[UUID]
+
+
 class TrainingPublishResponse(StrictTrainingSchema):
     published: TrainingVersionSummary
     previous_published_version_id: UUID | None
     employee_reference_switched: bool
-    assignment_count: Literal[0] = 0
-    completion_count: Literal[0] = 0
-    progress_count: Literal[0] = 0
-    rollout_count: Literal[0] = 0
-    notification_count: Literal[0] = 0
+    assignment_count: int = Field(ge=0)
+    completion_count: int = Field(ge=0)
+    progress_count: int = Field(ge=0)
+    rollout_count: int = Field(ge=0)
+    notification_count: int = Field(ge=0)
+    rollout_id: UUID | None = None
 
 
 class EmployeeTrainingSummary(StrictTrainingSchema):

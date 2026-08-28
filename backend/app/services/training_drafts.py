@@ -22,6 +22,7 @@ from app.models import (
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingVersion,
+    TrainingVersionAudience,
     TrainingVersionMenuDependency,
 )
 from app.services.idempotency import (
@@ -398,6 +399,26 @@ async def create_training_draft(
             )
         else:
             await _copy_version_graph(db, source=published, target=draft)
+            source_role_ids = list(
+                (
+                    await db.scalars(
+                        select(TrainingVersionAudience.operational_role_id).where(
+                            TrainingVersionAudience.training_version_id == published.id
+                        )
+                    )
+                ).all()
+            )
+            db.add_all(
+                [
+                    TrainingVersionAudience(
+                        organization_id=organization_id,
+                        location_id=location_id,
+                        training_version_id=draft.id,
+                        operational_role_id=role_id,
+                    )
+                    for role_id in source_role_ids
+                ]
+            )
 
         current_menu_version = await db.scalar(
             select(MenuVersion)

@@ -342,7 +342,12 @@ async def test_complete_backend_slice_from_admin_login_to_active_employee_access
     assert activation_audit.actor_user_id == admin_id
     assert activation_audit.target_id == employee_id
     assert activation_audit.old_values == {"membership_status": "pending"}
-    assert activation_audit.new_values == {"membership_status": "active"}
+    assert activation_audit.new_values == {
+        "membership_status": "active",
+        "training_applicability_effects": ["not_applicable"],
+        "assignment_count": 0,
+        "notification_count": 0,
+    }
     assert "Марія" not in str(activation_audit.old_values)
     assert "Марія" not in str(activation_audit.new_values)
     assert await evaluate_activation_applicability(
@@ -353,6 +358,7 @@ async def test_complete_backend_slice_from_admin_login_to_active_employee_access
         published_content_count=0,
         assignment_count=0,
         notification_count=0,
+        effects=("not_applicable",),
     )
 
 

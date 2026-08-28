@@ -216,3 +216,10 @@ class RolloutLessonRule(StrEnum):
     NEEDS_REPEAT = "needs_repeat"
     NEW_INCOMPLETE = "new_incomplete"
     REMOVED_HISTORICAL = "removed_historical"
+
+
+class TrainingApplicabilityEffect(StrEnum):
+    CREATED = "created"
+    RETAINED = "retained"
+    REVOKED = "revoked"
+    NOT_APPLICABLE = "not_applicable"

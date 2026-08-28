@@ -130,7 +130,11 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
         *,
         organization_id: UUID,
         employee_profile_id: UUID,
+        effective_membership_status: str | None = None,
+        now: datetime | None = None,
     ) -> ActivationApplicabilityResult:
+        assert effective_membership_status == "active"
+        assert now == FIXED_NOW
         applicability_calls.append((organization_id, employee_profile_id))
         return ActivationApplicabilityResult(0, 0, 0)
 
@@ -168,7 +172,12 @@ async def test_admin_activates_complete_employee_with_exact_response_and_safe_au
     assert audit.target_type == "employee_profile"
     assert audit.target_id == profile_id
     assert audit.old_values == {"membership_status": "pending"}
-    assert audit.new_values == {"membership_status": "active"}
+    assert audit.new_values == {
+        "membership_status": "active",
+        "training_applicability_effects": [],
+        "assignment_count": 0,
+        "notification_count": 0,
+    }
     assert audit.outcome == "success"
     assert "Iryna" not in str(audit.old_values)
     assert "Iryna" not in str(audit.new_values)

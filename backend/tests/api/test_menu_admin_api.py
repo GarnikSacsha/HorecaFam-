@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import MenuVersion, Organization, Session
 from app.security.tokens import hash_secret
 from tests.factories.auth import make_admin_access
-from tests.factories.identity import make_location, make_organization, make_user
+from tests.factories.identity import make_location, make_organization, make_role, make_user
 
 FIXED_NOW = datetime(2030, 8, 27, 13, 0, tzinfo=UTC)
 
@@ -25,8 +25,9 @@ async def arrange_admin(
     app.state.clock = lambda: FIXED_NOW
     organization = make_organization()
     location = make_location(organization)
+    role = make_role(organization, code=f"menu-role-{uuid4()}")
     admin = make_user(email_normalized=f"menu-admin-{uuid4()}@example.com")
-    db.add_all([organization, location, admin])
+    db.add_all([organization, location, role, admin])
     await db.flush()
     db.add(
         make_admin_access(

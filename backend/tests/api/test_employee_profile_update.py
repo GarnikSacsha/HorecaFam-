@@ -164,6 +164,10 @@ async def test_admin_updates_pending_profile_with_safe_atomic_audit(
         "last_name_changed": True,
         "operational_role_id": str(role_id),
         "location_id": str(location_id),
+        "training_applicability_effects": ["not_applicable"],
+        "assignment_count": 0,
+        "revoked_assignment_count": 0,
+        "notification_count": 0,
     }
     assert "Ірина" not in str(audit.old_values)
     assert "Ірина" not in str(audit.new_values)
@@ -226,7 +230,7 @@ async def test_pending_profile_patch_distinguishes_omitted_field_from_explicit_n
         ("disabled", None, FIXED_NOW - timedelta(days=1)),
     ],
 )
-async def test_non_pending_profile_is_not_editable(
+async def test_non_pending_profile_remains_editable_without_rewriting_disabled_access(
     auth_client: AsyncClient,
     auth_app: FastAPI,
     db_session: AsyncSession,
@@ -267,11 +271,10 @@ async def test_non_pending_profile_is_not_editable(
         json={"first_name": "Changed"},
     )
 
-    assert response.status_code == 409
-    assert response.json()["code"] == "EMPLOYEE_PROFILE_NOT_EDITABLE"
+    assert response.status_code == 200
     db_session.expire_all()
-    assert (await db_session.get_one(EmployeeProfile, profile_id)).first_name == "Original"
-    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+    assert (await db_session.get_one(EmployeeProfile, profile_id)).first_name == "Changed"
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 1
 
 
 async def test_profile_patch_rejects_inactive_and_foreign_references_without_mutation(
