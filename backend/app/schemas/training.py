@@ -400,6 +400,64 @@ class TrainingPublishResponse(StrictTrainingSchema):
     rollout_id: UUID | None = None
 
 
+class TrainingAssignmentCreate(StrictTrainingSchema):
+    training_version_id: UUID | None = None
+    reason: str | None = Field(default=None, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def normalize_reason(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else None
+
+
+class TrainingAssignmentRevoke(StrictTrainingSchema):
+    reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def normalize_reason(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Reason must not be blank")
+        return normalized
+
+
+class TrainingAssignmentReassign(TrainingAssignmentCreate):
+    pass
+
+
+class TrainingAssignmentResponse(StrictTrainingSchema):
+    id: UUID
+    organization_id: UUID
+    location_id: UUID
+    training_id: UUID
+    employee_profile_id: UUID
+    training_version_id: UUID
+    status: Literal["assigned", "in_progress", "completed", "revoked"]
+    source: Literal["automatic", "admin", "reassign", "rollout"]
+    previous_assignment_id: UUID | None
+    source_rollout_id: UUID | None
+    assigned_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    revoked_at: datetime | None
+    revoke_reason: Literal["admin", "role_changed", "location_changed", "rollout"] | None
+    revoke_note: str | None
+
+
+class TrainingProgressResponse(StrictTrainingSchema):
+    required_lesson_count: int = Field(ge=0)
+    completed_required_lesson_count: int = Field(ge=0)
+    percentage: int = Field(ge=0, le=100)
+    is_complete: bool
+
+
+class TrainingAssignmentListResponse(StrictTrainingSchema):
+    current: TrainingAssignmentResponse | None
+    history: list[TrainingAssignmentResponse]
+    progress: TrainingProgressResponse | None
+
+
 class EmployeeTrainingSummary(StrictTrainingSchema):
     id: UUID
     version_number: int

@@ -1,7 +1,7 @@
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
@@ -23,6 +23,13 @@ from app.schemas.employees import (
     OrganizationSummary,
     OwnEmployeeProfilesResponse,
 )
+from app.schemas.training import (
+    TrainingAssignmentCreate,
+    TrainingAssignmentListResponse,
+    TrainingAssignmentReassign,
+    TrainingAssignmentResponse,
+    TrainingAssignmentRevoke,
+)
 from app.services.employees import (
     activate_employee,
     get_employee_detail,
@@ -32,6 +39,12 @@ from app.services.employees import (
     list_locations,
     list_operational_roles,
     update_pending_employee_profile,
+)
+from app.services.training_assignments import (
+    create_training_assignment,
+    list_training_assignments,
+    reassign_training_assignment,
+    revoke_training_assignment,
 )
 
 router = APIRouter(tags=["employees"])
@@ -165,6 +178,120 @@ async def employee_activate_route(
         organization_id=organization_id,
         employee_id=employee_id,
         actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/employees/{employee_id}/training-assignments",
+    response_model=TrainingAssignmentListResponse,
+)
+async def training_assignments_list_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingAssignmentListResponse:
+    return await list_training_assignments(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}/training-assignments",
+    response_model=TrainingAssignmentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def training_assignment_create_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    payload: TrainingAssignmentCreate,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingAssignmentResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await create_training_assignment(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        payload=payload,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}"
+    "/training-assignments/{assignment_id}/revoke",
+    response_model=TrainingAssignmentResponse,
+)
+async def training_assignment_revoke_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    assignment_id: UUID,
+    payload: TrainingAssignmentRevoke,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingAssignmentResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await revoke_training_assignment(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        assignment_id=assignment_id,
+        actor_user_id=authorization.user.id,
+        payload=payload,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}"
+    "/training-assignments/{assignment_id}/reassign",
+    response_model=TrainingAssignmentResponse,
+)
+async def training_assignment_reassign_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    assignment_id: UUID,
+    payload: TrainingAssignmentReassign,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingAssignmentResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await reassign_training_assignment(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        assignment_id=assignment_id,
+        actor_user_id=authorization.user.id,
+        payload=payload,
         idempotency_key=idempotency_key.strip(),
         now=clock(),
         request_id=UUID(get_request_id()),
