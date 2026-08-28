@@ -16,6 +16,7 @@ import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusPill } from "../ui/States";
+import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 
@@ -141,6 +142,7 @@ export function AdminTrainingPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [publishOpen, setPublishOpen] = useState(false);
+  const [rolloutId, setRolloutId] = useState<string | null>(null);
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
   const [moduleRequired, setModuleRequired] = useState(true);
@@ -484,12 +486,13 @@ export function AdminTrainingPage() {
     setBusy(true);
     setError(null);
     try {
-      await client.request<TrainingPublishResponse>(`${draftBase}/publish`, {
+      const result = await client.request<TrainingPublishResponse>(`${draftBase}/publish`, {
         method: "POST",
         body: { expected_revision: readiness.revision },
         csrfToken: session.csrf_token,
         idempotencyKey: createIdempotencyKey(),
       });
+      setRolloutId(result.rollout_id);
       setPublishOpen(false);
       await loadWorkspace(locationId);
     } catch (caught) {
@@ -526,6 +529,7 @@ export function AdminTrainingPage() {
             value={locationId}
             onChange={(event) => {
               setLocationId(event.target.value);
+              setRolloutId(null);
               void loadWorkspace(event.target.value);
             }}
           >
@@ -918,6 +922,16 @@ export function AdminTrainingPage() {
             </button>
           </aside>
         </div>
+      ) : null}
+
+      {rolloutId && session && organizationId && locationId ? (
+        <AdminTrainingRolloutPanel
+          client={client}
+          csrfToken={session.csrf_token}
+          locationId={locationId}
+          organizationId={organizationId}
+          rolloutId={rolloutId}
+        />
       ) : null}
 
       <ConfirmDialog

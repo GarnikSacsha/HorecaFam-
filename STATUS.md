@@ -1,16 +1,16 @@
 # HoReCa Repository Status
 
-**Snapshot date:** 2026-08-28
-**Current product implementation:** CRA-54 MVP Vertical Slice 3 — Training Content is accepted,
+**Snapshot date:** 2026-08-29
+**Published product implementation:** CRA-54 MVP Vertical Slice 3 — Training Content is accepted,
 Done, and fast-forward published on `origin/main` through `d955f6a`. Backend MVP Vertical Slice 1
 through CRA-40, Frontend MVP Vertical Slice 1 through CRA-43, CRA-49 Menu Source of Truth, and
-CRA-54 Training Content are accepted and published. CRA-53 planning is accepted and Done. CRA-55
-is the active bounded documentation-only checkpoint for post-CRA-54 Linear/repository state
-synchronization; no product implementation issue is currently In Progress. The canonical routing
-entry is the Linear
+CRA-54 Training Content are accepted and published. CRA-53 planning, CRA-55 documentation
+synchronization, and CRA-56 Slice 4 planning are Done. CRA-57 is the active bounded implementation
+issue. Its nine-checkpoint Assignment, Completion, Progress and Rollout implementation is a local
+candidate pending Denys acceptance and publication. The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-Slice 4 planning and implementation, later commits and pushes, PR, merge, deployment, provider,
-and production-configuration actions remain separately gated. CRA-42 is unrelated Backlog work.
+Push, PR, merge, deployment, provider, and production-configuration actions remain separately
+gated. CRA-42 is unrelated Backlog work.
 
 ## Accepted implementation and planning checkpoints
 
@@ -53,7 +53,9 @@ and production-configuration actions remain separately gated. CRA-42 is unrelate
   Done.
 - CRA-54 Training Content is accepted, Done, and published through `d955f6a` as nine atomic
   checkpoints.
-- CRA-55 post-CRA-54 documentation synchronization is the active bounded documentation-only issue.
+- CRA-55 post-CRA-54 documentation synchronization is Done.
+- CRA-56 Slice 4 planning and its nine-checkpoint map are accepted and Done.
+- CRA-57 Slice 4 implementation is the active local candidate; acceptance/publication are pending.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -190,8 +192,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; local `main` and `origin/main` are aligned at the accepted CRA-54 endpoint
-  `d955f6a`.
+- Branch: `main`; `origin/main` remains at accepted CRA-54 endpoint `d955f6a`; local `main` is ahead
+  by the completed CRA-57 checkpoint commits and has no remote publication authorization.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
   checkpoints, CRA-49 through `8028d6e`, and CRA-54 through `d955f6a`.
@@ -202,8 +204,28 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted CRA-43/CRA-49/CRA-54 implementation with the Admin Training workspace,
-  Employee Learning reader, and automated acceptance boundary.
+- `frontend/`: accepted CRA-43/CRA-49/CRA-54 implementation plus the local CRA-57 Admin
+  assignment/rollout and assignment-aware Employee Learning candidate.
+
+## Local CRA-57 implementation candidate
+
+- Scope: version-owned audiences, shared applicability, immutable Assignment history, explicit
+  Lesson Completion, derived current Progress, deterministic replacement-Version Rollout,
+  transactional provider-free notification jobs, Admin assignment/rollout controls, and
+  assignment-aware Employee Home/Learning.
+- Backend gate: 363 passed, 0 failed, 0 skipped; 88% overall statement/branch coverage and 87%
+  aggregate coverage across the seven Slice 4 service files; Ruff format/check and strict mypy
+  passed.
+- Migrations: local head `0009_assignment_completion_rollout`; empty-database upgrade,
+  downgrade/upgrade coverage, current-head validation, and metadata no-drift passed.
+- Frontend gate: Prettier, ESLint, TypeScript, and production build passed; Vitest reports 35
+  passed, 0 failed, 0 skipped across 14 files.
+- Browser gate: Playwright reports 12 passed, 0 failed, 0 skipped across 1440×1000, 768×1024,
+  and 375×812 projects, including explicit Completion and Admin Assignment/Rollout confirmation.
+- Exact evidence and limitations:
+  [`docs/testing/training-assignment-slice-4-acceptance.md`](docs/testing/training-assignment-slice-4-acceptance.md).
+- CRA-57 remains In Progress until Denys explicitly accepts it. No push, PR, merge, provider,
+  deployment, or production configuration has been performed.
 
 ## Accepted and published CRA-54 checkpoint
 
@@ -276,9 +298,9 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   and the published repository baseline includes the CRA-46 documentation checkpoint at `586f8c5`.
   CRA-48 and CRA-49 are accepted and published; the CRA-49 corrective endpoint is `8028d6e`.
   CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is published through
-  `d955f6a`. CRA-55 documentation synchronization is the active bounded issue. Slice 4 planning,
-  implementation, every later commit or push, PR, merge, deploy, provider call, non-test mutation,
-  production configuration, and history rewrite remain separately gated.
+  `d955f6a`. CRA-55 and CRA-56 are Done. CRA-57 is the active local implementation candidate with
+  its mapped local commits authorized. Acceptance, every push, PR, merge, deploy, provider call,
+  non-test mutation, production configuration, and history rewrite remain separately gated.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

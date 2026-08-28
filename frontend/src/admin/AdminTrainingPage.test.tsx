@@ -8,6 +8,7 @@ import { ApiError } from "../api/client";
 import type { SessionResponse } from "../api/contracts";
 import { SessionProvider } from "../session/SessionContext";
 import { AdminTrainingPage } from "./AdminTrainingPage";
+import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
 
 const session: SessionResponse = {
   user: { id: "admin-1", email: "admin@example.com", preferred_locale: "uk" },
@@ -306,5 +307,184 @@ describe("Admin Training workspace", () => {
       ),
     ).toBe(true);
     vi.unstubAllGlobals();
+  });
+
+  it("previews changed lessons, records the preserve choice and confirms rollout", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const base = trainingClient(requests);
+    let ruleResolved = false;
+    let previewed = false;
+    let completed = false;
+    const rollout = () => ({
+      id: "rollout-1",
+      organization_id: "organization-1",
+      location_id: "location-1",
+      training_id: "training-1",
+      from_version: {
+        id: "published-training-1",
+        version_number: 1,
+        status: "archived",
+        revision: 3,
+      },
+      to_version: {
+        id: "training-version-1",
+        version_number: 2,
+        status: "published",
+        revision: 4,
+      },
+      status: completed ? "completed" : previewed ? "preview_ready" : "draft",
+      revision: completed ? 5 : previewed ? 4 : ruleResolved ? 3 : 2,
+      rules: [
+        {
+          lesson_id: "lesson-1",
+          from_lesson_version_id: "lesson-version-old",
+          to_lesson_version_id: "lesson-version-new",
+          rule: ruleResolved ? "preserve_completion" : null,
+          requires_admin_decision: !ruleResolved,
+          decided_by_user_id: ruleResolved ? "admin-1" : null,
+          decided_at: ruleResolved ? "2030-08-28T11:00:00Z" : null,
+        },
+      ],
+      employee_impacts: [
+        {
+          employee_profile_id: "employee-1",
+          source_assignment_id: "assignment-1",
+          target_assignment_id: completed ? "assignment-2" : null,
+          current_required_count: 3,
+          current_completed_count: 3,
+          current_progress_percentage: 100,
+          projected_required_count: 3,
+          projected_completed_count: ruleResolved ? 2 : 1,
+          projected_progress_percentage: ruleResolved ? 66 : 33,
+          lesson_impact: { materially_changed: ["lesson-1"] },
+          validation_codes: [],
+          warning_codes: [],
+        },
+      ],
+      impact_counts: { employee_count: 1, unresolved_rule_count: ruleResolved ? 0 : 1 },
+      is_stale: ruleResolved && !previewed,
+      warning_codes: [],
+      previewed_at: previewed ? "2030-08-28T11:10:00Z" : null,
+      created_at: "2030-08-28T10:00:00Z",
+    });
+    const client: ApiClient = {
+      getSession: () => base.getSession(),
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.endsWith("/publish")) {
+          requests.push({ path, options });
+          return Promise.resolve({
+            published: { ...detail, status: "published", version_number: 2 },
+            previous_published_version_id: "published-training-1",
+            employee_reference_switched: true,
+            assignment_count: 0,
+            completion_count: 0,
+            progress_count: 0,
+            rollout_count: 1,
+            notification_count: 0,
+            rollout_id: "rollout-1",
+          } as T);
+        }
+        if (path.endsWith("/lesson-rules/lesson-1")) {
+          requests.push({ path, options });
+          ruleResolved = true;
+          previewed = false;
+          return Promise.resolve(rollout() as T);
+        }
+        if (path.endsWith("/rollout-1/preview")) {
+          requests.push({ path, options });
+          previewed = true;
+          return Promise.resolve(rollout() as T);
+        }
+        if (path.endsWith("/rollout-1/confirm")) {
+          requests.push({ path, options });
+          completed = true;
+          return Promise.resolve(rollout() as T);
+        }
+        if (path.endsWith("/training-rollouts/rollout-1")) return Promise.resolve(rollout() as T);
+        return base.request<T>(path, options);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Опублікувати навчання" }));
+    await user.click(screen.getByRole("button", { name: "Опублікувати" }));
+    expect(
+      await screen.findByRole("heading", { name: "Перенесення прогресу" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 працівник")).toBeInTheDocument();
+    expect(screen.getByText("1 рішення для змінених уроків")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Зберегти завершення" }));
+    expect(await screen.findByText("Потрібен новий перегляд")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Оновити попередній перегляд" }));
+    expect(await screen.findByText("Прогноз: 2 із 3 · 66%")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Підтвердити перенесення" }));
+    await user.click(screen.getByRole("button", { name: "Перенести прогрес" }));
+    expect(await screen.findByText("Перенесення завершено")).toBeInTheDocument();
+
+    const ruleRequest = requests.find(({ path }) => path.endsWith("/lesson-rules/lesson-1"));
+    expect(ruleRequest?.options?.body).toEqual({
+      expected_revision: 2,
+      rule: "preserve_completion",
+    });
+    const confirmRequest = requests.find(({ path }) => path.endsWith("/rollout-1/confirm"));
+    expect(confirmRequest?.options?.body).toEqual({ expected_revision: 4 });
+    expect(confirmRequest?.options?.csrfToken).toBe("csrf-safe");
+    expect(typeof confirmRequest?.options?.idempotencyKey).toBe("string");
+  });
+
+  it("announces a stale rollout conflict and keeps the preview recoverable", async () => {
+    const user = userEvent.setup();
+    const preview = {
+      id: "rollout-stale",
+      organization_id: "organization-1",
+      location_id: "location-1",
+      training_id: "training-1",
+      from_version: { id: "v1", version_number: 1, status: "archived", revision: 2 },
+      to_version: { id: "v2", version_number: 2, status: "published", revision: 3 },
+      status: "preview_ready",
+      revision: 4,
+      rules: [],
+      employee_impacts: [],
+      impact_counts: { employee_count: 1, unresolved_rule_count: 0 },
+      is_stale: false,
+      warning_codes: [],
+      previewed_at: "2030-08-28T11:00:00Z",
+      created_at: "2030-08-28T10:00:00Z",
+    };
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(_path: string, options?: RequestOptions) =>
+        options?.method === "POST"
+          ? Promise.reject(
+              new ApiError(409, {
+                code: "TRAINING_ROLLOUT_STALE",
+                message: "Rollout preview is stale",
+              }),
+            )
+          : Promise.resolve(preview as T),
+    };
+
+    render(
+      <AdminTrainingRolloutPanel
+        client={client}
+        csrfToken="csrf-safe"
+        locationId="location-1"
+        organizationId="organization-1"
+        rolloutId="rollout-stale"
+      />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Підтвердити перенесення" }));
+    await user.click(screen.getByRole("button", { name: "Перенести прогрес" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Попередній перегляд застарів");
+    expect(screen.getByRole("button", { name: "Оновити дані" })).toBeEnabled();
   });
 });

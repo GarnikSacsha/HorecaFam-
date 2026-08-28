@@ -3,7 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import type { ApiClient, RequestOptions } from "../api/client";
-import type { EmployeeDetail, EmployeeListResponse, SessionResponse } from "../api/contracts";
+import type {
+  EmployeeDetail,
+  EmployeeListResponse,
+  SessionResponse,
+  TrainingAssignmentResponse,
+} from "../api/contracts";
 import { SessionProvider } from "../session/SessionContext";
 import { AdminEmployeeDetailPage } from "./AdminEmployeeDetailPage";
 import { AdminEmployeesPage } from "./AdminEmployeesPage";
@@ -153,6 +158,8 @@ describe("Admin Employee flow", () => {
         };
         return Promise.resolve(employee as T);
       }
+      if (path.endsWith("/training-assignments"))
+        return Promise.resolve({ current: null, history: [], progress: null } as T);
       return Promise.resolve(employee as T);
     });
     const user = userEvent.setup();
@@ -191,5 +198,115 @@ describe("Admin Employee flow", () => {
     expect(activationRequest?.options?.method).toBe("POST");
     expect(activationRequest?.options?.csrfToken).toBe("csrf-safe");
     expect(typeof activationRequest?.options?.idempotencyKey).toBe("string");
+  });
+
+  it("assigns, revokes and reassigns Training without hiding retained history", async () => {
+    const mutations: Array<{ path: string; options?: RequestOptions }> = [];
+    const activeEmployee: EmployeeDetail = {
+      ...pendingEmployee,
+      first_name: "Анна",
+      last_name: "Коваль",
+      membership_status: "active",
+      profile_complete: true,
+      activated_at: "2026-08-27T10:00:00Z",
+      operational_role: {
+        id: "role-1",
+        organization_id: "organization-1",
+        code: "waiter",
+        name_uk: "Офіціант",
+        status: "active",
+      },
+      location: {
+        id: "location-1",
+        organization_id: "organization-1",
+        name: "Хрещатик",
+        status: "active",
+        address: null,
+        timezone: "Europe/Kyiv",
+      },
+    };
+    const assignment: TrainingAssignmentResponse = {
+      id: "assignment-1",
+      organization_id: "organization-1",
+      location_id: "location-1",
+      training_id: "training-1",
+      employee_profile_id: "employee-1",
+      training_version_id: "training-version-1",
+      status: "assigned",
+      source: "admin",
+      previous_assignment_id: null,
+      source_rollout_id: null,
+      assigned_at: "2026-08-28T08:00:00Z",
+      started_at: null,
+      completed_at: null,
+      revoked_at: null,
+      revoke_reason: null,
+      revoke_note: null,
+    };
+    let current: TrainingAssignmentResponse | null = null;
+    let history: TrainingAssignmentResponse[] = [];
+    const client = adminClient(<T,>(path: string, options?: RequestOptions) => {
+      if (path.endsWith("/locations")) return Promise.resolve([activeEmployee.location] as T);
+      if (path.endsWith("/operational-roles"))
+        return Promise.resolve([activeEmployee.operational_role] as T);
+      if (path.endsWith("/training-assignments") && !options?.method)
+        return Promise.resolve({ current, history, progress: null } as T);
+      if (path.endsWith("/training-assignments") && options?.method === "POST") {
+        mutations.push({ path, options });
+        current = assignment;
+        return Promise.resolve(assignment as T);
+      }
+      if (path.endsWith("/training-assignments/assignment-1/revoke")) {
+        mutations.push({ path, options });
+        current = null;
+        history = [
+          {
+            ...assignment,
+            status: "revoked",
+            revoked_at: "2026-08-28T10:00:00Z",
+            revoke_reason: "admin",
+            revoke_note: "Зміна програми",
+          },
+        ];
+        return Promise.resolve(history[0] as T);
+      }
+      if (path.endsWith("/training-assignments/assignment-1/reassign")) {
+        mutations.push({ path, options });
+        current = { ...assignment, id: "assignment-2", source: "reassign" };
+        return Promise.resolve(current as T);
+      }
+      return Promise.resolve(activeEmployee as T);
+    });
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter initialEntries={["/admin/employees/employee-1"]}>
+          <Routes>
+            <Route path="/admin/employees/:employeeId" element={<AdminEmployeeDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Призначення навчання" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Призначити поточну версію" }));
+    expect(await screen.findByText("Навчання призначено")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Причина відкликання"), "Зміна програми");
+    await user.click(screen.getByRole("button", { name: "Відкликати призначення" }));
+    await user.click(screen.getByRole("button", { name: "Підтвердити відкликання" }));
+    expect(await screen.findByText("Призначення відкликано")).toBeInTheDocument();
+    expect(screen.getByText("Зміна програми")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Призначити повторно" }));
+    expect(await screen.findByText("Навчання призначено повторно")).toBeInTheDocument();
+    expect(mutations).toHaveLength(3);
+    for (const mutation of mutations) {
+      expect(mutation.options?.csrfToken).toBe("csrf-safe");
+      expect(typeof mutation.options?.idempotencyKey).toBe("string");
+    }
   });
 });

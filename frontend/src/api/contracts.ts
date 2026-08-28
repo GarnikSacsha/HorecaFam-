@@ -481,11 +481,101 @@ export interface TrainingPublishResponse {
   published: TrainingVersionSummary;
   previous_published_version_id: string | null;
   employee_reference_switched: boolean;
-  assignment_count: 0;
-  completion_count: 0;
-  progress_count: 0;
-  rollout_count: 0;
-  notification_count: 0;
+  assignment_count: number;
+  completion_count: number;
+  progress_count: number;
+  rollout_count: number;
+  notification_count: number;
+  rollout_id: string | null;
+}
+
+export type TrainingAssignmentStatus = "assigned" | "in_progress" | "completed" | "revoked";
+export type TrainingAssignmentSource = "automatic" | "admin" | "reassign" | "rollout";
+
+export interface TrainingAssignmentResponse {
+  id: string;
+  organization_id: string;
+  location_id: string;
+  training_id: string;
+  employee_profile_id: string;
+  training_version_id: string;
+  status: TrainingAssignmentStatus;
+  source: TrainingAssignmentSource;
+  previous_assignment_id: string | null;
+  source_rollout_id: string | null;
+  assigned_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  revoked_at: string | null;
+  revoke_reason: "admin" | "role_changed" | "location_changed" | "rollout" | null;
+  revoke_note: string | null;
+}
+
+export interface TrainingAssignmentListResponse {
+  current: TrainingAssignmentResponse | null;
+  history: TrainingAssignmentResponse[];
+  progress: TrainingProgressResponse | null;
+}
+
+export type RolloutLessonRule =
+  "preserve_completion" | "needs_repeat" | "new_incomplete" | "removed_historical";
+
+export interface TrainingRolloutVersionSummary {
+  id: string;
+  version_number: number;
+  status: "published" | "archived";
+  revision: number;
+}
+
+export interface TrainingRolloutLessonRuleResponse {
+  lesson_id: string;
+  from_lesson_version_id: string | null;
+  to_lesson_version_id: string | null;
+  rule: RolloutLessonRule | null;
+  requires_admin_decision: boolean;
+  decided_by_user_id: string | null;
+  decided_at: string | null;
+}
+
+export interface TrainingRolloutEmployeeImpactResponse {
+  employee_profile_id: string;
+  source_assignment_id: string;
+  target_assignment_id: string | null;
+  current_required_count: number;
+  current_completed_count: number;
+  current_progress_percentage: number;
+  projected_required_count: number;
+  projected_completed_count: number;
+  projected_progress_percentage: number;
+  lesson_impact: Record<string, string[]>;
+  validation_codes: string[];
+  warning_codes: string[];
+}
+
+export interface TrainingRolloutResponse {
+  id: string;
+  organization_id: string;
+  location_id: string;
+  training_id: string;
+  from_version: TrainingRolloutVersionSummary;
+  to_version: TrainingRolloutVersionSummary;
+  status:
+    | "draft"
+    | "preview_ready"
+    | "confirmed"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "stale";
+  revision: number;
+  rules: TrainingRolloutLessonRuleResponse[];
+  employee_impacts: TrainingRolloutEmployeeImpactResponse[];
+  impact_counts: { employee_count: number; unresolved_rule_count: number };
+  is_stale: boolean;
+  warning_codes: string[];
+  previewed_at: string | null;
+  created_at: string;
 }
 
 export interface AssetUploadIntentResponse {

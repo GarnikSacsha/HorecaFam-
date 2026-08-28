@@ -9,19 +9,21 @@ The published repository includes the accepted CRA-48 corrective record after `3
 test evidence remains anchored to `fa30a1f`. CRA-47 planning and CRA-48 documentation are Done.
 CRA-49 is accepted and fast-forward published through corrective checkpoint `8028d6e`; its runtime
 evidence is recorded below. CRA-53 planning and CRA-54 implementation are accepted and Done.
-CRA-54 is fast-forward published through `d955f6a`.
+CRA-54 is fast-forward published through `d955f6a`. CRA-55 and CRA-56 are Done. CRA-57 is the
+active local implementation candidate; its evidence is not yet accepted or published.
 
 ## Current test layout
 
 - `backend/tests/api`: application factory, health/errors, auth/session/CSRF/logout/MFA/RBAC,
   invitation lifecycle, Admin Menu/import/publication, Employee published-Menu behavior, Admin
-  Training/publication, and Employee published-Training behavior through the ASGI path with real
-  PostgreSQL state.
+  Training/publication/Assignment/Rollout, and Employee assignment-aware Training/Completion
+  behavior through the ASGI path with real PostgreSQL state.
 - `backend/tests/unit`: required configuration, fail-closed test database rules, canonical email
   normalization, and deterministic versioned invitation tokens.
 - `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip, persistence constraints,
   idempotency concurrency, transactional invitation delivery, Menu draft/facts/publication, and
-  Training draft/content/assets/publication state against PostgreSQL 16.
+  Training draft/content/assets/publication plus Assignment/Completion/Rollout state against
+  PostgreSQL 16.
 - `backend/tests/migration`: Alembic head/schema/drift checks and the prohibition on runtime
   `create_all`.
 - `backend/tests/factories` and `backend/tests/conftest.py`: deterministic identity objects and
@@ -197,3 +199,12 @@ requirement matrix, RED/GREEN evidence, critical-file declaration, browser path,
 limitations, and explicit Slice 4 exclusions. Denys accepted the checkpoint and authorized
 fast-forward publication through `d955f6a`; Railway/provider smoke, deployment, PR, and merge were
 not performed.
+
+## CRA-57 local candidate
+
+The local 2026-08-29 gate reports 363 backend tests, 88% overall statement/branch coverage, 87%
+aggregate Slice 4 service coverage, Alembic head `0009_assignment_completion_rollout`, 35 Vitest
+tests, and 12 Playwright executions across desktop, compact, and mobile projects. See
+[`training-assignment-slice-4-acceptance.md`](training-assignment-slice-4-acceptance.md) for the
+26-scenario matrix, exact boundary, security review, and limitations. CRA-57 remains In Progress;
+no acceptance, publication, deployment, provider, PR, or merge is claimed.

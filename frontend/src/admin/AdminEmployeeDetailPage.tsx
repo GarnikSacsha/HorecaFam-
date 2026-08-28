@@ -15,6 +15,7 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorSummary } from "../ui/ErrorSummary";
 import { StatusPill } from "../ui/States";
 import { fieldError, formErrors } from "../ui/formErrors";
+import { AdminEmployeeTrainingPanel } from "./AdminEmployeeTrainingPanel";
 
 export function AdminEmployeeDetailPage() {
   const { employeeId = "" } = useParams();
@@ -252,6 +253,14 @@ export function AdminEmployeeDetailPage() {
           </p>
         )}
       </form>
+      {!pending && session && organizationId ? (
+        <AdminEmployeeTrainingPanel
+          client={client}
+          csrfToken={session.csrf_token}
+          employeeId={employeeId}
+          organizationId={organizationId}
+        />
+      ) : null}
       <ConfirmDialog
         open={confirmOpen}
         title="Активувати працівника?"

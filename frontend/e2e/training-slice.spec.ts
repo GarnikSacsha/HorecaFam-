@@ -184,6 +184,15 @@ test("admin publishes Training and employee reads the current editorial referenc
     if (method === "GET" && pathname === "/me/training") {
       await route.fulfill({
         json: {
+          assignment: published
+            ? {
+                id: "assignment-1",
+                status: "in_progress",
+                assigned_at: publishedAt,
+                started_at: publishedAt,
+                completed_at: null,
+              }
+            : null,
           training: published
             ? { id: "training-1", version_number: 1, published_at: publishedAt }
             : null,
@@ -202,6 +211,15 @@ test("admin publishes Training and employee reads the current editorial referenc
                 },
               ]
             : [],
+          progress: published
+            ? {
+                required_lesson_count: 1,
+                completed_required_lesson_count: 0,
+                percentage: 0,
+                is_complete: false,
+              }
+            : null,
+          next_action: published ? "open_lesson" : "none",
           content_locale: "uk",
           translation_fallback: false,
         },
@@ -228,6 +246,7 @@ test("admin publishes Training and employee reads the current editorial referenc
               position: 0,
               required: true,
               estimated_minutes: 5,
+              completed: false,
               content_locale: "uk",
               translation_fallback: false,
             },
@@ -245,6 +264,7 @@ test("admin publishes Training and employee reads the current editorial referenc
           position: 0,
           required: true,
           estimated_minutes: 5,
+          completed: false,
           content_locale: "uk",
           translation_fallback: false,
           content_blocks: [
@@ -318,6 +338,36 @@ test("admin publishes Training and employee reads the current editorial referenc
       });
       return;
     }
+    if (method === "POST" && pathname === "/me/training/lessons/lesson-1/complete") {
+      assertProtectedMutation(request);
+      await route.fulfill({
+        json: {
+          completion: {
+            id: "completion-1",
+            assignment_id: "assignment-1",
+            lesson_id: "lesson-1",
+            lesson_version_id: "lesson-version-1",
+            completion_source: "employee",
+            completed_at: "2030-08-28T10:00:00Z",
+          },
+          assignment: {
+            id: "assignment-1",
+            status: "completed",
+            assigned_at: publishedAt,
+            started_at: publishedAt,
+            completed_at: "2030-08-28T10:00:00Z",
+          },
+          progress: {
+            required_lesson_count: 1,
+            completed_required_lesson_count: 1,
+            percentage: 100,
+            is_complete: true,
+          },
+          next_action: "review_training",
+        },
+      });
+      return;
+    }
     if (method === "GET" && pathname === "/me/training/assets/asset-1/access") {
       await route.fulfill({
         json: {
@@ -358,5 +408,318 @@ test("admin publishes Training and employee reads the current editorial referenc
   await expect(page.getByRole("img", { name: "Борщ у білій тарілці" })).toBeVisible();
   await expect(page.getByTitle("Відео про подачу")).toBeVisible();
   await expect(page.getByText("Подавайте зі сметаною.")).toBeVisible();
-  await expect(page.getByText(/завершити|прогрес|призначено/i)).toHaveCount(0);
+  await page.getByRole("button", { name: "Ознайомився" }).click();
+  await expect(page.getByRole("status")).toContainText("Урок завершено");
+});
+
+test("admin assigns Training and confirms a replacement rollout", async ({ page }) => {
+  let assignmentCreated = false;
+  let ruleResolved = false;
+  let previewReady = false;
+  let rolloutCompleted = false;
+  const oldVersionId = "training-version-old";
+  const targetVersionId = "training-version-target";
+  const versionsPath = `/organizations/${organizationId}/locations/${locationId}/training-versions`;
+  const rolloutPath = `/organizations/${organizationId}/locations/${locationId}/training-rollouts/rollout-1`;
+  const versionSummary = (
+    id: string,
+    versionNumber: number,
+    status: "draft" | "published" | "archived",
+  ) => ({
+    id,
+    training_id: "training-1",
+    location_id: locationId,
+    version_number: versionNumber,
+    status,
+    revision: status === "draft" ? 4 : 3,
+    base_version_id: id === targetVersionId ? oldVersionId : null,
+    module_count: 1,
+    lesson_count: 1,
+    created_at: "2030-08-28T07:00:00Z",
+    published_at: status === "draft" ? null : "2030-08-28T08:00:00Z",
+    archived_at: status === "archived" ? "2030-08-28T09:00:00Z" : null,
+  });
+  const targetDetail = {
+    ...versionSummary(targetVersionId, 2, "draft"),
+    menu_version_id: "menu-version-1",
+    modules: [
+      {
+        id: "module-1",
+        domain_type: "menu",
+        position: 0,
+        title_uk: "Оновлене меню",
+        description_uk: "Зміни для команди.",
+        required: true,
+        translation_status_en: null,
+        lessons: [
+          {
+            id: "lesson-1",
+            position: 0,
+            title_uk: "Оновлена подача",
+            description_uk: null,
+            required: true,
+            estimated_minutes: 5,
+            translation_status_en: null,
+            content_blocks: [
+              {
+                id: "block-1",
+                type: "text",
+                position: 0,
+                payload: { text_uk: "Нові факти." },
+                menu_item_id: null,
+                asset: null,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const assignment = {
+    id: "assignment-admin-1",
+    organization_id: organizationId,
+    location_id: locationId,
+    training_id: "training-1",
+    employee_profile_id: "employee-1",
+    training_version_id: oldVersionId,
+    status: "assigned",
+    source: "admin",
+    previous_assignment_id: null,
+    source_rollout_id: null,
+    assigned_at: "2030-08-28T08:00:00Z",
+    started_at: null,
+    completed_at: null,
+    revoked_at: null,
+    revoke_reason: null,
+    revoke_note: null,
+  };
+  const rollout = () => ({
+    id: "rollout-1",
+    organization_id: organizationId,
+    location_id: locationId,
+    training_id: "training-1",
+    from_version: { id: oldVersionId, version_number: 1, status: "archived", revision: 3 },
+    to_version: { id: targetVersionId, version_number: 2, status: "published", revision: 4 },
+    status: rolloutCompleted ? "completed" : previewReady ? "preview_ready" : "draft",
+    revision: rolloutCompleted ? 5 : previewReady ? 4 : ruleResolved ? 3 : 2,
+    rules: [
+      {
+        lesson_id: "lesson-1",
+        from_lesson_version_id: "lesson-old",
+        to_lesson_version_id: "lesson-new",
+        rule: ruleResolved ? "preserve_completion" : null,
+        requires_admin_decision: !ruleResolved,
+        decided_by_user_id: ruleResolved ? "admin-1" : null,
+        decided_at: ruleResolved ? "2030-08-28T10:00:00Z" : null,
+      },
+    ],
+    employee_impacts: [
+      {
+        employee_profile_id: "employee-1",
+        source_assignment_id: assignment.id,
+        target_assignment_id: rolloutCompleted ? "assignment-target" : null,
+        current_required_count: 1,
+        current_completed_count: 1,
+        current_progress_percentage: 100,
+        projected_required_count: 1,
+        projected_completed_count: ruleResolved ? 1 : 0,
+        projected_progress_percentage: ruleResolved ? 100 : 0,
+        lesson_impact: { materially_changed: ["lesson-1"] },
+        validation_codes: [],
+        warning_codes: [],
+      },
+    ],
+    impact_counts: { employee_count: 1, unresolved_rule_count: ruleResolved ? 0 : 1 },
+    is_stale: ruleResolved && !previewReady,
+    warning_codes: [],
+    previewed_at: previewReady ? "2030-08-28T10:10:00Z" : null,
+    created_at: "2030-08-28T09:00:00Z",
+  });
+
+  await page.route("**/api/v1/**", async (route: Route) => {
+    const request = route.request();
+    const method = request.method();
+    const pathname = new URL(request.url()).pathname.replace("/api/v1", "");
+    if (method === "GET" && pathname === "/auth/session") {
+      await route.fulfill({ json: sessionFor("admin") });
+      return;
+    }
+    if (method === "GET" && pathname === `/organizations/${organizationId}/locations`) {
+      await route.fulfill({
+        json: [
+          {
+            id: locationId,
+            organization_id: organizationId,
+            name: "Хрещатик",
+            status: "active",
+            address: null,
+            timezone: "Europe/Kyiv",
+          },
+        ],
+      });
+      return;
+    }
+    if (method === "GET" && pathname === `/organizations/${organizationId}/operational-roles`) {
+      await route.fulfill({
+        json: [
+          {
+            id: "role-1",
+            organization_id: organizationId,
+            code: "waiter",
+            name_uk: "Офіціант",
+            status: "active",
+          },
+        ],
+      });
+      return;
+    }
+    if (method === "GET" && pathname === `/organizations/${organizationId}/employees/employee-1`) {
+      await route.fulfill({
+        json: {
+          id: "employee-1",
+          organization_id: organizationId,
+          email: "employee@example.com",
+          first_name: "Анна",
+          last_name: "Коваль",
+          membership_status: "active",
+          operational_role: {
+            id: "role-1",
+            organization_id: organizationId,
+            code: "waiter",
+            name_uk: "Офіціант",
+            status: "active",
+          },
+          location: {
+            id: locationId,
+            organization_id: organizationId,
+            name: "Хрещатик",
+            status: "active",
+            address: null,
+            timezone: "Europe/Kyiv",
+          },
+          profile_complete: true,
+          created_at: "2030-08-27T00:00:00Z",
+          updated_at: "2030-08-27T00:00:00Z",
+          membership_created_at: "2030-08-27T00:00:00Z",
+          activated_at: "2030-08-27T10:00:00Z",
+          disabled_at: null,
+        },
+      });
+      return;
+    }
+    const assignmentsPath = `/organizations/${organizationId}/employees/employee-1/training-assignments`;
+    if (method === "GET" && pathname === assignmentsPath) {
+      await route.fulfill({
+        json: { current: assignmentCreated ? assignment : null, history: [], progress: null },
+      });
+      return;
+    }
+    if (method === "POST" && pathname === assignmentsPath) {
+      assertProtectedMutation(request);
+      assignmentCreated = true;
+      await route.fulfill({ status: 201, json: assignment });
+      return;
+    }
+    if (method === "GET" && pathname === versionsPath) {
+      await route.fulfill({
+        json: {
+          published: versionSummary(oldVersionId, 1, "published"),
+          draft: versionSummary(targetVersionId, 2, "draft"),
+          archived: [],
+        },
+      });
+      return;
+    }
+    if (method === "GET" && pathname === `${versionsPath}/${targetVersionId}`) {
+      await route.fulfill({ json: targetDetail });
+      return;
+    }
+    if (method === "GET" && pathname === `${versionsPath}/${targetVersionId}/readiness`) {
+      await route.fulfill({
+        json: {
+          training_id: "training-1",
+          training_version_id: targetVersionId,
+          organization_id: organizationId,
+          location_id: locationId,
+          revision: 4,
+          can_publish: true,
+          blocking_errors: [],
+          warnings: [],
+          counts: {
+            module_count: 1,
+            lesson_count: 1,
+            required_lesson_count: 1,
+            content_block_count: 1,
+            required_asset_count: 0,
+            ready_asset_count: 0,
+            menu_item_link_count: 0,
+          },
+        },
+      });
+      return;
+    }
+    if (method === "POST" && pathname === `${versionsPath}/${targetVersionId}/publish`) {
+      assertProtectedMutation(request);
+      await route.fulfill({
+        json: {
+          published: versionSummary(targetVersionId, 2, "published"),
+          previous_published_version_id: oldVersionId,
+          employee_reference_switched: true,
+          assignment_count: 0,
+          completion_count: 0,
+          progress_count: 0,
+          rollout_count: 1,
+          notification_count: 0,
+          rollout_id: "rollout-1",
+        },
+      });
+      return;
+    }
+    if (method === "GET" && pathname === rolloutPath) {
+      await route.fulfill({ json: rollout() });
+      return;
+    }
+    if (method === "PATCH" && pathname === `${rolloutPath}/lesson-rules/lesson-1`) {
+      expect(request.headers()["x-csrf-token"]).toBe("csrf-safe");
+      ruleResolved = true;
+      previewReady = false;
+      await route.fulfill({ json: rollout() });
+      return;
+    }
+    if (method === "POST" && pathname === `${rolloutPath}/preview`) {
+      assertProtectedMutation(request);
+      previewReady = true;
+      await route.fulfill({ json: rollout() });
+      return;
+    }
+    if (method === "POST" && pathname === `${rolloutPath}/confirm`) {
+      assertProtectedMutation(request);
+      rolloutCompleted = true;
+      await route.fulfill({ json: rollout() });
+      return;
+    }
+    await route.fulfill({
+      status: 404,
+      json: {
+        code: "UNEXPECTED_TEST_REQUEST",
+        message: `${method} ${pathname}`,
+        field_errors: [],
+        request_id: "rollout-unexpected",
+      },
+    });
+  });
+
+  await page.goto("/admin/employees/employee-1");
+  await page.getByRole("button", { name: "Призначити поточну версію" }).click();
+  await expect(page.getByRole("status")).toContainText("Навчання призначено");
+
+  await page.goto("/admin/content");
+  await page.getByRole("button", { name: "Опублікувати навчання" }).click();
+  await page.getByRole("button", { name: "Опублікувати", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Перенесення прогресу" })).toBeVisible();
+  await page.getByRole("button", { name: "Зберегти завершення" }).click();
+  await page.getByRole("button", { name: "Оновити попередній перегляд" }).click();
+  await page.getByRole("button", { name: "Підтвердити перенесення" }).click();
+  await page.getByRole("button", { name: "Перенести прогрес" }).click();
+  await expect(page.getByText("Перенесення завершено")).toBeVisible();
 });

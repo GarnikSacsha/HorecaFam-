@@ -11,9 +11,11 @@ The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication rec
 CRA-48 is Done. CRA-49 is accepted: its original ten implementation checkpoints end at `22927f7`,
 and its corrective acceptance tail is fast-forward published on `origin/main` through `8028d6e`.
 CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54's nine checkpoints are
-fast-forward published through `d955f6a`. CRA-55 is the active documentation-only synchronization
-issue. CRA-42 is unrelated Backlog work. `origin` points to the approved HoReCa GitHub repository,
-and local `main` has upstream tracking.
+fast-forward published through `d955f6a`. CRA-55 documentation synchronization and CRA-56 Slice 4
+planning are Done. CRA-57 is the active bounded implementation issue; its nine-checkpoint local
+candidate is ahead of `origin/main` and remains unaccepted/unpublished. CRA-42 is unrelated
+Backlog work. `origin` points to the approved HoReCa GitHub repository, and local `main` has
+upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -116,5 +118,6 @@ issue is active. CRA-46 is Done and published as the repository documentation ch
 `586f8c5`; CRA-47 planning is accepted and Done. CRA-48 is Done and published with no pending push.
 CRA-49 implementation and corrective acceptance tail are accepted and published through `8028d6e`.
 CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is published through
-`d955f6a`. CRA-55 documentation synchronization is active. Slice 4 planning, its implementation,
-and every later remote or product action remain separately gated.
+`d955f6a`. CRA-55 and CRA-56 are Done. CRA-57 is the active local Slice 4 candidate; its mapped
+local commits are authorized, while acceptance, every push, and every later remote or product
+action remain separately gated.
