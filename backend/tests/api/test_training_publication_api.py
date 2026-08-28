@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AuditEvent, TrainingVersion
+from app.models import AuditEvent, TrainingAssignment, TrainingRollout, TrainingVersion
 from app.services import training_publication
 from tests.api.test_menu_admin_api import FIXED_NOW, arrange_admin, mutation_headers
 from tests.api.test_menu_publication_api import arrange_ready_draft
@@ -279,6 +279,9 @@ async def test_training_publication_archives_previous_and_different_key_race_has
     success = next(response for response in responses if response.status_code == 200)
     assert failure.json()["code"] == "REVISION_CONFLICT"
     assert success.json()["previous_published_version_id"] == str(first_id)
+    assert success.json()["assignment_count"] == 0
+    assert success.json()["rollout_count"] == 1
+    assert success.json()["rollout_id"] is not None
 
     db_session.expire_all()
     assert (await db_session.get_one(TrainingVersion, first_id)).status == "archived"
@@ -291,6 +294,14 @@ async def test_training_publication_archives_previous_and_different_key_race_has
         )
         == 1
     )
+    rollout = await db_session.scalar(select(TrainingRollout))
+    assert rollout is not None
+    assert str(rollout.id) == success.json()["rollout_id"]
+    assert rollout.from_version_id == first_id
+    assert rollout.to_version_id == second_id
+    assert rollout.status == "preview_ready"
+    assert rollout.revision == 1
+    assert await db_session.scalar(select(func.count()).select_from(TrainingAssignment)) == 0
 
 
 async def test_training_publish_revalidates_current_menu_dependency(
@@ -409,3 +420,4 @@ async def test_training_publish_forced_failure_rolls_back_atomic_switch(
     db_session.expire_all()
     assert (await db_session.get_one(TrainingVersion, first_id)).status == "published"
     assert (await db_session.get_one(TrainingVersion, second_id)).status == "draft"
+    assert await db_session.scalar(select(func.count()).select_from(TrainingRollout)) == 0

@@ -43,6 +43,10 @@ from app.schemas.training import (
     TrainingReadinessResponse,
     TrainingReorderResponse,
     TrainingRevisionResponse,
+    TrainingRolloutCreate,
+    TrainingRolloutLessonRuleUpdate,
+    TrainingRolloutPreviewRequest,
+    TrainingRolloutResponse,
     TrainingVersionCollection,
     TrainingVersionCreate,
     TrainingVersionDetail,
@@ -85,6 +89,12 @@ from app.services.training_queries import (
     get_training_version_detail,
     list_training_versions,
     training_asset_response,
+)
+from app.services.training_rollouts import (
+    create_training_rollout,
+    get_training_rollout,
+    preview_training_rollout,
+    update_training_rollout_lesson_rule,
 )
 
 router = APIRouter(tags=["training"])
@@ -425,6 +435,121 @@ async def training_version_publish_route(
         request_id=UUID(get_request_id()),
         expected_revision=payload.expected_revision,
         idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-rollouts",
+    response_model=TrainingRolloutResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def training_rollout_create_route(
+    organization_id: UUID,
+    location_id: UUID,
+    payload: TrainingRolloutCreate,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingRolloutResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await create_training_rollout(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        from_version_id=payload.from_version_id,
+        to_version_id=payload.to_version_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/training-rollouts/{rollout_id}",
+    response_model=TrainingRolloutResponse,
+)
+async def training_rollout_detail_route(
+    organization_id: UUID,
+    location_id: UUID,
+    rollout_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingRolloutResponse:
+    return await get_training_rollout(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        rollout_id=rollout_id,
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-rollouts/"
+    "{rollout_id}/preview",
+    response_model=TrainingRolloutResponse,
+)
+async def training_rollout_preview_route(
+    organization_id: UUID,
+    location_id: UUID,
+    rollout_id: UUID,
+    payload: TrainingRolloutPreviewRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingRolloutResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await preview_training_rollout(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        rollout_id=rollout_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+    )
+
+
+@router.patch(
+    "/organizations/{organization_id}/locations/{location_id}/training-rollouts/"
+    "{rollout_id}/lesson-rules/{lesson_id}",
+    response_model=TrainingRolloutResponse,
+)
+async def training_rollout_lesson_rule_update_route(
+    organization_id: UUID,
+    location_id: UUID,
+    rollout_id: UUID,
+    lesson_id: UUID,
+    payload: TrainingRolloutLessonRuleUpdate,
+    request: Request,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingRolloutResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await update_training_rollout_lesson_rule(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        rollout_id=rollout_id,
+        lesson_id=lesson_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        rule_value=payload.rule,
         now=clock(),
     )
 

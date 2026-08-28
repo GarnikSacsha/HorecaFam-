@@ -537,3 +537,88 @@ class LessonCompletionResponse(StrictTrainingSchema):
     assignment: EmployeeTrainingAssignmentSummary
     progress: TrainingProgressResponse
     next_action: Literal["open_lesson", "review_training", "none"]
+
+
+class TrainingRolloutCreate(StrictTrainingSchema):
+    from_version_id: UUID
+    to_version_id: UUID
+
+
+class TrainingRolloutPreviewRequest(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+
+
+class TrainingRolloutLessonRuleUpdate(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+    rule: Literal["preserve_completion", "needs_repeat"]
+
+
+class TrainingRolloutVersionSummary(StrictTrainingSchema):
+    id: UUID
+    version_number: int = Field(ge=1)
+    status: Literal["published", "archived"]
+    revision: int = Field(ge=0)
+
+
+class TrainingRolloutLessonRuleResponse(StrictTrainingSchema):
+    lesson_id: UUID
+    from_lesson_version_id: UUID | None
+    to_lesson_version_id: UUID | None
+    rule: (
+        Literal[
+            "preserve_completion",
+            "needs_repeat",
+            "new_incomplete",
+            "removed_historical",
+        ]
+        | None
+    )
+    requires_admin_decision: bool
+    decided_by_user_id: UUID | None
+    decided_at: datetime | None
+
+
+class TrainingRolloutEmployeeImpactResponse(StrictTrainingSchema):
+    employee_profile_id: UUID
+    source_assignment_id: UUID
+    current_required_count: int = Field(ge=0)
+    current_completed_count: int = Field(ge=0)
+    current_progress_percentage: int = Field(ge=0, le=100)
+    projected_required_count: int = Field(ge=0)
+    projected_completed_count: int = Field(ge=0)
+    projected_progress_percentage: int = Field(ge=0, le=100)
+    lesson_impact: dict[str, list[UUID]]
+    validation_codes: list[str]
+    warning_codes: list[str]
+
+
+class TrainingRolloutImpactCounts(StrictTrainingSchema):
+    employee_count: int = Field(ge=0)
+    unresolved_rule_count: int = Field(ge=0)
+
+
+class TrainingRolloutResponse(StrictTrainingSchema):
+    id: UUID
+    organization_id: UUID
+    location_id: UUID
+    training_id: UUID
+    from_version: TrainingRolloutVersionSummary
+    to_version: TrainingRolloutVersionSummary
+    status: Literal[
+        "draft",
+        "preview_ready",
+        "confirmed",
+        "processing",
+        "completed",
+        "failed",
+        "cancelled",
+        "stale",
+    ]
+    revision: int = Field(ge=0)
+    rules: list[TrainingRolloutLessonRuleResponse]
+    employee_impacts: list[TrainingRolloutEmployeeImpactResponse]
+    impact_counts: TrainingRolloutImpactCounts
+    is_stale: bool
+    warning_codes: list[str]
+    previewed_at: datetime | None
+    created_at: datetime

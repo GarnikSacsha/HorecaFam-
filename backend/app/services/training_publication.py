@@ -40,6 +40,7 @@ from app.services.idempotency import (
     reserve_idempotency,
 )
 from app.services.training_queries import training_version_summary
+from app.services.training_rollouts import prepare_replacement_rollout
 
 
 def _not_found() -> APIError:
@@ -450,6 +451,7 @@ async def _publication_response(
     *,
     assignment_count: int | None = None,
     notification_count: int | None = None,
+    rollout_id: UUID | None = None,
 ) -> TrainingPublishResponse:
     if assignment_count is None or notification_count is None:
         audit = await db.scalar(
@@ -463,6 +465,8 @@ async def _publication_response(
         values = audit.new_values if audit is not None and audit.new_values is not None else {}
         assignment_count = int(values.get("assignment_count", 0))
         notification_count = int(values.get("notification_count", 0))
+        stored_rollout_id = values.get("rollout_id")
+        rollout_id = UUID(stored_rollout_id) if stored_rollout_id is not None else None
     return TrainingPublishResponse(
         published=await training_version_summary(db, version),
         previous_published_version_id=version.base_version_id,
@@ -470,9 +474,9 @@ async def _publication_response(
         assignment_count=assignment_count,
         completion_count=0,
         progress_count=0,
-        rollout_count=0,
+        rollout_count=1 if rollout_id is not None else 0,
         notification_count=notification_count,
-        rollout_id=None,
+        rollout_id=rollout_id,
     )
 
 
@@ -590,6 +594,16 @@ async def publish_training_version(
             )
             assignment_count += applicability.assignment_count
             notification_count += applicability.notification_count
+        rollout = None
+        if previous is not None:
+            rollout = await prepare_replacement_rollout(
+                db,
+                source=previous,
+                target=version,
+                actor_user_id=actor_user_id,
+                request_id=request_id,
+                now=now,
+            )
         await reserve_idempotency(
             db,
             organization_id=organization_id,
@@ -620,8 +634,9 @@ async def publish_training_version(
                     "assignment_count": assignment_count,
                     "completion_count": 0,
                     "progress_count": 0,
-                    "rollout_count": 0,
+                    "rollout_count": 1 if rollout is not None else 0,
                     "notification_count": notification_count,
+                    "rollout_id": str(rollout.id) if rollout is not None else None,
                 },
                 request_id=request_id,
                 outcome="success",
@@ -633,6 +648,7 @@ async def publish_training_version(
             version,
             assignment_count=assignment_count,
             notification_count=notification_count,
+            rollout_id=rollout.id if rollout is not None else None,
         )
     except Exception:
         await db.rollback()
