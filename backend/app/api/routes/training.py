@@ -28,6 +28,9 @@ from app.schemas.training import (
     TrainingModuleMutationResponse,
     TrainingModulePatch,
     TrainingModuleResponse,
+    TrainingPublishRequest,
+    TrainingPublishResponse,
+    TrainingReadinessResponse,
     TrainingReorderResponse,
     TrainingRevisionResponse,
     TrainingVersionCollection,
@@ -55,6 +58,10 @@ from app.services.training_drafts import (
     reorder_lessons,
     update_lesson,
     update_module,
+)
+from app.services.training_publication import (
+    get_training_readiness,
+    publish_training_version,
 )
 from app.services.training_queries import (
     get_training_version_detail,
@@ -171,6 +178,59 @@ async def training_version_detail_route(
         organization_id=organization_id,
         location_id=location_id,
         version_id=version_id,
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/readiness",
+    response_model=TrainingReadinessResponse,
+)
+async def training_version_readiness_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingReadinessResponse:
+    return await get_training_readiness(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/publish",
+    response_model=TrainingPublishResponse,
+)
+async def training_version_publish_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: TrainingPublishRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingPublishResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await publish_training_version(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
     )
 
 

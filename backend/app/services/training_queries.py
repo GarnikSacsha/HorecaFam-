@@ -47,7 +47,9 @@ def training_asset_response(asset: Asset) -> TrainingAssetResponse:
     )
 
 
-async def _summary(db: AsyncSession, version: TrainingVersion) -> TrainingVersionSummary:
+async def training_version_summary(
+    db: AsyncSession, version: TrainingVersion
+) -> TrainingVersionSummary:
     module_count = int(
         await db.scalar(
             select(func.count(TrainingModuleVersion.id)).where(
@@ -106,7 +108,7 @@ async def list_training_versions(
             )
         ).all()
     )
-    summaries = [await _summary(db, version) for version in versions]
+    summaries = [await training_version_summary(db, version) for version in versions]
     return TrainingVersionCollection(
         published=next((item for item in summaries if item.status == "published"), None),
         draft=next((item for item in summaries if item.status == "draft"), None),
@@ -229,7 +231,7 @@ async def get_training_version_detail(
             )
         )
 
-    summary = await _summary(db, version)
+    summary = await training_version_summary(db, version)
     dependency = await db.scalar(
         select(TrainingVersionMenuDependency).where(
             TrainingVersionMenuDependency.training_version_id == version.id

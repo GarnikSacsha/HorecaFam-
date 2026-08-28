@@ -335,3 +335,47 @@ class TrainingRevisionResponse(StrictTrainingSchema):
 class TrainingReorderResponse(StrictTrainingSchema):
     ordered_ids: list[UUID]
     revision: int
+
+
+class TrainingReadinessIssue(StrictTrainingSchema):
+    code: str
+    message: str
+    entity_type: str
+    entity_id: UUID | None
+
+
+class TrainingReadinessCounts(StrictTrainingSchema):
+    module_count: int
+    lesson_count: int
+    required_lesson_count: int
+    content_block_count: int
+    required_asset_count: int
+    ready_asset_count: int
+    menu_item_link_count: int
+
+
+class TrainingReadinessResponse(StrictTrainingSchema):
+    training_id: UUID
+    training_version_id: UUID
+    organization_id: UUID
+    location_id: UUID
+    revision: int
+    can_publish: bool
+    blocking_errors: list[TrainingReadinessIssue]
+    warnings: list[TrainingReadinessIssue]
+    counts: TrainingReadinessCounts
+
+
+class TrainingPublishRequest(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+
+
+class TrainingPublishResponse(StrictTrainingSchema):
+    published: TrainingVersionSummary
+    previous_published_version_id: UUID | None
+    employee_reference_switched: bool
+    assignment_count: Literal[0] = 0
+    completion_count: Literal[0] = 0
+    progress_count: Literal[0] = 0
+    rollout_count: Literal[0] = 0
+    notification_count: Literal[0] = 0
