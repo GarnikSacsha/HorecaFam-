@@ -104,3 +104,17 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         )
     }
     assert expected_paths <= set(openapi["paths"])
+    assert {
+        "/api/v1/me/training/lessons/{lesson_id}/interactive-training/attempts",
+        "/api/v1/me/training/interactive-training/attempts/{attempt_id}",
+        "/api/v1/me/training/interactive-training/attempts/{attempt_id}/takeover",
+    } <= set(openapi["paths"])
+    safe_question_properties = openapi["components"]["schemas"][
+        "InteractiveAttemptQuestionResponse"
+    ]["properties"]
+    assert "grading_payload" not in safe_question_properties
+    assert "explanation_payload" not in safe_question_properties
+    safe_option_properties = openapi["components"]["schemas"]["InteractiveAttemptOptionResponse"][
+        "properties"
+    ]
+    assert "is_correct" not in safe_option_properties

@@ -4,13 +4,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
+from app.api.dependencies.auth import (
+    AuthorizationContext,
+    require_current_active_employee,
+    require_organization_admin,
+)
 from app.api.dependencies.session import AuthenticatedSession, get_csrf_protected_session
 from app.core.clock import Clock
 from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.models import AuditEvent
 from app.schemas.assessment import (
+    InteractiveAttemptResponse,
+    InteractiveAttemptStartResponse,
+    InteractiveAttemptTakeoverResponse,
     InteractiveTrainingReadinessResponse,
     QuestionCandidateApprovalResponse,
     QuestionCandidateApproveRequest,
@@ -27,6 +34,11 @@ from app.services.idempotency import (
     request_fingerprint,
     reserve_idempotency,
 )
+from app.services.interactive_attempts import (
+    get_interactive_attempt,
+    start_or_resume_interactive_attempt,
+    takeover_interactive_attempt,
+)
 from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
@@ -38,6 +50,102 @@ from app.services.question_review import (
 )
 
 router = APIRouter(tags=["assessments"])
+
+
+def _employee_scope(authorization: AuthorizationContext) -> tuple[UUID, UUID, UUID]:
+    if (
+        authorization.organization_id is None
+        or authorization.location_id is None
+        or authorization.employee_profile_id is None
+    ):
+        raise RuntimeError("Active Employee authorization has no complete scope")
+    return (
+        authorization.organization_id,
+        authorization.location_id,
+        authorization.employee_profile_id,
+    )
+
+
+@router.post(
+    "/me/training/lessons/{lesson_id}/interactive-training/attempts",
+    response_model=InteractiveAttemptStartResponse,
+)
+async def start_interactive_attempt_route(
+    lesson_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    locale: Literal["uk", "en"] | None = None,
+) -> InteractiveAttemptStartResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    presentation_locale = locale or ("en" if authorization.user.preferred_locale == "en" else "uk")
+    return await start_or_resume_interactive_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        lesson_id=lesson_id,
+        presentation_locale=presentation_locale,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.get(
+    "/me/training/interactive-training/attempts/{attempt_id}",
+    response_model=InteractiveAttemptResponse,
+)
+async def get_interactive_attempt_route(
+    attempt_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> InteractiveAttemptResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_interactive_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        attempt_id=attempt_id,
+        session_id=authorization.session.id,
+    )
+
+
+@router.post(
+    "/me/training/interactive-training/attempts/{attempt_id}/takeover",
+    response_model=InteractiveAttemptTakeoverResponse,
+)
+async def takeover_interactive_attempt_route(
+    attempt_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> InteractiveAttemptTakeoverResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await takeover_interactive_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        attempt_id=attempt_id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
 
 
 @router.post(

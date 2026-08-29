@@ -177,3 +177,44 @@ class QuestionCandidateApprovalResponse(StrictAssessmentSchema):
 
 class QuestionCandidateBatchApprovalResponse(StrictAssessmentSchema):
     items: list[QuestionCandidateApprovalResponse]
+
+
+class InteractiveAttemptOptionResponse(StrictAssessmentSchema):
+    id: UUID
+    position: int = Field(ge=0)
+    payload: dict[str, object]
+
+
+class InteractiveAttemptQuestionResponse(StrictAssessmentSchema):
+    id: UUID
+    position: int = Field(ge=0, le=4)
+    mechanic: str
+    prompt_payload: dict[str, object]
+    options: list[InteractiveAttemptOptionResponse]
+    answered: bool = False
+
+
+class InteractiveAttemptResponse(StrictAssessmentSchema):
+    id: UUID
+    lesson_id: UUID
+    lesson_version_id: UUID
+    assessment_version_id: UUID
+    status: str
+    presentation_locale: Literal["uk", "en"]
+    started_at: datetime
+    expires_at: datetime
+    lease_generation: int = Field(ge=1)
+    writable: bool
+    questions: list[InteractiveAttemptQuestionResponse]
+
+
+class InteractiveAttemptStartResponse(StrictAssessmentSchema):
+    attempt: InteractiveAttemptResponse
+    created: bool
+    replayed: bool
+
+
+class InteractiveAttemptTakeoverResponse(StrictAssessmentSchema):
+    attempt_id: UUID
+    lease_generation: int = Field(ge=1)
+    replayed: bool
