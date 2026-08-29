@@ -50,7 +50,8 @@ required environment configuration
   `0009_assignment_completion_rollout.py` creates the accepted CRA-57 Assignment, Completion and
   Rollout schema; local candidate migrations `0010_interactive_training`,
   `0011_candidate_provenance`, and `0012_question_rules` add assessment execution, Candidate-owned
-  provenance and the active deterministic category rule.
+  provenance and the active deterministic category rule. Local amendment migration
+  `0013_question_templates` adds component, allergen and description rules.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -241,10 +242,13 @@ snapshotted once; unanswered reads expose no grading key or hidden explanation. 
 device lease can be explicitly taken over without deleting Answers. Results have Knowledge bands
 but no Passed/Failed or Progress/eligibility effect.
 
-The seeded automated rule is `menu.category` version 1 (`single_choice`). The Answer and UI
-contracts also execute multiple choice/recognition, ordering/assembly and matching snapshots, but
-this local candidate does not claim additional automated source templates. Slice 6 Practice,
-Final Exam, provider execution and deployment remain absent.
+The seeded automated rules are `menu.category` version 1 (`single_choice`), `menu.components`
+version 1 (`multiple_choice`), `menu.allergens` version 1 (`recognition`) and `menu.description`
+version 1 (`recognition`). Generation uses only confirmed, verified and unambiguous facts, with
+independent fingerprints and staleness per rule. The Answer and UI contracts also execute
+ordering/assembly and matching snapshots, but automated templates for those mechanics remain
+absent because current sources do not prove preparation order or verified pair semantics. Slice 6
+Practice, Final Exam, provider execution and deployment remain absent.
 
 ## Test boundary
 

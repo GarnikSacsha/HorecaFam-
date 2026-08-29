@@ -11,12 +11,13 @@ claim.
 
 ## Delivered boundary
 
-The nine local checkpoints add versioned Question Candidate and Question Bank persistence,
-deterministic source-bound category generation, human review/publication, per-Lesson readiness,
-five-question immutable Interactive Training Attempts, progressive idempotent Answers, immediate
-feedback, device takeover, Results, Latest/Best history, Admin review/readiness UI and the Employee
-mobile flow. Alembic `0012_question_rules` makes the active category rule available after a clean
-upgrade; runtime generation no longer depends on manual test or operator seeding.
+The ten local implementation checkpoints add versioned Question Candidate and Question Bank
+persistence, deterministic source-bound category, component, allergen and description generation,
+human review/publication, per-Lesson readiness, five-question immutable Interactive Training
+Attempts, progressive idempotent Answers, immediate feedback, device takeover, Results,
+Latest/Best history, Admin review/readiness UI and the Employee mobile flow. Alembic
+`0013_question_templates` makes all four active rules available after a clean upgrade; runtime
+generation no longer depends on manual test or operator seeding.
 
 Interactive Training remains distinct from Slice 6 Practice and Slice 7 Final Exam. It creates no
 Passed/Failed state and never mutates Lesson Completion, Training Progress, certification, or exam
@@ -26,7 +27,7 @@ eligibility.
 
 | # | Accepted scenario | Executable evidence | Result |
 | -: | --- | --- | --- |
-| 1 | PostgreSQL schema, constraints, indexes and clean upgrade | persistence contract, migration tests through `0012_question_rules` | Pass |
+| 1 | PostgreSQL schema, constraints, indexes and clean upgrade | persistence contract, migration tests through `0013_question_templates` | Pass |
 | 2 | Source-supported deterministic Candidates with exact rule/version/provenance | question-generation unit and integration suites | Pass |
 | 3 | Idempotent regeneration; ambiguity and price-only exclusions | question-generation unit/integration suites | Pass |
 | 4 | Source changes stale new-use Questions without changing snapshots | generation and Attempt integration suites | Pass |
@@ -60,18 +61,21 @@ Environment: Python 3.12.10, native PostgreSQL 16, ignored test-only environment
 
 - Ruff format and lint: passed.
 - strict mypy: passed for 158 source files.
-- full pytest control run: **417 passed, 0 failed, 0 skipped**.
+- full pytest control run: **424 passed, 0 failed, 0 skipped**.
 - coverage-instrumented full run: **88% overall statement/branch coverage**.
-- predeclared five-file critical Slice 5 aggregate: **85%** across question generation, question
+- predeclared five-file critical Slice 5 aggregate: **86%** across question generation, question
   review, Attempt, Answer and history services.
-- focused critical suite: 36 passed with 84% aggregate before the final full run raised the
-  aggregate to 85%.
-- migration suite: **12 passed**; current head `0012_question_rules`; clean upgrade, downgrade/
-  upgrade and candidate-provenance round trips passed.
+- focused amendment gates: **10 unit tests passed** plus **2 PostgreSQL tests passed** for generation
+  and the new migration round trip.
+- migration suite: **13 passed**; current head `0013_question_templates`; clean upgrade, downgrade/
+  upgrade and candidate-provenance/template round trips passed.
 - Alembic current-head and autogenerate checks passed with no new upgrade operations.
 
 ## Frontend and browser gate
 
+- The current worktree and clean dependency-bearing checkout had identical `frontend` Git tree
+  `d1b7e3c4f5155b241e046e9c8efe3fe2a381cc97`; successful frontend commands ran against that clean
+  checkout because this worktree has no `node_modules`.
 - Prettier, ESLint and TypeScript project checking: passed.
 - Vitest: **16 files passed; 45 tests passed, 0 failed, 0 skipped**.
 - Vite production build: passed; 52 modules transformed.
@@ -86,10 +90,16 @@ Environment: Python 3.12.10, native PostgreSQL 16, ignored test-only environment
 - Admin review remains server-authoritative for MFA, RBAC, Organization/Location scope, CSRF,
   expected revision and idempotency. Employee identity and ownership come from the Session.
 - Correct flags and grading payloads stay hidden until the corresponding Answer is confirmed.
-- `0012_question_rules` seeds only the deterministic `menu.category` version 1
-  `single_choice` generator. Answer persistence, grading and UI are typed for single choice,
-  multiple choice/recognition, ordering/assembly and matching, but additional automated source
-  templates are not claimed by this candidate.
+- `0012_question_rules` seeds deterministic `menu.category` version 1 (`single_choice`), and
+  `0013_question_templates` seeds `menu.components` version 1 (`multiple_choice`),
+  `menu.allergens` version 1 (`recognition`) and `menu.description` version 1 (`recognition`).
+- Component generation requires `confirmed_present`, verified item/link facts, at least two
+  correct components and one unambiguous distractor. Allergen generation requires
+  `confirmed_present`, verified item/link facts and a distractor. Description generation requires
+  ready, verified and case-insensitively unique Ukrainian names and non-empty descriptions.
+- Unknown, `confirmed_none`, unverified, ambiguous and duplicate-label facts remain excluded.
+  Ordering/assembly and matching execution stay typed, but automated templates are not claimed:
+  component position proves display order, not preparation order, and no verified pair model exists.
 - Provider/staging/deployment smoke is deferred by the accepted gate. No provider call,
   dependency, architecture change, production mutation, deployment, push, PR, merge or history
   rewrite occurred.
@@ -98,5 +108,5 @@ Environment: Python 3.12.10, native PostgreSQL 16, ignored test-only environment
 ## Approval boundary
 
 This is a local acceptance candidate. CRA-61 must remain In Progress until Denys explicitly
-accepts this evidence and the stated deterministic-generation limitation. Push, PR, merge,
+accepts this multi-template evidence and its remaining source-bound limitation. Push, PR, merge,
 deployment and provider activity remain separate approval gates.

@@ -236,10 +236,10 @@ merge, provider, deployment, production configuration, or production-data action
 
 ## Local CRA-61 candidate evidence
 
-The 2026-08-29 local gate reports 417 passed, 0 failed, 0 skipped with 88% overall
-statement/branch coverage and 85% aggregate coverage across the predeclared five critical Slice 5
+The 2026-08-29 local gate reports 424 passed, 0 failed, 0 skipped with 88% overall
+statement/branch coverage and 86% aggregate coverage across the predeclared five critical Slice 5
 services on Python 3.12.10 and native PostgreSQL 16. Ruff format/check and strict mypy pass.
-Alembic head is `0012_question_rules`; 12 migration tests, clean upgrade, current-head validation
+Alembic head is `0013_question_templates`; 13 migration tests, clean upgrade, current-head validation
 and metadata no-drift pass. The frontend reports 45 Vitest tests and 15 Playwright executions,
 with Prettier, ESLint, TypeScript and production build green.
 

@@ -214,11 +214,11 @@ merge, or production action was performed.
 
 ## Local CRA-61 acceptance candidate
 
-The 2026-08-29 local gate reports 417 backend tests, 88% overall statement/branch coverage, 85%
+The 2026-08-29 local gate reports 424 backend tests, 88% overall statement/branch coverage, 86%
 aggregate coverage across the predeclared five-file Slice 5 service set, Alembic head
-`0012_question_rules`, 45 Vitest tests, and 15 Playwright executions across the approved desktop,
-compact and mobile projects. The complete 27-scenario mapping, exact local boundary, security
-review and generation limitation are in
+`0013_question_templates`, 45 Vitest tests, and 15 Playwright executions across the approved
+desktop, compact and mobile projects. The complete 27-scenario mapping, exact local boundary,
+security review and remaining source-bound generation limitations are in
 [`interactive-training-slice-5-acceptance.md`](interactive-training-slice-5-acceptance.md).
 
 This evidence is a candidate, not an accepted or published checkpoint. CRA-61 remains In Progress;
