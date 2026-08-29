@@ -228,3 +228,63 @@ class TrainingApplicabilityEffect(StrEnum):
     RETAINED = "retained"
     REVOKED = "revoked"
     NOT_APPLICABLE = "not_applicable"
+
+
+class QuestionMechanic(StrEnum):
+    SINGLE_CHOICE = "single_choice"
+    MULTIPLE_CHOICE = "multiple_choice"
+    MATCHING = "matching"
+    ORDERING = "ordering"
+    ASSEMBLY = "assembly"
+    RECOGNITION = "recognition"
+
+
+class GenerationRuleStatus(StrEnum):
+    ACTIVE = "active"
+    RETIRED = "retired"
+
+
+class QuestionCandidateStatus(StrEnum):
+    NEEDS_REVIEW = "needs_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    STALE = "stale"
+
+
+class QuestionVersionStatus(StrEnum):
+    PUBLISHED = "published"
+    STALE = "stale"
+    ARCHIVED = "archived"
+
+
+class QuestionSourceRole(StrEnum):
+    CORRECT_FACT = "correct_fact"
+    DISTRACTOR_BASIS = "distractor_basis"
+    EXPLANATION_SOURCE = "explanation_source"
+    CRITICAL_FACT = "critical_fact"
+
+
+class AssessmentType(StrEnum):
+    INTERACTIVE_TRAINING = "interactive_training"
+    WHOLE_MENU_KNOWLEDGE_CHECK = "whole_menu_knowledge_check"
+    MENU_FINAL_EXAM = "menu_final_exam"
+
+
+class AssessmentVersionStatus(StrEnum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+class AssessmentReadinessStatus(StrEnum):
+    PROCESSING = "processing"
+    READY = "ready"
+    WARNING = "warning"
+    BLOCKED = "blocked"
+
+
+class AssessmentAttemptStatus(StrEnum):
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+    INVALIDATED = "invalidated"

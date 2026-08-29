@@ -23,6 +23,28 @@ ASSIGNMENT_ROLLOUT_TABLES = {
     "training_version_audiences",
 }
 
+INTERACTIVE_TRAINING_TABLES = {
+    "assessment_attempts",
+    "assessment_question_pools",
+    "assessment_readiness",
+    "assessment_version_translations",
+    "assessment_versions",
+    "assessments",
+    "attempt_device_leases",
+    "attempt_options",
+    "attempt_questions",
+    "attempt_results",
+    "question_candidates",
+    "question_generation_rules",
+    "question_option_translations",
+    "question_options",
+    "question_source_links",
+    "question_version_translations",
+    "question_versions",
+    "questions",
+    "submitted_answers",
+}
+
 
 def database_settings() -> Settings:
     database_url = os.getenv("TEST_DATABASE_URL")
@@ -104,8 +126,18 @@ def test_metadata_contains_current_backend_tables() -> None:
         "admin_access",
         "allergens",
         "api_idempotency_records",
+        "assessment_attempts",
+        "assessment_question_pools",
+        "assessment_readiness",
+        "assessment_version_translations",
+        "assessment_versions",
+        "assessments",
         "audit_events",
         "auth_rate_limit_buckets",
+        "attempt_device_leases",
+        "attempt_options",
+        "attempt_questions",
+        "attempt_results",
         "background_jobs",
         "email_deliveries",
         "employee_profiles",
@@ -136,7 +168,16 @@ def test_metadata_contains_current_backend_tables() -> None:
         "operational_roles",
         "organization_memberships",
         "organizations",
+        "question_candidates",
+        "question_generation_rules",
+        "question_option_translations",
+        "question_options",
+        "question_source_links",
+        "question_version_translations",
+        "question_versions",
+        "questions",
         "sessions",
+        "submitted_answers",
         "assets",
         "lesson_content_block_translations",
         "lesson_content_blocks",
@@ -248,6 +289,29 @@ def test_assignment_completion_rollout_migration_downgrades_and_upgrades() -> No
             database_column_names(settings, "organization_memberships")
         )
         assert "training_participation_status" not in downgraded_membership_columns
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_interactive_training_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        current_tables = asyncio.run(database_table_names(settings))
+        assert current_tables >= INTERACTIVE_TRAINING_TABLES
+
+        command.downgrade(config, "0009_assignment_completion_rollout")
+        downgraded_tables = asyncio.run(database_table_names(settings))
+
+        assert INTERACTIVE_TRAINING_TABLES.isdisjoint(downgraded_tables)
+        assert "training_assignments" in downgraded_tables
+        assert "lesson_completions" in downgraded_tables
     finally:
         command.upgrade(config, "head")
 
