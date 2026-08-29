@@ -297,6 +297,10 @@ class QuestionSourceLink(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="source_role_allowed",
         ),
         CheckConstraint(
+            "num_nonnulls(question_candidate_id, question_version_id) = 1",
+            name="exactly_one_owner",
+        ),
+        CheckConstraint(
             "num_nonnulls(menu_item_version_id, menu_item_version_component_id, "
             "menu_item_version_allergen_id) = 1",
             name="exactly_one_source",
@@ -311,12 +315,24 @@ class QuestionSourceLink(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="fk_question_source_links_question_scope",
             ondelete="RESTRICT",
         ),
+        ForeignKeyConstraint(
+            ["question_candidate_id", "organization_id", "location_id"],
+            [
+                "question_candidates.id",
+                "question_candidates.organization_id",
+                "question_candidates.location_id",
+            ],
+            name="fk_question_source_links_candidate_scope",
+            ondelete="RESTRICT",
+        ),
+        Index("ix_question_source_links_candidate_role", "question_candidate_id", "source_role"),
         Index("ix_question_source_links_question_role", "question_version_id", "source_role"),
     )
 
     organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
-    question_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    question_candidate_id: Mapped[UUID | None] = mapped_column(_uuid())
+    question_version_id: Mapped[UUID | None] = mapped_column(_uuid())
     source_role: Mapped[str] = mapped_column(String(32), nullable=False)
     menu_item_version_id: Mapped[UUID | None] = mapped_column(
         _uuid(), ForeignKey("menu_item_versions.id", ondelete="RESTRICT")

@@ -318,6 +318,27 @@ def test_interactive_training_migration_downgrades_and_upgrades() -> None:
 
 @pytest.mark.integration
 @pytest.mark.migration
+def test_candidate_provenance_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        current_columns = asyncio.run(database_column_names(settings, "question_source_links"))
+        assert "question_candidate_id" in current_columns
+
+        command.downgrade(config, "0010_interactive_training")
+        downgraded_columns = asyncio.run(database_column_names(settings, "question_source_links"))
+        assert "question_candidate_id" not in downgraded_columns
+        assert "question_version_id" in downgraded_columns
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
 async def test_database_contains_current_tables(
     migrated_test_database: Settings,
 ) -> None:
