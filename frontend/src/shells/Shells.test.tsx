@@ -16,6 +16,11 @@ describe("application shells", () => {
       </MemoryRouter>,
     );
 
+    expect(screen.getByRole("link", { name: "Банк питань" })).toHaveAttribute(
+      "href",
+      "/admin/questions",
+    );
+
     const trigger = screen.getByRole("button", { name: "Відкрити навігацію" });
     await user.click(trigger);
     expect(screen.getByRole("dialog", { name: "Навігація адміністратора" })).toBeInTheDocument();

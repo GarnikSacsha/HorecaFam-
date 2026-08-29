@@ -5,6 +5,7 @@ const links = [
   { to: "/admin/employees", label: "Працівники" },
   { to: "/admin/menu", label: "Меню" },
   { to: "/admin/content", label: "Навчальні матеріали" },
+  { to: "/admin/questions", label: "Банк питань" },
   { to: "/admin/results", label: "Результати", disabled: true },
 ];
 

@@ -681,3 +681,88 @@ export interface EmployeeTrainingAssetAccessResponse {
   url: string;
   expires_in: 300;
 }
+
+export type QuestionCandidateStatus = "needs_review" | "approved" | "rejected" | "stale";
+
+export interface QuestionCandidateOption {
+  stable_key: string;
+  text: string;
+}
+
+export interface QuestionCandidatePromptPayload {
+  locale: "uk";
+  stem: string;
+  options: QuestionCandidateOption[];
+}
+
+export interface QuestionCandidateAnswerPayload {
+  correct_option_keys: string[];
+}
+
+export interface QuestionCandidateExplanationPayload {
+  locale: "uk";
+  text: string;
+}
+
+export interface QuestionCandidateSource {
+  source_role: string;
+  menu_item_version_id: string | null;
+  menu_item_version_component_id: string | null;
+  menu_item_version_allergen_id: string | null;
+}
+
+export interface QuestionCandidateResponse {
+  id: string;
+  training_version_id: string;
+  lesson_version_id: string;
+  mechanic: string;
+  prompt_payload: QuestionCandidatePromptPayload;
+  answer_payload: QuestionCandidateAnswerPayload;
+  explanation_payload: QuestionCandidateExplanationPayload;
+  source_fingerprint: string;
+  status: QuestionCandidateStatus;
+  revision: number;
+  reviewed_at: string | null;
+  rejection_reason_code: string | null;
+  sources: QuestionCandidateSource[];
+}
+
+export interface QuestionCandidateCollection {
+  items: QuestionCandidateResponse[];
+  total: number;
+}
+
+export interface QuestionCandidateEditedPayload {
+  prompt_payload: QuestionCandidatePromptPayload;
+  answer_payload: QuestionCandidateAnswerPayload;
+  explanation_payload: QuestionCandidateExplanationPayload;
+}
+
+export interface QuestionCandidateGenerateResponse {
+  created_count: number;
+  existing_count: number;
+  stale_candidate_count: number;
+  stale_question_count: number;
+  replayed: boolean;
+}
+
+export interface LessonAssessmentReadiness {
+  assessment_version_id: string;
+  lesson_id: string;
+  lesson_version_id: string;
+  status: "processing" | "ready" | "warning" | "blocked";
+  eligible_count: number;
+  required_count: 5;
+  coverage_evidence: Record<string, unknown>;
+  rotation_supported: boolean;
+  basis_fingerprint: string;
+  blocking_codes: string[];
+  warning_codes: string[];
+  computed_at: string;
+  can_start: boolean;
+}
+
+export interface InteractiveTrainingReadinessResponse {
+  training_version_id: string;
+  lessons: LessonAssessmentReadiness[];
+}
