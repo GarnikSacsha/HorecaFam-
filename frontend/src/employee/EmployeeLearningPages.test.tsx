@@ -352,7 +352,8 @@ describe("Employee Training reference", () => {
       "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
     );
     expect(screen.getByRole("button", { name: "Ознайомився" })).toBeInTheDocument();
-    expect(document.body).not.toHaveTextContent(/практика/i);
+    expect(screen.getByRole("heading", { name: "Інтерактивне тренування" })).toBeInTheDocument();
+    expect(screen.getByText("Спочатку завершіть урок")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Відкрити позицію в меню" })).toHaveAttribute(
       "href",
       "/employee/menu?item=menu-item-1",
@@ -372,6 +373,21 @@ describe("Employee Training reference", () => {
       request: <T,>(path: string, options?: RequestOptions) => {
         requests.push({ path, options });
         if (options?.method === "POST") return completion as Promise<T>;
+        if (path.endsWith("/interactive-training")) {
+          return Promise.resolve({
+            lesson_id: "lesson-1",
+            lesson_version_id: "lesson-version-1",
+            assessment_version_id: null,
+            availability: "preparing",
+            can_start: false,
+            reason_codes: ["ASSESSMENT_NOT_PUBLISHED"],
+            readiness_status: null,
+            active_attempt: null,
+            latest: null,
+            best: null,
+            history: [],
+          } as T);
+        }
         return Promise.resolve({
           id: "lesson-1",
           title: "Подача борщу",
@@ -423,7 +439,7 @@ describe("Employee Training reference", () => {
     });
 
     expect(await screen.findByRole("button", { name: "Ознайомлено" })).toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent("Урок завершено");
+    expect(screen.getByText("Урок завершено").closest('[role="status"]')).not.toBeNull();
     expect(screen.getByText("1 із 1 обов’язкових уроків завершено")).toBeInTheDocument();
     const mutation = requests.find(({ options }) => options?.method === "POST");
     expect(mutation?.path).toBe("/me/training/lessons/lesson-1/complete");

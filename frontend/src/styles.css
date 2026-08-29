@@ -2533,3 +2533,308 @@ h1 {
     flex-direction: column;
   }
 }
+
+.interactive-training {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 2rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  background: var(--surface-raised);
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.interactive-training-heading {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.interactive-training-heading h2,
+.interactive-training-heading p,
+.interactive-attempt h3,
+.interactive-final h3,
+.interactive-history-heading h2,
+.interactive-history-heading p,
+.interactive-result-card h3,
+.interactive-result-card time,
+.interactive-result-card small,
+.interactive-device-card p {
+  margin: 0;
+}
+
+.interactive-training-heading > p:last-child,
+.interactive-device-card p,
+.interactive-result-card time,
+.interactive-result-card small,
+.interactive-history-list time,
+.interactive-history-list small {
+  color: var(--text-muted);
+}
+
+.interactive-availability,
+.interactive-device-card,
+.interactive-feedback,
+.interactive-final {
+  display: grid;
+  gap: 0.6rem;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.interactive-availability {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-soft);
+}
+
+.interactive-availability span {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.interactive-availability.is-paused {
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--border-subtle));
+}
+
+.interactive-warning,
+.interactive-locale-note {
+  border-left: 3px solid var(--warning);
+  margin: 0;
+  color: var(--text-muted);
+  padding: 0.35rem 0.8rem;
+}
+
+.interactive-device-card {
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--warning) 7%, var(--surface-raised));
+}
+
+.interactive-device-card .button,
+.interactive-start-button {
+  justify-self: start;
+}
+
+.interactive-attempt {
+  display: grid;
+  gap: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+}
+
+.interactive-progress {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.interactive-progress progress {
+  width: 100%;
+  height: 0.55rem;
+  border: 0;
+  border-radius: 999px;
+  accent-color: var(--accent);
+}
+
+.interactive-attempt h3 {
+  max-width: 44rem;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.25;
+}
+
+.interactive-attempt h3:focus {
+  outline: none;
+}
+
+.interactive-options {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.interactive-options legend {
+  margin-bottom: 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.interactive-option {
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 52px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  padding: 0.7rem 0.85rem;
+}
+
+.interactive-option:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-raised));
+}
+
+.interactive-option:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.interactive-option input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.interactive-order-row,
+.interactive-match-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 52px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--surface-soft);
+  padding: 0.55rem 0.8rem;
+}
+
+.interactive-order-actions,
+.interactive-attempt-actions,
+.interactive-final-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.interactive-order-actions .button {
+  min-width: 44px;
+  padding-inline: 0.65rem;
+}
+
+.interactive-match-row select {
+  min-height: 44px;
+  max-width: min(100%, 18rem);
+}
+
+.interactive-feedback {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-soft);
+}
+
+.interactive-feedback p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.interactive-feedback.is-correct {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border-subtle));
+}
+
+.interactive-feedback.is-incorrect {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border-subtle));
+}
+
+.interactive-final {
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-raised));
+}
+
+.interactive-knowledge-level {
+  font-size: 1.05rem;
+}
+
+.interactive-weak-items {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.interactive-weak-items h4,
+.interactive-weak-items ul {
+  margin: 0;
+}
+
+.interactive-history {
+  display: grid;
+  gap: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+}
+
+.interactive-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.interactive-result-card {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--surface-soft);
+  padding: 1rem;
+}
+
+.interactive-result-card strong {
+  font-size: 1.35rem;
+}
+
+.interactive-history-list {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.85rem;
+}
+
+.interactive-history-list summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.interactive-history-list ol {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.4rem;
+}
+
+.interactive-history-list li {
+  display: grid;
+  gap: 0.2rem;
+  padding-left: 0.2rem;
+}
+
+@media (max-width: 46rem) {
+  .interactive-training {
+    margin-inline: -0.35rem;
+    border-radius: 15px;
+  }
+
+  .interactive-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .interactive-match-row {
+    grid-template-columns: 1fr;
+  }
+
+  .interactive-match-row select,
+  .interactive-start-button,
+  .interactive-device-card .button,
+  .interactive-attempt-actions .button,
+  .interactive-final-actions .button {
+    width: 100%;
+  }
+
+  .interactive-final-actions {
+    flex-direction: column;
+  }
+}

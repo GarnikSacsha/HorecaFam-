@@ -10,6 +10,7 @@ import type {
 import { ApiError, createIdempotencyKey } from "../api/client";
 import type { ApiClient } from "../api/client";
 import { useSession } from "../session/SessionContext";
+import { EmployeeInteractiveTraining } from "./EmployeeInteractiveTraining";
 
 function textValue(payload: Record<string, unknown>, key: string): string | null {
   const value = payload[key];
@@ -335,6 +336,15 @@ export function EmployeeLearningLessonPage() {
               </Link>
             ) : null}
           </section>
+          {session ? (
+            <EmployeeInteractiveTraining
+              client={client}
+              csrfToken={session.csrf_token}
+              lessonCompleted={lesson.completed}
+              lessonId={lesson.id}
+              preferredLocale={locale}
+            />
+          ) : null}
         </>
       ) : null}
     </article>

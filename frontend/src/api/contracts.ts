@@ -766,3 +766,115 @@ export interface InteractiveTrainingReadinessResponse {
   training_version_id: string;
   lessons: LessonAssessmentReadiness[];
 }
+
+export type InteractiveKnowledgeLevel = "very_weak" | "weak" | "good" | "strong";
+
+export interface InteractiveAttemptOption {
+  id: string;
+  position: number;
+  payload: Record<string, unknown>;
+}
+
+export type InteractiveAnswerPayload =
+  | { mechanic: "single_choice"; option_id: string }
+  | { mechanic: "multiple_choice" | "recognition"; option_ids: string[] }
+  | { mechanic: "ordering" | "assembly"; option_ids: string[] }
+  | {
+      mechanic: "matching";
+      pairs: Array<{ left_option_id: string; right_option_id: string }>;
+    };
+
+export interface InteractiveConfirmedAnswer {
+  id: string;
+  answer_payload: Record<string, unknown>;
+  is_correct: boolean;
+  submitted_at: string;
+}
+
+export interface InteractiveFeedback {
+  is_correct: boolean;
+  correct_option_ids: string[];
+  explanation_payload: Record<string, unknown>;
+}
+
+export interface InteractiveAttemptQuestion {
+  id: string;
+  position: number;
+  mechanic: string;
+  prompt_payload: Record<string, unknown>;
+  options: InteractiveAttemptOption[];
+  answered: boolean;
+  confirmed_answer: InteractiveConfirmedAnswer | null;
+  feedback: InteractiveFeedback | null;
+}
+
+export interface InteractiveAttempt {
+  id: string;
+  lesson_id: string;
+  lesson_version_id: string;
+  assessment_version_id: string;
+  status: string;
+  presentation_locale: "uk" | "en";
+  started_at: string;
+  expires_at: string;
+  lease_generation: number;
+  writable: boolean;
+  questions: InteractiveAttemptQuestion[];
+}
+
+export interface InteractiveAttemptStartResponse {
+  attempt: InteractiveAttempt;
+  created: boolean;
+  replayed: boolean;
+}
+
+export interface InteractiveAttemptTakeoverResponse {
+  attempt_id: string;
+  lease_generation: number;
+  replayed: boolean;
+}
+
+export interface InteractiveResult {
+  id: string;
+  correct_count: number;
+  total_count: 5;
+  score_basis_points: number;
+  knowledge_level: InteractiveKnowledgeLevel;
+  pass_status: null;
+  completed_at: string;
+}
+
+export interface InteractiveAnswerResponse {
+  answer: InteractiveConfirmedAnswer;
+  feedback: InteractiveFeedback;
+  next_question_id: string | null;
+  attempt_status: "in_progress" | "completed";
+  result: InteractiveResult | null;
+  replayed: boolean;
+}
+
+export interface InteractiveResultSummary {
+  result_id: string;
+  attempt_id: string;
+  assessment_version_id: string;
+  completed_at: string;
+  correct_count: number;
+  total_count: 5;
+  score_basis_points: number;
+  knowledge_level: InteractiveKnowledgeLevel;
+  is_current: boolean;
+}
+
+export interface LessonInteractiveTrainingSummary {
+  lesson_id: string;
+  lesson_version_id: string;
+  assessment_version_id: string | null;
+  availability: "ready" | "preparing" | "unavailable" | "paused";
+  can_start: boolean;
+  reason_codes: string[];
+  readiness_status: "processing" | "ready" | "warning" | "blocked" | null;
+  active_attempt: InteractiveAttempt | null;
+  latest: InteractiveResultSummary | null;
+  best: InteractiveResultSummary | null;
+  history: InteractiveResultSummary[];
+}
