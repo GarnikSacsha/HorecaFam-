@@ -108,6 +108,7 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training/attempts",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}/takeover",
+        "/api/v1/me/training/interactive-training/attempts/{attempt_id}/answer",
     } <= set(openapi["paths"])
     safe_question_properties = openapi["components"]["schemas"][
         "InteractiveAttemptQuestionResponse"
@@ -118,3 +119,25 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         "properties"
     ]
     assert "is_correct" not in safe_option_properties
+
+
+async def test_employee_answer_route_requires_an_authenticated_employee_session(
+    auth_client: AsyncClient,
+) -> None:
+    response = await auth_client.post(
+        f"/api/v1/me/training/interactive-training/attempts/{uuid4()}/answer",
+        headers={
+            "Idempotency-Key": "anonymous-answer",
+            "X-CSRF-Token": "not-a-session-token",
+        },
+        json={
+            "attempt_question_id": str(uuid4()),
+            "answer_payload": {
+                "mechanic": "single_choice",
+                "option_id": str(uuid4()),
+            },
+            "lease_generation": 1,
+        },
+    )
+    assert response.status_code == 401
+    assert response.json()["code"] == "AUTHENTICATION_REQUIRED"

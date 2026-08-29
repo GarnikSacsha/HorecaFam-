@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -185,6 +185,62 @@ class InteractiveAttemptOptionResponse(StrictAssessmentSchema):
     payload: dict[str, object]
 
 
+class SingleChoiceSubmission(StrictAssessmentSchema):
+    mechanic: Literal["single_choice"]
+    option_id: UUID
+
+
+class MultipleChoiceSubmission(StrictAssessmentSchema):
+    mechanic: Literal["multiple_choice", "recognition"]
+    option_ids: list[UUID] = Field(min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def options_are_unique(self) -> "MultipleChoiceSubmission":
+        if len(self.option_ids) != len(set(self.option_ids)):
+            raise ValueError("Option IDs must be unique")
+        return self
+
+
+class OrderingSubmission(StrictAssessmentSchema):
+    mechanic: Literal["ordering", "assembly"]
+    option_ids: list[UUID] = Field(min_length=2, max_length=20)
+
+    @model_validator(mode="after")
+    def options_are_unique(self) -> "OrderingSubmission":
+        if len(self.option_ids) != len(set(self.option_ids)):
+            raise ValueError("Option IDs must be unique")
+        return self
+
+
+class MatchingPairSubmission(StrictAssessmentSchema):
+    left_option_id: UUID
+    right_option_id: UUID
+
+
+class MatchingSubmission(StrictAssessmentSchema):
+    mechanic: Literal["matching"]
+    pairs: list[MatchingPairSubmission] = Field(min_length=1, max_length=20)
+
+
+InteractiveAnswerPayload = Annotated[
+    SingleChoiceSubmission | MultipleChoiceSubmission | OrderingSubmission | MatchingSubmission,
+    Field(discriminator="mechanic"),
+]
+
+
+class InteractiveConfirmedAnswerResponse(StrictAssessmentSchema):
+    id: UUID
+    answer_payload: dict[str, object]
+    is_correct: bool
+    submitted_at: datetime
+
+
+class InteractiveFeedbackResponse(StrictAssessmentSchema):
+    is_correct: bool
+    correct_option_ids: list[UUID]
+    explanation_payload: dict[str, object]
+
+
 class InteractiveAttemptQuestionResponse(StrictAssessmentSchema):
     id: UUID
     position: int = Field(ge=0, le=4)
@@ -192,6 +248,8 @@ class InteractiveAttemptQuestionResponse(StrictAssessmentSchema):
     prompt_payload: dict[str, object]
     options: list[InteractiveAttemptOptionResponse]
     answered: bool = False
+    confirmed_answer: InteractiveConfirmedAnswerResponse | None = None
+    feedback: InteractiveFeedbackResponse | None = None
 
 
 class InteractiveAttemptResponse(StrictAssessmentSchema):
@@ -217,4 +275,29 @@ class InteractiveAttemptStartResponse(StrictAssessmentSchema):
 class InteractiveAttemptTakeoverResponse(StrictAssessmentSchema):
     attempt_id: UUID
     lease_generation: int = Field(ge=1)
+    replayed: bool
+
+
+class InteractiveAnswerRequest(StrictAssessmentSchema):
+    attempt_question_id: UUID
+    answer_payload: InteractiveAnswerPayload
+    lease_generation: int = Field(ge=1)
+
+
+class InteractiveResultResponse(StrictAssessmentSchema):
+    id: UUID
+    correct_count: int = Field(ge=0, le=5)
+    total_count: Literal[5] = 5
+    score_basis_points: int = Field(ge=0, le=10000)
+    knowledge_level: Literal["very_weak", "weak", "good", "strong"]
+    pass_status: None = None
+    completed_at: datetime
+
+
+class InteractiveAnswerResponse(StrictAssessmentSchema):
+    answer: InteractiveConfirmedAnswerResponse
+    feedback: InteractiveFeedbackResponse
+    next_question_id: UUID | None
+    attempt_status: Literal["in_progress", "completed"]
+    result: InteractiveResultResponse | None
     replayed: bool

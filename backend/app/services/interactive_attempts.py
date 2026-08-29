@@ -33,6 +33,8 @@ from app.schemas.assessment import (
     InteractiveAttemptResponse,
     InteractiveAttemptStartResponse,
     InteractiveAttemptTakeoverResponse,
+    InteractiveConfirmedAnswerResponse,
+    InteractiveFeedbackResponse,
 )
 from app.services.idempotency import (
     find_idempotency_replay,
@@ -173,6 +175,28 @@ async def _attempt_response(
                 .order_by(AttemptOption.position)
             )
         )
+        confirmed_answer = await db.scalar(
+            select(SubmittedAnswer).where(
+                SubmittedAnswer.attempt_id == attempt.id,
+                SubmittedAnswer.attempt_question_id == question.id,
+            )
+        )
+        confirmed_response = None
+        feedback = None
+        if confirmed_answer is not None:
+            confirmed_response = InteractiveConfirmedAnswerResponse(
+                id=confirmed_answer.id,
+                answer_payload=confirmed_answer.answer_payload,
+                is_correct=confirmed_answer.is_correct,
+                submitted_at=confirmed_answer.submitted_at,
+            )
+            feedback = InteractiveFeedbackResponse(
+                is_correct=confirmed_answer.is_correct,
+                correct_option_ids=sorted(
+                    (option.id for option in options if option.is_correct), key=str
+                ),
+                explanation_payload=question.explanation_payload,
+            )
         questions.append(
             InteractiveAttemptQuestionResponse(
                 id=question.id,
@@ -188,6 +212,8 @@ async def _attempt_response(
                     for option in options
                 ],
                 answered=question.id in answer_ids,
+                confirmed_answer=confirmed_response,
+                feedback=feedback,
             )
         )
     return InteractiveAttemptResponse(
