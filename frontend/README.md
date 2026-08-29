@@ -9,6 +9,9 @@ Accepted CRA-57 adds Admin Assignment and replacement-Version Rollout controls p
 assignment-aware Employee Learning, Lesson Completion, and Progress experience. Its nine
 checkpoints are published through `d4e0184`, with the CRA-58 documentation checkpoint at
 `5dc459b`.
+CRA-61 adds a local, not-yet-accepted Admin Question Bank/readiness experience and Employee
+Interactive Training flow. Its evidence is recorded separately from the published baseline.
+
 The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
 server-session driven, responsive, keyboard accessible, and reduced-motion aware.
@@ -62,12 +65,16 @@ responsive presentation, and the frontend-to-contract request boundary.
   recovery, and confirmed rollout execution.
 - Assignment-aware Employee Learning with current and retained-Version access, explicit Lesson
   Completion, derived Progress, and one truthful next action.
+- Admin exact-version Question Candidate generation, provenance review, Approve/Edit+Approve,
+  Reject, atomic batch approval and per-Lesson readiness.
+- Completion-gated Employee Interactive Training with five server-confirmed Questions, immediate
+  feedback, retry-safe answer saving, resume, device takeover, Result and Latest/Best history.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
-Practice, Question Bank, Knowledge Check, Final Exam, Results, provider delivery, password reset,
-deployment, and production environment configuration remain outside the accepted Slice 4
-boundary. CRA-57 notification behavior is limited to safe transactional local jobs; it does not
-call an external provider.
+Slice 6 Practice, Final Exam, team Results/analytics, provider delivery, password reset,
+deployment, and production environment configuration remain outside the local CRA-61 boundary.
+CRA-57 notification behavior is limited to safe transactional local jobs; it does not call an
+external provider.
 
 Fresh CRA-49 backend/frontend/browser evidence is recorded in
 [`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
@@ -76,3 +83,6 @@ Accepted CRA-54 evidence is recorded in
 Accepted CRA-57 evidence records 35 Vitest tests and 12 Playwright executions across the approved
 desktop, tablet, and mobile projects in
 [`../docs/testing/training-assignment-slice-4-acceptance.md`](../docs/testing/training-assignment-slice-4-acceptance.md).
+The local CRA-61 candidate reports 45 Vitest tests and 15 Playwright executions; exact evidence and
+its pending acceptance boundary are in
+[`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).

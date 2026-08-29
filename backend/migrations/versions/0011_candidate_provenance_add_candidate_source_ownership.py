@@ -57,4 +57,3 @@ def downgrade() -> None:
     )
     op.alter_column("question_source_links", "question_version_id", nullable=False)
     op.drop_column("question_source_links", "question_candidate_id")
-

@@ -11,7 +11,8 @@ CRA-49 is accepted and fast-forward published through corrective checkpoint `802
 evidence is recorded below. CRA-53 planning and CRA-54 implementation are accepted and Done.
 CRA-54 is fast-forward published through `d955f6a`, and CRA-55 advances the prior documentation
 baseline to `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is fast-forward published
-through `d4e0184`, followed by the CRA-58 documentation checkpoint containing this record.
+through `d4e0184`, followed by CRA-58. CRA-60 planning is accepted and Done; CRA-61 is a local
+Interactive Training acceptance candidate and remains In Progress pending Denys acceptance.
 
 ## Current test layout
 
@@ -210,3 +211,15 @@ tests, and 12 Playwright executions across desktop, compact, and mobile projects
 26-scenario matrix, exact boundary, security review, and limitations. Denys accepted CRA-57 and
 authorized ordinary fast-forward publication of `5823a0e..d4e0184`; no deployment, provider, PR,
 merge, or production action was performed.
+
+## Local CRA-61 acceptance candidate
+
+The 2026-08-29 local gate reports 417 backend tests, 88% overall statement/branch coverage, 85%
+aggregate coverage across the predeclared five-file Slice 5 service set, Alembic head
+`0012_question_rules`, 45 Vitest tests, and 15 Playwright executions across the approved desktop,
+compact and mobile projects. The complete 27-scenario mapping, exact local boundary, security
+review and generation limitation are in
+[`interactive-training-slice-5-acceptance.md`](interactive-training-slice-5-acceptance.md).
+
+This evidence is a candidate, not an accepted or published checkpoint. CRA-61 remains In Progress;
+push, PR, merge, provider and deployment actions were not performed.

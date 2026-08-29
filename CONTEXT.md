@@ -14,8 +14,11 @@ CRA-54 is fast-forward published through `d955f6a`, and CRA-55 advances the prio
 baseline to `afc607a`. CRA-56 Slice 4 planning and CRA-57 implementation are accepted and Done.
 CRA-57 adds Assignment, Completion, Progress and Rollout as nine fast-forward-published checkpoints
 through `d4e0184`; the CRA-58 documentation checkpoint containing this record follows that range.
-CRA-42 is unrelated Backlog work. Broader production administration, providers/workers, PR,
-merge, deployment, and production configuration require separate approval or later bounded issues.
+CRA-60 Slice 5 planning is accepted and Done. CRA-61 Interactive Training is implemented locally
+as a nine-checkpoint acceptance candidate and remains In Progress pending Denys acceptance; it is
+not published. CRA-42 is unrelated Backlog work. Broader production administration,
+providers/workers, PR, merge, deployment, and production configuration require separate approval
+or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -123,16 +126,26 @@ tests, and 12 Playwright executions. See
 [`docs/testing/training-assignment-slice-4-acceptance.md`](docs/testing/training-assignment-slice-4-acceptance.md).
 The implementation is accepted and published; it was not deployed and made no provider calls.
 
+[CRA-61](https://linear.app/craftspacee/issue/CRA-61) is the active local acceptance candidate. It
+adds Question Candidate/Bank and assessment persistence through `0012_question_rules`,
+deterministic category Candidate generation with provenance and human publication, per-Lesson
+readiness, immutable five-question Attempts, idempotent Answers, immediate feedback, device
+takeover, Results, Latest/Best history, and responsive Admin/Employee UI. The local gate reports
+417 backend tests, 88% overall and 85% aggregate critical Slice 5 coverage, 45 Vitest tests and 15
+Playwright executions. Exact evidence and the category-rule limitation are recorded in
+[`docs/testing/interactive-training-slice-5-acceptance.md`](docs/testing/interactive-training-slice-5-acceptance.md).
+CRA-61 is not yet accepted, Done, pushed, deployed, or provider-executed.
+
 ## Repository map
 
-- [`backend/app`](backend/app): accepted Stage 0–6 runtime plus accepted CRA-49/CRA-54/CRA-57
-  behavior.
+- [`backend/app`](backend/app): accepted Stage 0–6 and CRA-49/CRA-54/CRA-57 runtime plus the local
+  CRA-61 candidate.
 - [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
-  CRA-57 head `0009_assignment_completion_rollout`.
+  local candidate head `0012_question_rules`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted CRA-43/CRA-49/CRA-54/CRA-57 Admin and Employee experiences,
-  unit/component tests, and Playwright evidence.
+- [`frontend`](frontend): accepted CRA-43/CRA-49/CRA-54/CRA-57 experiences plus the local CRA-61
+  Admin/Employee candidate, component tests and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

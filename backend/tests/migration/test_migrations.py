@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 from app.core.config import Settings
 from app.db.base import Base
@@ -75,6 +75,21 @@ async def database_column_names(settings: Settings, table_name: str) -> set[str]
                     column["name"] for column in inspect(sync_connection).get_columns(table_name)
                 }
             )
+    finally:
+        await engine.dispose()
+
+
+async def generation_rules(settings: Settings) -> set[tuple[str, int, str]]:
+    engine = create_engine(settings)
+    try:
+        async with engine.connect() as connection:
+            rows = await connection.execute(
+                text(
+                    "SELECT code, version, mechanic "
+                    "FROM question_generation_rules WHERE status = 'active'"
+                )
+            )
+            return {(row.code, row.version, row.mechanic) for row in rows}
     finally:
         await engine.dispose()
 
@@ -333,6 +348,27 @@ def test_candidate_provenance_migration_downgrades_and_upgrades() -> None:
         downgraded_columns = asyncio.run(database_column_names(settings, "question_source_links"))
         assert "question_candidate_id" not in downgraded_columns
         assert "question_version_id" in downgraded_columns
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_question_generation_rule_seed_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        command.downgrade(config, "0011_candidate_provenance")
+        downgraded_rules = asyncio.run(generation_rules(settings))
+        assert ("menu.category", 1, "single_choice") not in downgraded_rules
+
+        command.upgrade(config, "head")
+        active_rules = asyncio.run(generation_rules(settings))
+        assert ("menu.category", 1, "single_choice") in active_rules
     finally:
         command.upgrade(config, "head")
 

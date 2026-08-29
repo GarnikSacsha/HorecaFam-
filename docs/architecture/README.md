@@ -1,8 +1,8 @@
 # Current Architecture
 
 This document describes the verified accepted implementation published through CRA-57 at
-`d4e0184`; the CRA-58 documentation checkpoint containing this record follows that range.
-Canonical product behavior and contracts remain in Linear.
+`d4e0184` and the separate local CRA-61 acceptance candidate. CRA-61 is not yet accepted or
+published. Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -48,7 +48,9 @@ required environment configuration
   `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the accepted CRA-49 Menu
   schema; `0008_training_content.py` creates the accepted CRA-54 Training content schema;
   `0009_assignment_completion_rollout.py` creates the accepted CRA-57 Assignment, Completion and
-  Rollout schema.
+  Rollout schema; local candidate migrations `0010_interactive_training`,
+  `0011_candidate_provenance`, and `0012_question_rules` add assessment execution, Candidate-owned
+  provenance and the active deterministic category rule.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -222,6 +224,28 @@ read contract. CRA-57 therefore does not add an unsafe browser editor that could
 unknown existing role selections. Practice, Knowledge, Final Exam, scoring, certification,
 deadlines, analytics, external delivery, and deployment remain absent.
 
+## Local CRA-61 Interactive Training candidate
+
+```text
+verified Menu fact + versioned rule
+→ provenance-bound Candidate → Admin review/publication
+→ per-Lesson readiness → immutable five-Question Attempt
+→ confirmed Answer → immediate safe feedback
+→ fifth Answer → immutable Result → Latest/Best history
+```
+
+Admin generation and review remain Organization/Location, MFA, CSRF, expected-revision and
+idempotency protected. Employee start derives exact Completion, Assignment, participation and
+Assessment Version authority from the Session. Attempt Questions/options and grading inputs are
+snapshotted once; unanswered reads expose no grading key or hidden explanation. One writable
+device lease can be explicitly taken over without deleting Answers. Results have Knowledge bands
+but no Passed/Failed or Progress/eligibility effect.
+
+The seeded automated rule is `menu.category` version 1 (`single_choice`). The Answer and UI
+contracts also execute multiple choice/recognition, ordering/assembly and matching snapshots, but
+this local candidate does not claim additional automated source templates. Slice 6 Practice,
+Final Exam, provider execution and deployment remain absent.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -234,4 +258,5 @@ There is no invitation list/detail workflow, password recovery, MFA enrollment, 
 reference CRUD, Employee disable/reactivate lifecycle administration, Practice/exam workflow,
 provider integration, or deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/)
 and includes accepted CRA-49/CRA-54/CRA-57 experiences. Adding any absent
-capability requires a new bounded Linear issue and approval.
+capability requires a bounded Linear issue and approval. CRA-61 remains the active bounded issue
+until its local evidence is explicitly accepted or amended.

@@ -11,6 +11,11 @@ containing this record follows the accepted CRA-57 range. The canonical routing 
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
+**Local unpublished candidate:** CRA-60 planning is accepted and Done. CRA-61 Interactive
+Training is implemented as nine authorized local checkpoints and remains In Progress pending
+Denys acceptance of the executed gate and stated generation limitation. No CRA-61 push, PR,
+merge, deployment, provider call, or production action has occurred.
+
 ## Accepted implementation and planning checkpoints
 
 - CRA-20 Stage 0 is accepted and Done.
@@ -56,6 +61,9 @@ CRA-42 is unrelated Backlog work.
 - CRA-56 Slice 4 planning and its nine-checkpoint map are accepted and Done.
 - CRA-57 Slice 4 implementation is accepted, Done, and published through `d4e0184`.
 - CRA-58 is the documentation checkpoint that records CRA-57 acceptance and publication.
+- CRA-60 Slice 5 planning and its nine-checkpoint implementation map are accepted and Done.
+- CRA-61 Slice 5 Interactive Training is a complete local acceptance candidate; Denys acceptance
+  and publication remain pending.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -271,6 +279,25 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   untouched and unstaged.
 - Exact matrix and limitations: [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
 
+## Local CRA-61 acceptance candidate
+
+- Scope: provenance-bound deterministic Question Candidates, Admin review/publication/readiness,
+  immutable five-question Interactive Training Attempts, progressive idempotent Answers,
+  immediate feedback, device takeover, Results, Latest/Best history, and responsive Admin/
+  Employee UI.
+- Backend gate: 417 passed, 0 failed, 0 skipped; 88% overall statement/branch coverage and 85%
+  aggregate coverage across the predeclared five Slice 5 service files; Ruff and strict mypy pass.
+- Migrations: head `0012_question_rules`; 12 migration tests, clean upgrade/current head and
+  metadata no-drift pass. The active category rule is seeded by migration.
+- Frontend gate: Prettier, ESLint, TypeScript and production build pass; Vitest reports 45 tests;
+  Playwright reports 15 executions across 1440×1000, 768×1024 and 375×812.
+- Exact 27-scenario mapping and limitation:
+  [`docs/testing/interactive-training-slice-5-acceptance.md`](docs/testing/interactive-training-slice-5-acceptance.md).
+- Automated Candidate generation currently seeds the deterministic category/single-choice rule;
+  additional mechanic-specific source templates are not claimed by this candidate.
+- CRA-61 remains In Progress until Denys explicitly accepts this evidence. Nothing from the local
+  CRA-61 range is published.
+
 ## Protected uncommitted material
 
 - `Photos/` contains seven project-asset JPG files for
@@ -286,6 +313,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
+- The active bounded issue is CRA-61 until Denys accepts or amends its local acceptance candidate.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization
   are recorded in CRA-26. Further staging or commits require a new bounded map and explicit

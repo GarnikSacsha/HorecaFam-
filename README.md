@@ -11,8 +11,11 @@ CRA-53 Training Content planning and CRA-54 implementation are accepted and Done
 published through `d955f6a`, and CRA-55 advances the prior documentation baseline to `afc607a`.
 CRA-56 Slice 4 planning and CRA-57 Assignment, Completion, Progress and Rollout implementation are
 accepted and Done. The nine CRA-57 checkpoints are fast-forward published through `d4e0184`; the
-CRA-58 documentation checkpoint containing this record follows that range. PR, merge, deployment,
-providers, and production configuration remain separate gates. CRA-42 is unrelated Backlog work.
+CRA-58 documentation checkpoint follows that range. CRA-60 Slice 5 planning is accepted and Done.
+CRA-61 Interactive Training is implemented locally as a nine-checkpoint acceptance candidate and
+remains In Progress pending Denys acceptance; nothing from CRA-61 has been pushed. PR, merge,
+deployment, providers, and production configuration remain separate gates. CRA-42 is unrelated
+Backlog work.
 
 ## Start here
 
@@ -27,10 +30,10 @@ Repository documentation summarizes verified local state and routes agents to th
 
 ## Repository map
 
-- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed first-slice
-  foundations and accepted CRA-49/CRA-54/CRA-57 runtime.
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed accepted
+  runtime plus the local CRA-61 Interactive Training candidate.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright implementation through accepted CRA-57.
+  Playwright through accepted CRA-57 plus the local CRA-61 candidate.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -78,3 +81,11 @@ Completion, derived Progress, deterministic replacement-Version Rollout, Admin a
 controls, and assignment-aware Employee Learning. Its executed evidence is recorded in
 [`docs/testing/training-assignment-slice-4-acceptance.md`](docs/testing/training-assignment-slice-4-acceptance.md);
 the accepted nine-checkpoint range ends at `d4e0184`.
+
+The local CRA-61 candidate adds deterministic provenance-bound Question Candidates, Admin human
+review and readiness, immutable five-question Interactive Training Attempts, progressive Answers
+with immediate feedback, device takeover, Results and Latest/Best history, plus responsive Admin
+and Employee UI. Its executed local evidence is recorded in
+[`docs/testing/interactive-training-slice-5-acceptance.md`](docs/testing/interactive-training-slice-5-acceptance.md).
+The candidate is not yet accepted or published; Slice 6 Practice, Final Exam, providers and
+deployment remain outside this boundary.
