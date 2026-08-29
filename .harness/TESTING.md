@@ -17,8 +17,8 @@ through corrective checkpoint `8028d6e`; its evidence is recorded in
 CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54 is published through
 `d955f6a`; its evidence is recorded in
 [`../docs/testing/training-slice-3-acceptance.md`](../docs/testing/training-slice-3-acceptance.md).
-CRA-55 documentation synchronization and CRA-56 Slice 4 planning are Done. CRA-57 is the active
-local implementation candidate; its unaccepted evidence is recorded in
+CRA-55 documentation synchronization and CRA-56 Slice 4 planning are Done. CRA-57 is accepted,
+Done, and fast-forward published through `d4e0184`; its evidence is recorded in
 [`../docs/testing/training-assignment-slice-4-acceptance.md`](../docs/testing/training-assignment-slice-4-acceptance.md).
 
 ## Environment setup
@@ -218,7 +218,7 @@ Denys accepted the candidate and authorized fast-forward publication of its nine
 `origin/main` through `d955f6a`. Railway/provider smoke, deployment, PR, merge, and production
 configuration were not performed.
 
-## CRA-57 local candidate evidence
+## Accepted CRA-57 evidence
 
 The 2026-08-29 local gate reports 363 passed, 0 failed, 0 skipped with 88% overall
 statement/branch coverage and 87% aggregate coverage across the seven Slice 4 service files on
@@ -227,5 +227,6 @@ Python 3.12.10 and native PostgreSQL 16. Ruff format/check and strict mypy pass.
 metadata no-drift pass. The frontend reports 35 Vitest tests and 12 Playwright executions with
 Prettier, ESLint, TypeScript, and production build green.
 
-This is implementation evidence only. CRA-57 remains In Progress until Denys explicitly accepts
-it, and no push, PR, merge, provider, deployment, or production action is authorized by the gate.
+Denys accepted the implementation and authorized ordinary fast-forward publication of the nine
+checkpoint range `5823a0e..d4e0184`. The range is published without history rewriting. No PR,
+merge, provider, deployment, production configuration, or production-data action was performed.

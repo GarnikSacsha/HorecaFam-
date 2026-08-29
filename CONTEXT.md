@@ -10,12 +10,12 @@ Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and 
 publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is accepted and
 fast-forward published on `origin/main` through corrective checkpoint `8028d6e`. CRA-53 planning
 and CRA-54 implementation for MVP Vertical Slice 3 — Training Content are accepted and Done.
-CRA-54 is fast-forward published through `d955f6a`. CRA-55 documentation synchronization and
-CRA-56 Slice 4 planning are Done. CRA-57 is the active bounded implementation issue. Its local
-nine-checkpoint candidate adds Assignment, Completion, Progress and Rollout; Denys acceptance and
-publication are still pending. CRA-42 is unrelated Backlog work. Broader production
-administration, providers/workers, later pushes, PR, merge, deployment, and production
-configuration require separate approval or later bounded issues.
+CRA-54 is fast-forward published through `d955f6a`, and CRA-55 advances the prior documentation
+baseline to `afc607a`. CRA-56 Slice 4 planning and CRA-57 implementation are accepted and Done.
+CRA-57 adds Assignment, Completion, Progress and Rollout as nine fast-forward-published checkpoints
+through `d4e0184`; the CRA-58 documentation checkpoint containing this record follows that range.
+CRA-42 is unrelated Backlog work. Broader production administration, providers/workers, PR,
+merge, deployment, and production configuration require separate approval or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -113,26 +113,26 @@ backend tests, 88% overall statement/branch coverage, 80% aggregate critical Tra
 Vitest tests, 9 Playwright tests, Alembic head `0008_training_content`, and no metadata drift. See
 [`docs/testing/training-slice-3-acceptance.md`](docs/testing/training-slice-3-acceptance.md).
 
-[CRA-57](https://linear.app/craftspacee/issue/CRA-57) is the active local implementation
-candidate. It adds version audiences, shared applicability, immutable Assignment lineage,
+[CRA-57](https://linear.app/craftspacee/issue/CRA-57) is accepted, Done and published through
+`d4e0184`. It adds version audiences, shared applicability, immutable Assignment lineage,
 explicit Lesson Completion, derived Progress, replacement-Version Rollout preview/rules/confirm,
 transactional provider-free notification jobs, Admin assignment/rollout controls, and
 assignment-aware Employee Learning. The local gate reports 363 backend tests, 88% overall and 87%
 aggregate Slice 4 service coverage, Alembic head `0009_assignment_completion_rollout`, 35 Vitest
 tests, and 12 Playwright executions. See
 [`docs/testing/training-assignment-slice-4-acceptance.md`](docs/testing/training-assignment-slice-4-acceptance.md).
-This evidence does not make CRA-57 accepted, Done, published, or deployed.
+The implementation is accepted and published; it was not deployed and made no provider calls.
 
 ## Repository map
 
-- [`backend/app`](backend/app): accepted Stage 0–6 runtime plus accepted CRA-49/CRA-54 behavior and
-  the local CRA-57 candidate.
-- [`backend/migrations`](backend/migrations): Alembic environment, accepted revisions through
-  `0008_training_content`, and local CRA-57 revision `0009_assignment_completion_rollout`.
+- [`backend/app`](backend/app): accepted Stage 0–6 runtime plus accepted CRA-49/CRA-54/CRA-57
+  behavior.
+- [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
+  CRA-57 head `0009_assignment_completion_rollout`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted CRA-43/CRA-49/CRA-54 experiences plus the local CRA-57 Admin and
-  Employee candidate, unit/component tests, and Playwright evidence.
+- [`frontend`](frontend): accepted CRA-43/CRA-49/CRA-54/CRA-57 Admin and Employee experiences,
+  unit/component tests, and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

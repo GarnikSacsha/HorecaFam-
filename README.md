@@ -8,12 +8,11 @@ planning for Menu Slice 2 is accepted and Done. The CRA-48 documentation checkpo
 its corrective publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is
 accepted and fast-forward published on `origin/main` through corrective checkpoint `8028d6e`.
 CRA-53 Training Content planning and CRA-54 implementation are accepted and Done; CRA-54 is
-fast-forward published on `origin/main` through `d955f6a`. CRA-55 documentation synchronization
-and CRA-56 Slice 4 planning are Done. CRA-57 is the active bounded implementation issue. Its nine
-local checkpoints implement Assignment, Completion, Progress and Rollout as an unaccepted local
-candidate; the ninth checkpoint includes final browser/evidence closure. CRA-42 is unrelated
-Backlog work. Acceptance, push, PR, merge, deployment, providers, and production configuration
-remain separate gates.
+published through `d955f6a`, and CRA-55 advances the prior documentation baseline to `afc607a`.
+CRA-56 Slice 4 planning and CRA-57 Assignment, Completion, Progress and Rollout implementation are
+accepted and Done. The nine CRA-57 checkpoints are fast-forward published through `d4e0184`; the
+CRA-58 documentation checkpoint containing this record follows that range. PR, merge, deployment,
+providers, and production configuration remain separate gates. CRA-42 is unrelated Backlog work.
 
 ## Start here
 
@@ -29,9 +28,9 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed first-slice
-  foundations, accepted CRA-49/CRA-54 runtime, and the local CRA-57 candidate.
+  foundations and accepted CRA-49/CRA-54/CRA-57 runtime.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright implementation through accepted CRA-54.
+  Playwright implementation through accepted CRA-57.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -74,8 +73,8 @@ types, private images, readiness and atomic publication, an Admin authoring work
 published-only Active Employee editorial reader. Assignments, completions, progress, Practice,
 notifications, providers, and deployment remain outside Slice 3. Accepted evidence is in
 [`docs/testing/training-slice-3-acceptance.md`](docs/testing/training-slice-3-acceptance.md).
-The active CRA-57 candidate adds version audiences, immutable Assignment history, explicit Lesson
+Accepted CRA-57 adds version audiences, immutable Assignment history, explicit Lesson
 Completion, derived Progress, deterministic replacement-Version Rollout, Admin assignment/rollout
 controls, and assignment-aware Employee Learning. Its executed evidence is recorded in
 [`docs/testing/training-assignment-slice-4-acceptance.md`](docs/testing/training-assignment-slice-4-acceptance.md);
-that record does not claim Denys acceptance or publication.
+the accepted nine-checkpoint range ends at `d4e0184`.

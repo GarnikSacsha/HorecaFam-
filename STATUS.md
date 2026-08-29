@@ -1,16 +1,15 @@
 # HoReCa Repository Status
 
 **Snapshot date:** 2026-08-29
-**Published product implementation:** CRA-54 MVP Vertical Slice 3 — Training Content is accepted,
-Done, and fast-forward published on `origin/main` through `d955f6a`. Backend MVP Vertical Slice 1
-through CRA-40, Frontend MVP Vertical Slice 1 through CRA-43, CRA-49 Menu Source of Truth, and
-CRA-54 Training Content are accepted and published. CRA-53 planning, CRA-55 documentation
-synchronization, and CRA-56 Slice 4 planning are Done. CRA-57 is the active bounded implementation
-issue. Its nine-checkpoint Assignment, Completion, Progress and Rollout implementation is a local
-candidate pending Denys acceptance and publication. The canonical routing entry is the Linear
+**Published product implementation:** CRA-57 MVP Vertical Slice 4 — Assignment, Completion and
+Rollout is accepted, Done, and fast-forward published through `d4e0184`. Backend MVP Vertical
+Slice 1 through CRA-40, Frontend MVP Vertical Slice 1 through CRA-43, CRA-49 Menu Source of Truth,
+CRA-54 Training Content, and CRA-57 are accepted and published. CRA-55 advances the prior
+documentation baseline to `afc607a`; CRA-56 planning is Done; the CRA-58 documentation checkpoint
+containing this record follows the accepted CRA-57 range. The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-Push, PR, merge, deployment, provider, and production-configuration actions remain separately
-gated. CRA-42 is unrelated Backlog work.
+PR, merge, deployment, provider, and production-configuration actions remain separately gated.
+CRA-42 is unrelated Backlog work.
 
 ## Accepted implementation and planning checkpoints
 
@@ -55,7 +54,8 @@ gated. CRA-42 is unrelated Backlog work.
   checkpoints.
 - CRA-55 post-CRA-54 documentation synchronization is Done.
 - CRA-56 Slice 4 planning and its nine-checkpoint map are accepted and Done.
-- CRA-57 Slice 4 implementation is the active local candidate; acceptance/publication are pending.
+- CRA-57 Slice 4 implementation is accepted, Done, and published through `d4e0184`.
+- CRA-58 is the documentation checkpoint that records CRA-57 acceptance and publication.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -192,22 +192,23 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; `origin/main` remains at accepted CRA-54 endpoint `d955f6a`; local `main` is ahead
-  by the completed CRA-57 checkpoint commits and has no remote publication authorization.
+- Branch: `main`; the accepted CRA-57 implementation range is published through `d4e0184`, and the
+  CRA-58 documentation checkpoint containing this snapshot follows it on `origin/main`.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
-  checkpoints, CRA-49 through `8028d6e`, and CRA-54 through `d955f6a`.
+  checkpoints, CRA-49 through `8028d6e`, CRA-54 through `d955f6a`, CRA-55 through `afc607a`, and
+  CRA-57 through `d4e0184`.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
-- Published branch: CRA-49 and its corrective acceptance tail end at `8028d6e`; the accepted CRA-54
-  nine-checkpoint range `8e15bd2..d955f6a` follows it on `origin/main`. No force-push or history
-  rewriting was performed.
+- Published branch: CRA-49 and its corrective acceptance tail end at `8028d6e`; CRA-54's
+  `8e15bd2..d955f6a`, CRA-55's `afc607a`, and CRA-57's `5823a0e..d4e0184` follow without force-push
+  or history rewriting.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted CRA-43/CRA-49/CRA-54 implementation plus the local CRA-57 Admin
-  assignment/rollout and assignment-aware Employee Learning candidate.
+- `frontend/`: accepted CRA-43/CRA-49/CRA-54/CRA-57 implementation with Admin assignment/rollout
+  and assignment-aware Employee Learning.
 
-## Local CRA-57 implementation candidate
+## Accepted and published CRA-57 checkpoint
 
 - Scope: version-owned audiences, shared applicability, immutable Assignment history, explicit
   Lesson Completion, derived current Progress, deterministic replacement-Version Rollout,
@@ -216,7 +217,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Backend gate: 363 passed, 0 failed, 0 skipped; 88% overall statement/branch coverage and 87%
   aggregate coverage across the seven Slice 4 service files; Ruff format/check and strict mypy
   passed.
-- Migrations: local head `0009_assignment_completion_rollout`; empty-database upgrade,
+- Migrations: accepted head `0009_assignment_completion_rollout`; empty-database upgrade,
   downgrade/upgrade coverage, current-head validation, and metadata no-drift passed.
 - Frontend gate: Prettier, ESLint, TypeScript, and production build passed; Vitest reports 35
   passed, 0 failed, 0 skipped across 14 files.
@@ -224,8 +225,9 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   and 375×812 projects, including explicit Completion and Admin Assignment/Rollout confirmation.
 - Exact evidence and limitations:
   [`docs/testing/training-assignment-slice-4-acceptance.md`](docs/testing/training-assignment-slice-4-acceptance.md).
-- CRA-57 remains In Progress until Denys explicitly accepts it. No push, PR, merge, provider,
-  deployment, or production configuration has been performed.
+- Denys explicitly accepted CRA-57; its nine-checkpoint range `5823a0e..d4e0184` was
+  fast-forward published. No PR, merge, provider, deployment, or production configuration was
+  performed.
 
 ## Accepted and published CRA-54 checkpoint
 
@@ -298,9 +300,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   and the published repository baseline includes the CRA-46 documentation checkpoint at `586f8c5`.
   CRA-48 and CRA-49 are accepted and published; the CRA-49 corrective endpoint is `8028d6e`.
   CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is published through
-  `d955f6a`. CRA-55 and CRA-56 are Done. CRA-57 is the active local implementation candidate with
-  its mapped local commits authorized. Acceptance, every push, PR, merge, deploy, provider call,
-  non-test mutation, production configuration, and history rewrite remain separately gated.
+  `d955f6a`, and CRA-55 follows at `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is
+  published through `d4e0184`, with CRA-58 providing this documentation checkpoint. Every later
+  implementation, push, PR, merge, deploy, provider call, non-test mutation, production
+  configuration, and history rewrite remains separately gated.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.

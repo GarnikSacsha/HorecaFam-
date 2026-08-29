@@ -1,8 +1,8 @@
 # Current Architecture
 
-This document describes the verified accepted implementation published through CRA-54 at
-`d955f6a` and the unaccepted local CRA-57 candidate. Canonical product behavior and contracts
-remain in Linear.
+This document describes the verified accepted implementation published through CRA-57 at
+`d4e0184`; the CRA-58 documentation checkpoint containing this record follows that range.
+Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -47,7 +47,7 @@ required environment configuration
   `0004_invitation_lifecycle.py` and `0005_invitation_email_outbox.py` create Stage 3;
   `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the accepted CRA-49 Menu
   schema; `0008_training_content.py` creates the accepted CRA-54 Training content schema;
-  `0009_assignment_completion_rollout.py` creates the local CRA-57 Assignment, Completion and
+  `0009_assignment_completion_rollout.py` creates the accepted CRA-57 Assignment, Completion and
   Rollout schema.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
@@ -199,7 +199,7 @@ video URLs are reconstructed only from validated YouTube identifiers and a fixed
 Assignments, completions, progress, rollout, notifications, Practice, exams, and analytics remain
 absent and publication reports zero Slice 4 counts.
 
-## Local CRA-57 Assignment, Completion and Rollout candidate
+## Accepted CRA-57 Assignment, Completion and Rollout
 
 ```text
 version-owned audience + active Employee applicability
@@ -209,7 +209,7 @@ version-owned audience + active Employee applicability
 → locked atomic confirm → superseding Assignment + carried provenance
 ```
 
-The candidate replaces the Slice 3 current-Published-only Employee reference with
+The accepted implementation replaces the Slice 3 current-Published-only Employee reference with
 current-Assignment authority. Employee Home and Learning expose truthful progress and next action;
 an assigned retained Version remains readable, media views never write, and Completion requires an
 explicit protected mutation. Admin Employee detail supports assign/revoke/reassign. Admin Training
@@ -218,7 +218,7 @@ recovery, and confirmed atomic Rollout. Provider-free background jobs are transa
 deduplicated; no delivery worker or external provider call is added.
 
 The accepted API currently has a revision-guarded audience replacement mutation but no audience
-read contract. The candidate therefore does not add an unsafe browser editor that could overwrite
+read contract. CRA-57 therefore does not add an unsafe browser editor that could overwrite
 unknown existing role selections. Practice, Knowledge, Final Exam, scoring, certification,
 deadlines, analytics, external delivery, and deployment remain absent.
 
@@ -233,5 +233,5 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
 reference CRUD, Employee disable/reactivate lifecycle administration, Practice/exam workflow,
 provider integration, or deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/)
-and includes accepted CRA-49/CRA-54 experiences plus the local CRA-57 candidate. Adding any absent
+and includes accepted CRA-49/CRA-54/CRA-57 experiences. Adding any absent
 capability requires a new bounded Linear issue and approval.
