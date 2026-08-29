@@ -301,3 +301,29 @@ class InteractiveAnswerResponse(StrictAssessmentSchema):
     attempt_status: Literal["in_progress", "completed"]
     result: InteractiveResultResponse | None
     replayed: bool
+
+
+class InteractiveResultSummaryResponse(StrictAssessmentSchema):
+    result_id: UUID
+    attempt_id: UUID
+    assessment_version_id: UUID
+    completed_at: datetime
+    correct_count: int = Field(ge=0, le=5)
+    total_count: Literal[5] = 5
+    score_basis_points: int = Field(ge=0, le=10000)
+    knowledge_level: Literal["very_weak", "weak", "good", "strong"]
+    is_current: bool
+
+
+class LessonInteractiveTrainingSummaryResponse(StrictAssessmentSchema):
+    lesson_id: UUID
+    lesson_version_id: UUID
+    assessment_version_id: UUID | None
+    availability: Literal["ready", "preparing", "unavailable", "paused"]
+    can_start: bool
+    reason_codes: list[str]
+    readiness_status: Literal["processing", "ready", "warning", "blocked"] | None
+    active_attempt: InteractiveAttemptResponse | None
+    latest: InteractiveResultSummaryResponse | None
+    best: InteractiveResultSummaryResponse | None
+    history: list[InteractiveResultSummaryResponse]

@@ -105,6 +105,7 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
     }
     assert expected_paths <= set(openapi["paths"])
     assert {
+        "/api/v1/me/training/lessons/{lesson_id}/interactive-training",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training/attempts",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}/takeover",

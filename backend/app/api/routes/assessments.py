@@ -21,6 +21,7 @@ from app.schemas.assessment import (
     InteractiveAttemptStartResponse,
     InteractiveAttemptTakeoverResponse,
     InteractiveTrainingReadinessResponse,
+    LessonInteractiveTrainingSummaryResponse,
     QuestionCandidateApprovalResponse,
     QuestionCandidateApproveRequest,
     QuestionCandidateBatchApprovalResponse,
@@ -42,6 +43,7 @@ from app.services.interactive_attempts import (
     start_or_resume_interactive_attempt,
     takeover_interactive_attempt,
 )
+from app.services.interactive_history import get_lesson_interactive_training_summary
 from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
@@ -66,6 +68,26 @@ def _employee_scope(authorization: AuthorizationContext) -> tuple[UUID, UUID, UU
         authorization.organization_id,
         authorization.location_id,
         authorization.employee_profile_id,
+    )
+
+
+@router.get(
+    "/me/training/lessons/{lesson_id}/interactive-training",
+    response_model=LessonInteractiveTrainingSummaryResponse,
+)
+async def get_lesson_interactive_training_summary_route(
+    lesson_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> LessonInteractiveTrainingSummaryResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_lesson_interactive_training_summary(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        lesson_id=lesson_id,
+        session_id=authorization.session.id,
     )
 
 

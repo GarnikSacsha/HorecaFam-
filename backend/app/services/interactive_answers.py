@@ -306,7 +306,7 @@ async def submit_interactive_answer(
         raise _error(409, "ATTEMPT_NOT_WRITABLE", "Спроба призупинена адміністратором.")
     assignment = await db.get(TrainingAssignment, attempt.assignment_id)
     if assignment is None or not (
-        assignment.status == "assigned"
+        assignment.status != "revoked"
         or (
             assignment.status == "revoked"
             and assignment.revoke_reason == "rollout"

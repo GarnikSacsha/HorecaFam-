@@ -15,8 +15,10 @@ from app.models import (
     AttemptOption,
     AttemptQuestion,
     AuditEvent,
+    EmployeeProfile,
     LessonCompletion,
     LessonVersion,
+    OrganizationMembership,
     QuestionCandidate,
     QuestionOption,
     QuestionOptionTranslation,
@@ -113,6 +115,30 @@ def _unavailable() -> APIError:
 
 def _not_ready() -> APIError:
     return _error(409, "ASSESSMENT_NOT_READY", "Питання для тренування ще готуються.")
+
+
+async def _require_active_training_participation(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    employee_profile_id: UUID,
+) -> None:
+    participation = await db.scalar(
+        select(OrganizationMembership.training_participation_status)
+        .join(EmployeeProfile, EmployeeProfile.membership_id == OrganizationMembership.id)
+        .where(
+            OrganizationMembership.organization_id == organization_id,
+            OrganizationMembership.status == "active",
+            EmployeeProfile.id == employee_profile_id,
+            EmployeeProfile.organization_id == organization_id,
+            EmployeeProfile.location_id == location_id,
+        )
+    )
+    if participation is None:
+        raise _not_found()
+    if participation == "paused":
+        raise _error(409, "ATTEMPT_NOT_WRITABLE", "Спробу призупинено адміністратором.")
 
 
 async def _owned_attempt(
@@ -273,7 +299,7 @@ async def _assignment_lesson(
                 TrainingAssignment.organization_id == organization_id,
                 TrainingAssignment.location_id == location_id,
                 TrainingAssignment.employee_profile_id == employee_profile_id,
-                TrainingAssignment.status == "assigned",
+                TrainingAssignment.status != "revoked",
                 LessonVersion.lesson_id == lesson_id,
             )
             .with_for_update(of=TrainingAssignment)
@@ -475,6 +501,12 @@ async def start_or_resume_interactive_attempt(
     request_id: UUID,
     now: datetime,
 ) -> InteractiveAttemptStartResponse:
+    await _require_active_training_participation(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+    )
     fingerprint = request_fingerprint(
         {"lesson_id": str(lesson_id), "presentation_locale": presentation_locale}
     )
