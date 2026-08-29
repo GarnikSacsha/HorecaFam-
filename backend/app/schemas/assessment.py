@@ -23,6 +23,24 @@ class CategoryGenerationRule(StrictAssessmentSchema):
     mechanic: Literal["single_choice"] = "single_choice"
 
 
+class ComponentGenerationRule(StrictAssessmentSchema):
+    code: str = Field(min_length=1, max_length=100)
+    version: int = Field(ge=1)
+    mechanic: Literal["multiple_choice"] = "multiple_choice"
+
+
+class AllergenGenerationRule(StrictAssessmentSchema):
+    code: str = Field(min_length=1, max_length=100)
+    version: int = Field(ge=1)
+    mechanic: Literal["recognition"] = "recognition"
+
+
+class DescriptionGenerationRule(StrictAssessmentSchema):
+    code: str = Field(min_length=1, max_length=100)
+    version: int = Field(ge=1)
+    mechanic: Literal["recognition"] = "recognition"
+
+
 class CategoryFact(StrictAssessmentSchema):
     menu_item_version_id: UUID
     menu_item_id: UUID
@@ -30,6 +48,35 @@ class CategoryFact(StrictAssessmentSchema):
     menu_version_category_id: UUID
     category_name: str
     price_minor: int | None = Field(default=None, ge=0)
+    verified: bool
+
+
+class ComponentFact(StrictAssessmentSchema):
+    menu_item_version_component_id: UUID
+    menu_component_version_id: UUID
+    menu_item_version_id: UUID
+    menu_item_id: UUID
+    item_name: str
+    component_name: str
+    position: int = Field(ge=0)
+    verified: bool
+
+
+class AllergenFact(StrictAssessmentSchema):
+    menu_item_version_allergen_id: UUID
+    allergen_id: UUID
+    menu_item_version_id: UUID
+    menu_item_id: UUID
+    item_name: str
+    allergen_name: str
+    verified: bool
+
+
+class DescriptionFact(StrictAssessmentSchema):
+    menu_item_version_id: UUID
+    menu_item_id: UUID
+    item_name: str
+    description: str
     verified: bool
 
 
@@ -63,11 +110,24 @@ class CandidateExplanationPayload(StrictAssessmentSchema):
 
 class CandidateSource(StrictAssessmentSchema):
     source_role: Literal["correct_fact", "distractor_basis", "explanation_source"]
-    menu_item_version_id: UUID
+    menu_item_version_id: UUID | None = None
+    menu_item_version_component_id: UUID | None = None
+    menu_item_version_allergen_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def exactly_one_source(self) -> "CandidateSource":
+        values = (
+            self.menu_item_version_id,
+            self.menu_item_version_component_id,
+            self.menu_item_version_allergen_id,
+        )
+        if sum(value is not None for value in values) != 1:
+            raise ValueError("Candidate source must identify exactly one verified fact")
+        return self
 
 
 class GeneratedCandidate(StrictAssessmentSchema):
-    mechanic: Literal["single_choice"]
+    mechanic: Literal["single_choice", "multiple_choice", "recognition"]
     prompt_payload: CandidatePromptPayload
     answer_payload: CandidateAnswerPayload
     explanation_payload: CandidateExplanationPayload

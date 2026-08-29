@@ -375,6 +375,33 @@ def test_question_generation_rule_seed_migration_downgrades_and_upgrades() -> No
 
 @pytest.mark.integration
 @pytest.mark.migration
+def test_deterministic_template_seed_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    expected = {
+        ("menu.components", 1, "multiple_choice"),
+        ("menu.allergens", 1, "recognition"),
+        ("menu.description", 1, "recognition"),
+    }
+    command.upgrade(config, "head")
+    try:
+        command.downgrade(config, "0012_question_rules")
+        downgraded_rules = asyncio.run(generation_rules(settings))
+        assert ("menu.category", 1, "single_choice") in downgraded_rules
+        assert expected.isdisjoint(downgraded_rules)
+
+        command.upgrade(config, "head")
+        active_rules = asyncio.run(generation_rules(settings))
+        assert expected <= active_rules
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
 async def test_database_contains_current_tables(
     migrated_test_database: Settings,
 ) -> None:

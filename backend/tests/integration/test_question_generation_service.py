@@ -20,11 +20,17 @@ from app.services.question_review import (
 )
 from tests.factories.identity import make_location, make_organization, make_user
 from tests.factories.menu import (
+    make_allergen,
     make_category_translation,
+    make_component_translation,
+    make_component_version,
+    make_item_allergen,
+    make_item_component,
     make_item_translation,
     make_item_version,
     make_menu,
     make_menu_category,
+    make_menu_component,
     make_menu_item,
     make_menu_section,
     make_menu_version,
@@ -56,12 +62,27 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     section = make_menu_section(menu)
     soup_category = make_menu_category(menu, stable_code="soups")
     salad_category = make_menu_category(menu, stable_code="salads")
+    beetroot = make_menu_component(menu, stable_code="beetroot")
+    broth = make_menu_component(menu, stable_code="broth")
+    chicken = make_menu_component(menu, stable_code="chicken")
     soup = make_menu_item(menu, stable_code="borshch")
     salad = make_menu_item(menu, stable_code="caesar")
     training = make_training(organization.id, location.id)
     module = make_training_module(training)
     db_session.add_all(
-        [menu, section, soup_category, salad_category, soup, salad, training, module]
+        [
+            menu,
+            section,
+            soup_category,
+            salad_category,
+            beetroot,
+            broth,
+            chicken,
+            soup,
+            salad,
+            training,
+            module,
+        ]
     )
     await db_session.flush()
 
@@ -91,6 +112,11 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     lesson_version = make_lesson_version(module_version, lesson)
     db_session.add_all([version_section, lesson_version])
     await db_session.flush()
+    beetroot_version = make_component_version(menu_version, beetroot)
+    broth_version = make_component_version(menu_version, broth)
+    chicken_version = make_component_version(menu_version, chicken)
+    db_session.add_all([beetroot_version, broth_version, chicken_version])
+    await db_session.flush()
     soup_version_category = make_version_category(
         menu_version, soup_category, version_section, position=0
     )
@@ -105,6 +131,8 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
         soup,
         soup_version_category,
         price_minor=15000,
+        component_data_status="confirmed_present",
+        allergen_data_status="confirmed_present",
         verified_by_user_id=actor.id,
         verified_at=now,
     )
@@ -113,6 +141,8 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
         salad,
         salad_version_category,
         price_minor=20000,
+        component_data_status="confirmed_present",
+        allergen_data_status="confirmed_present",
         verified_by_user_id=actor.id,
         verified_at=now,
     )
@@ -131,10 +161,72 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
         ]
     )
     await db_session.flush()
+    gluten = make_allergen(code="gluten", label_uk="Глютен")
+    dairy = make_allergen(code="dairy", label_uk="Молочні продукти")
+    db_session.add_all([gluten, dairy])
+    await db_session.flush()
     db_session.add_all(
         [
-            make_item_translation(menu_version, soup_version, name="Борщ"),
-            make_item_translation(menu_version, salad_version, name="Цезар"),
+            make_item_translation(
+                menu_version,
+                soup_version,
+                name="Борщ",
+                description="Буряковий суп із насиченим смаком",
+            ),
+            make_item_translation(
+                menu_version,
+                salad_version,
+                name="Цезар",
+                description="Салат із куркою та хрустким листям",
+            ),
+            make_component_translation(
+                menu_version,
+                beetroot_version,
+                name="Буряк",
+            ),
+            make_component_translation(
+                menu_version,
+                broth_version,
+                name="Бульйон",
+            ),
+            make_component_translation(
+                menu_version,
+                chicken_version,
+                name="Курка",
+            ),
+            make_item_component(
+                menu_version,
+                soup_version,
+                beetroot_version,
+                position=0,
+                verified_by_user_id=actor.id,
+            ),
+            make_item_component(
+                menu_version,
+                soup_version,
+                broth_version,
+                position=1,
+                verified_by_user_id=actor.id,
+            ),
+            make_item_component(
+                menu_version,
+                salad_version,
+                chicken_version,
+                position=0,
+                verified_by_user_id=actor.id,
+            ),
+            make_item_allergen(
+                menu_version,
+                soup_version,
+                gluten,
+                verified_by_user_id=actor.id,
+            ),
+            make_item_allergen(
+                menu_version,
+                salad_version,
+                dairy,
+                verified_by_user_id=actor.id,
+            ),
             make_content_block(
                 lesson_version,
                 type="menu_item_card",
@@ -161,6 +253,30 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
                 status="active",
                 configuration={},
             ),
+            QuestionGenerationRule(
+                code="menu.components",
+                version=1,
+                domain_type="menu",
+                mechanic="multiple_choice",
+                status="active",
+                configuration={},
+            ),
+            QuestionGenerationRule(
+                code="menu.allergens",
+                version=1,
+                domain_type="menu",
+                mechanic="recognition",
+                status="active",
+                configuration={},
+            ),
+            QuestionGenerationRule(
+                code="menu.description",
+                version=1,
+                domain_type="menu",
+                mechanic="recognition",
+                status="active",
+                configuration={},
+            ),
         ]
     )
     await db_session.flush()
@@ -173,9 +289,17 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     }
     first = await generate_question_candidates(db_session, **scope)
     await db_session.flush()
-    assert first.created_count == 2
-    assert await db_session.scalar(select(func.count()).select_from(QuestionSourceLink)) == 6
-    published_candidate = await db_session.scalar(select(QuestionCandidate).limit(1))
+    assert first.created_count == 7
+    assert await db_session.scalar(select(func.count()).select_from(QuestionSourceLink)) == 22
+    published_candidate = await db_session.scalar(
+        select(QuestionCandidate)
+        .join(
+            QuestionGenerationRule,
+            QuestionGenerationRule.id == QuestionCandidate.generation_rule_id,
+        )
+        .where(QuestionGenerationRule.code == "menu.category")
+        .limit(1)
+    )
     assert published_candidate is not None
     approval = await approve_question_candidate(
         db_session,
@@ -196,14 +320,22 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     replay = await generate_question_candidates(db_session, **scope)
     soup_version.price_minor = 99999
     price_only = await generate_question_candidates(db_session, **scope)
-    assert replay.existing_count == 2
-    assert price_only.existing_count == 2
+    assert replay.existing_count == 7
+    assert price_only.existing_count == 7
     assert price_only.created_count == 0
     assert price_only.stale_candidate_count == 0
 
     salad_category_translation.name = "Основні страви"
     unreviewed_candidate = await db_session.scalar(
-        select(QuestionCandidate).where(QuestionCandidate.status == "needs_review")
+        select(QuestionCandidate)
+        .join(
+            QuestionGenerationRule,
+            QuestionGenerationRule.id == QuestionCandidate.generation_rule_id,
+        )
+        .where(
+            QuestionCandidate.status == "needs_review",
+            QuestionGenerationRule.code == "menu.category",
+        )
     )
     assert unreviewed_candidate is not None
     with pytest.raises(APIError) as stale_approval:
@@ -222,6 +354,7 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     changed = await generate_question_candidates(db_session, **scope)
     await db_session.flush()
     assert changed.created_count == 2
+    assert changed.existing_count == 5
     assert changed.stale_candidate_count == 2
     assert changed.stale_question_count == 1
     assert question_version.status == "stale"
@@ -241,7 +374,7 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
             .order_by(QuestionCandidate.id)
         )
     )
-    assert len(reviewable) == 2
+    assert len(reviewable) == 7
     reviewable[1].status = "stale"
     await db_session.flush()
     with pytest.raises(APIError) as raised:
