@@ -4,14 +4,20 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import APIError
 from app.models import (
     QuestionCandidate,
     QuestionGenerationRule,
     QuestionSourceLink,
+    QuestionVersion,
     TrainingVersionMenuDependency,
 )
+from app.schemas.assessment import QuestionCandidateBatchItem
 from app.services.question_generation import generate_question_candidates
-from tests.factories.assessments import make_question, make_question_version
+from app.services.question_review import (
+    approve_question_candidate,
+    approve_question_candidate_batch,
+)
 from tests.factories.identity import make_location, make_organization, make_user
 from tests.factories.menu import (
     make_category_translation,
@@ -171,12 +177,21 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     assert await db_session.scalar(select(func.count()).select_from(QuestionSourceLink)) == 6
     published_candidate = await db_session.scalar(select(QuestionCandidate).limit(1))
     assert published_candidate is not None
-    question = make_question(published_candidate)
-    db_session.add(question)
-    await db_session.flush()
-    question_version = make_question_version(question, published_candidate, actor.id)
-    db_session.add(question_version)
-    await db_session.flush()
+    approval = await approve_question_candidate(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        candidate_id=published_candidate.id,
+        expected_revision=0,
+        edited_payload=None,
+        actor_user_id=actor.id,
+        request_id=published_candidate.id,
+        now=now,
+    )
+    assert approval.readiness.status == "blocked"
+    assert approval.readiness.eligible_count == 1
+    question_version = await db_session.get(QuestionVersion, approval.question_version_id)
+    assert question_version is not None
 
     replay = await generate_question_candidates(db_session, **scope)
     soup_version.price_minor = 99999
@@ -187,6 +202,23 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     assert price_only.stale_candidate_count == 0
 
     salad_category_translation.name = "Основні страви"
+    unreviewed_candidate = await db_session.scalar(
+        select(QuestionCandidate).where(QuestionCandidate.status == "needs_review")
+    )
+    assert unreviewed_candidate is not None
+    with pytest.raises(APIError) as stale_approval:
+        await approve_question_candidate(
+            db_session,
+            organization_id=organization.id,
+            location_id=location.id,
+            candidate_id=unreviewed_candidate.id,
+            expected_revision=unreviewed_candidate.revision,
+            edited_payload=None,
+            actor_user_id=actor.id,
+            request_id=unreviewed_candidate.id,
+            now=now,
+        )
+    assert stale_approval.value.code == "QUESTION_CANDIDATE_STALE"
     changed = await generate_question_candidates(db_session, **scope)
     await db_session.flush()
     assert changed.created_count == 2
@@ -202,3 +234,28 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
         )
         == 2
     )
+    reviewable = list(
+        await db_session.scalars(
+            select(QuestionCandidate)
+            .where(QuestionCandidate.status == "needs_review")
+            .order_by(QuestionCandidate.id)
+        )
+    )
+    assert len(reviewable) == 2
+    reviewable[1].status = "stale"
+    await db_session.flush()
+    with pytest.raises(APIError) as raised:
+        await approve_question_candidate_batch(
+            db_session,
+            organization_id=organization.id,
+            location_id=location.id,
+            items=[
+                QuestionCandidateBatchItem(candidate_id=row.id, expected_revision=row.revision)
+                for row in reviewable
+            ],
+            actor_user_id=actor.id,
+            request_id=reviewable[0].id,
+            now=now,
+        )
+    assert raised.value.code == "QUESTION_CANDIDATE_STALE"
+    assert reviewable[0].status == "needs_review"

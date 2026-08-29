@@ -1,11 +1,16 @@
+from typing import cast
+
+from sqlalchemy import Table
+
 from app.models import QuestionSourceLink
 
 
 def test_candidate_and_question_provenance_have_exclusive_owners() -> None:
-    columns = QuestionSourceLink.__table__.columns
+    table = cast(Table, QuestionSourceLink.__table__)
+    columns = table.columns
     checks = {
         constraint.name: str(constraint.sqltext)
-        for constraint in QuestionSourceLink.__table__.constraints
+        for constraint in table.constraints
         if hasattr(constraint, "sqltext")
     }
 

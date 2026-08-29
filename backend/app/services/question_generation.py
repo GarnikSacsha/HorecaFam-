@@ -264,11 +264,13 @@ async def generate_question_candidates(
     )
     rules = list(
         await db.scalars(
-            select(QuestionGenerationRule).where(
+            select(QuestionGenerationRule)
+            .where(
                 QuestionGenerationRule.code == "menu.category",
                 QuestionGenerationRule.mechanic == "single_choice",
                 QuestionGenerationRule.status == "active",
             )
+            .with_for_update()
         )
     )
     lesson_items = await _lesson_item_ids(db, training_version_id)
@@ -373,3 +375,59 @@ async def generate_question_candidates(
         stale_candidate_count=stale_candidate_count,
         stale_question_count=stale_question_count,
     )
+
+
+async def candidate_source_fingerprint_is_current(
+    db: AsyncSession,
+    candidate: QuestionCandidate,
+) -> bool:
+    rule_row = await db.get(QuestionGenerationRule, candidate.generation_rule_id)
+    dependency = await db.scalar(
+        select(TrainingVersionMenuDependency).where(
+            TrainingVersionMenuDependency.training_version_id == candidate.training_version_id
+        )
+    )
+    if (
+        rule_row is None
+        or dependency is None
+        or rule_row.code != "menu.category"
+        or rule_row.mechanic != "single_choice"
+    ):
+        return False
+    source_rows = list(
+        await db.scalars(
+            select(QuestionSourceLink).where(
+                QuestionSourceLink.question_candidate_id == candidate.id,
+                QuestionSourceLink.source_role == "correct_fact",
+            )
+        )
+    )
+    if len(source_rows) != 1 or source_rows[0].menu_item_version_id is None:
+        return False
+    lesson_items = await _lesson_item_ids(db, candidate.training_version_id)
+    item_ids = lesson_items.get(candidate.lesson_version_id, set())
+    facts_by_item = await _category_facts(db, dependency.menu_version_id)
+    facts = [facts_by_item[item_id] for item_id in item_ids if item_id in facts_by_item]
+    target = next(
+        (
+            fact
+            for fact in facts
+            if fact.menu_item_version_id == source_rows[0].menu_item_version_id
+        ),
+        None,
+    )
+    if target is None:
+        return False
+    generated = build_category_candidate(
+        GenerationScope(
+            organization_id=candidate.organization_id,
+            location_id=candidate.location_id,
+            menu_version_id=dependency.menu_version_id,
+            training_version_id=candidate.training_version_id,
+            lesson_version_id=candidate.lesson_version_id,
+        ),
+        CategoryGenerationRule(code=rule_row.code, version=rule_row.version),
+        target,
+        facts,
+    )
+    return generated is not None and generated.source_fingerprint == candidate.source_fingerprint
