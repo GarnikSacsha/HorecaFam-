@@ -4,6 +4,8 @@ import { AdminEmployeeDetailPage } from "../admin/AdminEmployeeDetailPage";
 import { AdminEmployeesPage } from "../admin/AdminEmployeesPage";
 import { AdminMenuPage } from "../admin/AdminMenuPage";
 import { AdminQuestionBankPage } from "../admin/AdminQuestionBankPage";
+import { AdminResultDetailPage } from "../admin/AdminResultDetailPage";
+import { AdminResultsPage } from "../admin/AdminResultsPage";
 import { AdminTrainingPage } from "../admin/AdminTrainingPage";
 import { LoginPage } from "../auth/LoginPage";
 import { MfaPage } from "../auth/MfaPage";
@@ -74,6 +76,26 @@ export function App() {
               <ProtectedRoute audience="admin">
                 <AdminShell>
                   <AdminQuestionBankPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/results"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminResultsPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/results/:employeeId"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminResultDetailPage />
                 </AdminShell>
               </ProtectedRoute>
             }

@@ -121,6 +121,22 @@ const practiceReadiness = {
   can_start: false,
 };
 
+const finalExamReadiness = {
+  training_version_id: "training-version-1",
+  assessment_version_id: "final-exam-version-1",
+  status: "warning",
+  eligible_count: 24,
+  required_count: 20,
+  coverage_evidence: { distinct_menu_item_count: 24 },
+  rotation_supported: false,
+  rotation_target_count: 40,
+  basis_fingerprint: "e".repeat(64),
+  blocking_codes: [],
+  warning_codes: ["REPEAT_ROTATION_LIMITED"],
+  computed_at: "2030-08-29T10:00:00Z",
+  can_start: true,
+};
+
 function questionBankClient(
   requests: Array<{ path: string; options?: RequestOptions }>,
   staleApproval = false,
@@ -157,6 +173,7 @@ function questionBankClient(
           archived: [],
         } as T);
       if (path.includes("/interactive-training/readiness")) return Promise.resolve(readiness as T);
+      if (path.includes("/final-exam/readiness")) return Promise.resolve(finalExamReadiness as T);
       if (path.includes("/practice/readiness")) return Promise.resolve(practiceReadiness as T);
       if (path.includes("/question-candidates?") || path.endsWith("/question-candidates"))
         return Promise.resolve({ items: candidates, total: 2 } as T);
@@ -205,10 +222,26 @@ describe("Admin Question Bank", () => {
     expect(screen.getByText("До якої категорії належить Борщ?")).toBeInTheDocument();
     expect(screen.getByText("menu-item-version-1")).toBeInTheDocument();
     expect(screen.getAllByText("Один варіант")[0]).toBeInTheDocument();
-    expect(screen.getByText("REPEAT_ROTATION_LIMITED")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Готовність Практики" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("1 / 10 різних позицій меню");
-    expect(screen.getByText("INSUFFICIENT_QUESTION_POOL")).toBeInTheDocument();
+    const practiceCard = screen
+      .getByRole("heading", { name: "Готовність Практики" })
+      .closest("article");
+    expect(practiceCard).not.toBeNull();
+    expect(within(practiceCard as HTMLElement).getByRole("status")).toHaveTextContent(
+      "1 / 10 різних позицій меню",
+    );
+    expect(
+      within(practiceCard as HTMLElement).getByText("INSUFFICIENT_QUESTION_POOL"),
+    ).toBeInTheDocument();
+    const finalExamCard = screen
+      .getByRole("heading", { name: "Готовність Final Exam" })
+      .closest("article");
+    expect(finalExamCard).not.toBeNull();
+    expect(within(finalExamCard as HTMLElement).getByRole("status")).toHaveTextContent(
+      "24 / 20 перевірених питань",
+    );
+    expect(
+      within(finalExamCard as HTMLElement).getByText("REPEAT_ROTATION_LIMITED"),
+    ).toBeInTheDocument();
     expect(requests.some(({ path }) => path.endsWith("/practice/readiness"))).toBe(true);
 
     await user.click(screen.getByRole("button", { name: "Згенерувати кандидатів" }));

@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import type { ApiClient, RequestOptions } from "../api/client";
 import type {
+  AdminResultsOverviewResponse,
   EmployeeDetail,
   EmployeeListResponse,
   SessionResponse,
@@ -12,6 +13,7 @@ import type {
 import { SessionProvider } from "../session/SessionContext";
 import { AdminEmployeeDetailPage } from "./AdminEmployeeDetailPage";
 import { AdminEmployeesPage } from "./AdminEmployeesPage";
+import { AdminResultsPage } from "./AdminResultsPage";
 
 const adminSession: SessionResponse = {
   user: { id: "admin-1", email: "admin@example.com", preferred_locale: "uk" },
@@ -52,6 +54,60 @@ function adminClient(
 }
 
 describe("Admin Employee flow", () => {
+  it("shows Final Exam status without turning employee results into a leaderboard", async () => {
+    const results: AdminResultsOverviewResponse = {
+      items: [
+        {
+          employee_id: "employee-1",
+          first_name: "Анна",
+          last_name: "Коваль",
+          location_id: "location-1",
+          current_training_status: "completed",
+          latest_practice_score_basis_points: 8700,
+          certification: {
+            result_id: "result-1",
+            attempt_id: "attempt-1",
+            certified_at: "2026-08-31T10:00:00Z",
+          },
+          latest_final_exam: {
+            result_id: "result-1",
+            attempt_id: "attempt-1",
+            assessment_version_id: "assessment-1",
+            completed_at: "2026-08-31T10:00:00Z",
+            correct_count: 16,
+            total_count: 20,
+            score_basis_points: 8000,
+            knowledge_level: "strong",
+            pass_status: "passed",
+            critical_error_count: 0,
+          },
+          critical_error_count: 0,
+        },
+      ],
+      total: 1,
+      next_cursor: null,
+    };
+    const client = adminClient(<T,>() => Promise.resolve(results as T));
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminResultsPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(
+      await screen.findByRole("table", { name: "Результати працівників" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Сертифіковано").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Відкрити" })).toHaveAttribute(
+      "href",
+      "/admin/results/employee-1",
+    );
+    expect(screen.queryByRole("columnheader", { name: /рейтинг/i })).not.toBeInTheDocument();
+  });
+
   it("renders Employees as a semantic table and creates an invitation with protected headers", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const employees: EmployeeListResponse = { items: [pendingEmployee], next_cursor: null };

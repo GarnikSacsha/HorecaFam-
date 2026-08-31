@@ -6,29 +6,22 @@ const links = [
   { to: "/admin/menu", label: "Меню" },
   { to: "/admin/content", label: "Навчальні матеріали" },
   { to: "/admin/questions", label: "Банк питань" },
-  { to: "/admin/results", label: "Результати", disabled: true },
+  { to: "/admin/results", label: "Результати" },
 ];
 
 function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav aria-label="Навігація адміністратора" className="admin-nav">
-      {links.map((link) =>
-        link.disabled ? (
-          <span key={link.to} className="admin-nav-link is-disabled" aria-disabled="true">
-            {link.label}
-            <span className="nav-note">Згодом</span>
-          </span>
-        ) : (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            onClick={onNavigate}
-            className={({ isActive }) => `admin-nav-link${isActive ? " is-active" : ""}`}
-          >
-            {link.label}
-          </NavLink>
-        ),
-      )}
+      {links.map((link) => (
+        <NavLink
+          key={link.to}
+          to={link.to}
+          onClick={onNavigate}
+          className={({ isActive }) => `admin-nav-link${isActive ? " is-active" : ""}`}
+        >
+          {link.label}
+        </NavLink>
+      ))}
     </nav>
   );
 }

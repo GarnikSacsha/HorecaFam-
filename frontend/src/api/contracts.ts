@@ -906,6 +906,71 @@ export interface PracticeReadinessResponse {
   can_start: boolean;
 }
 
+export interface FinalExamReadinessResponse {
+  training_version_id: string;
+  assessment_version_id: string | null;
+  status: "processing" | "ready" | "warning" | "blocked";
+  eligible_count: number;
+  required_count: 20;
+  coverage_evidence: Record<string, unknown>;
+  rotation_supported: boolean;
+  rotation_target_count: 40;
+  basis_fingerprint: string | null;
+  blocking_codes: string[];
+  warning_codes: string[];
+  computed_at: string | null;
+  can_start: boolean;
+}
+
+export interface FinalExamCertification {
+  result_id: string;
+  attempt_id: string;
+  certified_at: string;
+}
+
+export interface FinalExamResultSummary {
+  result_id: string;
+  attempt_id: string;
+  assessment_version_id: string;
+  completed_at: string;
+  correct_count: number;
+  total_count: 20;
+  score_basis_points: number;
+  knowledge_level: InteractiveKnowledgeLevel;
+  pass_status: "passed" | "failed";
+  critical_error_count: number;
+}
+
+export interface FinalExamHistoryResponse {
+  certification: FinalExamCertification | null;
+  latest: FinalExamResultSummary | null;
+  best: FinalExamResultSummary | null;
+  history: FinalExamResultSummary[];
+}
+
+export interface AdminEmployeeResultRow {
+  employee_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  location_id: string | null;
+  current_training_status: string | null;
+  latest_practice_score_basis_points: number | null;
+  certification: FinalExamCertification | null;
+  latest_final_exam: FinalExamResultSummary | null;
+  critical_error_count: number;
+}
+
+export interface AdminResultsOverviewResponse {
+  items: AdminEmployeeResultRow[];
+  total: number;
+  next_cursor: string | null;
+}
+
+export interface AdminEmployeeResultsDetailResponse {
+  employee: AdminEmployeeResultRow;
+  final_exam: FinalExamHistoryResponse;
+}
+
 export type InteractiveKnowledgeLevel = "very_weak" | "weak" | "good" | "strong";
 
 export interface InteractiveAttemptOption {

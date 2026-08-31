@@ -20,6 +20,10 @@ describe("application shells", () => {
       "href",
       "/admin/questions",
     );
+    expect(screen.getByRole("link", { name: "Результати" })).toHaveAttribute(
+      "href",
+      "/admin/results",
+    );
 
     const trigger = screen.getByRole("button", { name: "Відкрити навігацію" });
     await user.click(trigger);

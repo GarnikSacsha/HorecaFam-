@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError, createIdempotencyKey } from "../api/client";
 import type {
+  FinalExamReadinessResponse,
   InteractiveTrainingReadinessResponse,
   LocationSummary,
   MenuVersionCollection,
@@ -290,6 +291,9 @@ export function AdminQuestionBankPage() {
   const [practiceReadiness, setPracticeReadiness] = useState<PracticeReadinessResponse | null>(
     null,
   );
+  const [finalExamReadiness, setFinalExamReadiness] = useState<FinalExamReadinessResponse | null>(
+    null,
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -323,19 +327,24 @@ export function AdminQuestionBankPage() {
         setCandidateTotal(queue.total);
         setSelectedIds(new Set());
         if (publishedTraining) {
-          const [lessonReadiness, wholeMenuReadiness] = await Promise.all([
+          const [lessonReadiness, wholeMenuReadiness, examReadiness] = await Promise.all([
             client.request<InteractiveTrainingReadinessResponse>(
               `${base}/training-versions/${publishedTraining.id}/interactive-training/readiness`,
             ),
             client.request<PracticeReadinessResponse>(
               `${base}/training-versions/${publishedTraining.id}/practice/readiness`,
             ),
+            client.request<FinalExamReadinessResponse>(
+              `${base}/training-versions/${publishedTraining.id}/final-exam/readiness`,
+            ),
           ]);
           setReadiness(lessonReadiness);
           setPracticeReadiness(wholeMenuReadiness);
+          setFinalExamReadiness(examReadiness);
         } else {
           setReadiness(null);
           setPracticeReadiness(null);
+          setFinalExamReadiness(null);
         }
       } catch {
         setError("Не вдалося завантажити Банк питань. Перевірте з’єднання та повторіть.");
@@ -586,6 +595,37 @@ export function AdminQuestionBankPage() {
               {practiceReadiness.rotation_supported ? "підтримується" : "ще обмежена"}
             </p>
             {[...practiceReadiness.blocking_codes, ...practiceReadiness.warning_codes].map(
+              (code) => (
+                <code key={code}>{code}</code>
+              ),
+            )}
+          </article>
+        ) : null}
+        {finalExamReadiness ? (
+          <article
+            className="readiness-card practice-readiness-card"
+            aria-labelledby="final-exam-readiness-title"
+          >
+            <div className="readiness-card-heading">
+              <div>
+                <p className="eyebrow">Сертифікація</p>
+                <h3 id="final-exam-readiness-title">Готовність Final Exam</h3>
+              </div>
+              <StatusPill tone={readinessTone(finalExamReadiness.status)}>
+                {finalExamReadiness.status}
+              </StatusPill>
+            </div>
+            <p className="practice-readiness-count" role="status">
+              <strong>
+                {finalExamReadiness.eligible_count} / {finalExamReadiness.required_count}
+              </strong>{" "}
+              перевірених питань
+            </p>
+            <p>
+              Повна ротація від {finalExamReadiness.rotation_target_count}:{" "}
+              {finalExamReadiness.rotation_supported ? "підтримується" : "ще обмежена"}
+            </p>
+            {[...finalExamReadiness.blocking_codes, ...finalExamReadiness.warning_codes].map(
               (code) => (
                 <code key={code}>{code}</code>
               ),
