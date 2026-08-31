@@ -338,6 +338,63 @@ class InteractiveAttemptTakeoverResponse(StrictAssessmentSchema):
     replayed: bool
 
 
+class PracticeAttemptOptionResponse(StrictAssessmentSchema):
+    id: UUID
+    position: int = Field(ge=0)
+    payload: dict[str, object]
+
+
+class PracticeSavedAnswerResponse(StrictAssessmentSchema):
+    id: UUID
+    answer_payload: dict[str, object]
+    submitted_at: datetime
+
+
+class PracticeAttemptQuestionResponse(StrictAssessmentSchema):
+    id: UUID
+    position: int = Field(ge=0, le=9)
+    mechanic: str
+    prompt_payload: dict[str, object]
+    coverage_key: str
+    options: list[PracticeAttemptOptionResponse]
+    saved_answer: PracticeSavedAnswerResponse | None = None
+
+
+class PracticeAttemptResponse(StrictAssessmentSchema):
+    id: UUID
+    assignment_id: UUID
+    assessment_version_id: UUID
+    status: Literal["in_progress", "completed", "expired", "invalidated"]
+    presentation_locale: Literal["uk", "en"]
+    started_at: datetime
+    last_activity_at: datetime
+    expires_at: datetime
+    lease_generation: int = Field(ge=1)
+    writable: bool
+    answered_count: int = Field(ge=0, le=10)
+    questions: list[PracticeAttemptQuestionResponse]
+
+
+class PracticeAttemptStartResponse(StrictAssessmentSchema):
+    attempt: PracticeAttemptResponse
+    created: bool
+    replayed: bool
+
+
+class PracticeAttemptTakeoverResponse(StrictAssessmentSchema):
+    attempt_id: UUID
+    lease_generation: int = Field(ge=1)
+    replayed: bool
+
+
+class PracticeSummaryResponse(StrictAssessmentSchema):
+    availability: Literal["ready", "preparing", "unavailable", "paused"]
+    can_start: bool
+    reason_codes: list[str]
+    readiness_status: Literal["processing", "ready", "warning", "blocked"] | None
+    active_attempt: PracticeAttemptResponse | None
+
+
 class InteractiveAnswerRequest(StrictAssessmentSchema):
     attempt_question_id: UUID
     answer_payload: InteractiveAnswerPayload

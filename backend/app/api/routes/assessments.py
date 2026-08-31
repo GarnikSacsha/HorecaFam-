@@ -22,6 +22,10 @@ from app.schemas.assessment import (
     InteractiveAttemptTakeoverResponse,
     InteractiveTrainingReadinessResponse,
     LessonInteractiveTrainingSummaryResponse,
+    PracticeAttemptResponse,
+    PracticeAttemptStartResponse,
+    PracticeAttemptTakeoverResponse,
+    PracticeSummaryResponse,
     QuestionCandidateApprovalResponse,
     QuestionCandidateApproveRequest,
     QuestionCandidateBatchApprovalResponse,
@@ -44,6 +48,12 @@ from app.services.interactive_attempts import (
     takeover_interactive_attempt,
 )
 from app.services.interactive_history import get_lesson_interactive_training_summary
+from app.services.practice_attempts import (
+    get_practice_attempt,
+    get_practice_summary,
+    start_or_resume_practice_attempt,
+    takeover_practice_attempt,
+)
 from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
@@ -68,6 +78,96 @@ def _employee_scope(authorization: AuthorizationContext) -> tuple[UUID, UUID, UU
         authorization.organization_id,
         authorization.location_id,
         authorization.employee_profile_id,
+    )
+
+
+@router.get("/me/training/practice", response_model=PracticeSummaryResponse)
+async def get_practice_summary_route(
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeSummaryResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_practice_summary(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        session_id=authorization.session.id,
+    )
+
+
+@router.post("/me/training/practice/attempts", response_model=PracticeAttemptStartResponse)
+async def start_practice_attempt_route(
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    locale: Literal["uk", "en"] | None = None,
+) -> PracticeAttemptStartResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    presentation_locale = locale or ("en" if authorization.user.preferred_locale == "en" else "uk")
+    return await start_or_resume_practice_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        presentation_locale=presentation_locale,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.get("/me/training/practice/attempts/{attempt_id}", response_model=PracticeAttemptResponse)
+async def get_practice_attempt_route(
+    attempt_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeAttemptResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_practice_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        attempt_id=attempt_id,
+        session_id=authorization.session.id,
+    )
+
+
+@router.post(
+    "/me/training/practice/attempts/{attempt_id}/takeover",
+    response_model=PracticeAttemptTakeoverResponse,
+)
+async def takeover_practice_attempt_route(
+    attempt_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeAttemptTakeoverResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await takeover_practice_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        attempt_id=attempt_id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
     )
 
 

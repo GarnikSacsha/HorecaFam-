@@ -105,6 +105,10 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
     }
     assert expected_paths <= set(openapi["paths"])
     assert {
+        "/api/v1/me/training/practice",
+        "/api/v1/me/training/practice/attempts",
+        "/api/v1/me/training/practice/attempts/{attempt_id}",
+        "/api/v1/me/training/practice/attempts/{attempt_id}/takeover",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training/attempts",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}",
@@ -120,6 +124,16 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         "properties"
     ]
     assert "is_correct" not in safe_option_properties
+    practice_question_properties = openapi["components"]["schemas"][
+        "PracticeAttemptQuestionResponse"
+    ]["properties"]
+    assert "grading_payload" not in practice_question_properties
+    assert "explanation_payload" not in practice_question_properties
+    assert "provenance_snapshot" not in practice_question_properties
+    practice_option_properties = openapi["components"]["schemas"]["PracticeAttemptOptionResponse"][
+        "properties"
+    ]
+    assert "is_correct" not in practice_option_properties
 
 
 async def test_employee_answer_route_requires_an_authenticated_employee_session(
@@ -138,6 +152,20 @@ async def test_employee_answer_route_requires_an_authenticated_employee_session(
                 "option_id": str(uuid4()),
             },
             "lease_generation": 1,
+        },
+    )
+    assert response.status_code == 401
+    assert response.json()["code"] == "AUTHENTICATION_REQUIRED"
+
+
+async def test_practice_mutations_require_employee_session_csrf_and_idempotency(
+    auth_client: AsyncClient,
+) -> None:
+    response = await auth_client.post(
+        "/api/v1/me/training/practice/attempts",
+        headers={
+            "Idempotency-Key": "anonymous-practice-start",
+            "X-CSRF-Token": "not-a-session-token",
         },
     )
     assert response.status_code == 401
