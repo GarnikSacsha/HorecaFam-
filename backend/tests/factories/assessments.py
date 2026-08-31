@@ -5,6 +5,7 @@ from uuid import uuid4
 from app.models import (
     Assessment,
     AssessmentAttempt,
+    AssessmentEligibility,
     AssessmentQuestionPool,
     AssessmentReadiness,
     AssessmentVersion,
@@ -121,7 +122,7 @@ def make_question_option(
 
 def make_assessment(
     training: Training,
-    lesson_version: LessonVersion,
+    lesson_version: LessonVersion | None,
     **overrides: Any,
 ) -> Assessment:
     values: dict[str, Any] = {
@@ -129,7 +130,7 @@ def make_assessment(
         "organization_id": training.organization_id,
         "location_id": training.location_id,
         "training_id": training.id,
-        "lesson_id": lesson_version.lesson_id,
+        "lesson_id": lesson_version.lesson_id if lesson_version is not None else None,
         "assessment_type": "interactive_training",
     }
     values.update(overrides)
@@ -139,7 +140,7 @@ def make_assessment(
 def make_assessment_version(
     assessment: Assessment,
     training_version: TrainingVersion,
-    lesson_version: LessonVersion,
+    lesson_version: LessonVersion | None,
     **overrides: Any,
 ) -> AssessmentVersion:
     values: dict[str, Any] = {
@@ -148,11 +149,12 @@ def make_assessment_version(
         "location_id": assessment.location_id,
         "assessment_id": assessment.id,
         "training_version_id": training_version.id,
-        "lesson_id": lesson_version.lesson_id,
-        "lesson_version_id": lesson_version.id,
+        "lesson_id": lesson_version.lesson_id if lesson_version is not None else None,
+        "lesson_version_id": lesson_version.id if lesson_version is not None else None,
         "version_number": 1,
         "status": "published",
         "question_count": 5,
+        "threshold_percent": None,
         "feedback_policy": "immediate",
         "sampling_configuration": {},
     }
@@ -315,3 +317,26 @@ def make_attempt_result(attempt: AssessmentAttempt, **overrides: Any) -> Attempt
     }
     values.update(overrides)
     return AttemptResult(**values)
+
+
+def make_assessment_eligibility(
+    employee: EmployeeProfile,
+    assignment: TrainingAssignment,
+    target_assessment: Assessment,
+    earned_by_attempt: AssessmentAttempt,
+    **overrides: Any,
+) -> AssessmentEligibility:
+    values: dict[str, Any] = {
+        "id": uuid4(),
+        "organization_id": assignment.organization_id,
+        "location_id": assignment.location_id,
+        "training_id": assignment.training_id,
+        "employee_profile_id": employee.id,
+        "assignment_id": assignment.id,
+        "target_assessment_id": target_assessment.id,
+        "earned_by_attempt_id": earned_by_attempt.id,
+        "status": "earned",
+        "earned_at": datetime.now(UTC),
+    }
+    values.update(overrides)
+    return AssessmentEligibility(**values)

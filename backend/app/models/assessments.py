@@ -350,10 +350,23 @@ class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("lesson_id", "assessment_type", name="uq_assessments_lesson_type"),
         UniqueConstraint("id", "organization_id", "location_id", name="uq_assessments_scope"),
+        UniqueConstraint(
+            "id",
+            "organization_id",
+            "location_id",
+            "training_id",
+            name="uq_assessments_training_scope",
+        ),
         CheckConstraint(
             "assessment_type IN ('interactive_training', "
             "'whole_menu_knowledge_check', 'menu_final_exam')",
             name="assessment_type_allowed",
+        ),
+        CheckConstraint(
+            "(assessment_type = 'interactive_training' AND lesson_id IS NOT NULL) OR "
+            "(assessment_type IN ('whole_menu_knowledge_check', 'menu_final_exam') "
+            "AND lesson_id IS NULL)",
+            name="scope_matches_type",
         ),
         ForeignKeyConstraint(
             ["training_id", "organization_id", "location_id"],
@@ -361,13 +374,20 @@ class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="fk_assessments_training_scope",
             ondelete="RESTRICT",
         ),
+        Index(
+            "uq_assessments_training_type",
+            "training_id",
+            "assessment_type",
+            unique=True,
+            postgresql_where=text("lesson_id IS NULL"),
+        ),
     )
 
     organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     training_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
-    lesson_id: Mapped[UUID] = mapped_column(
-        _uuid(), ForeignKey("lessons.id", ondelete="RESTRICT"), nullable=False
+    lesson_id: Mapped[UUID | None] = mapped_column(
+        _uuid(), ForeignKey("lessons.id", ondelete="RESTRICT")
     )
     assessment_type: Mapped[str] = mapped_column(
         String(32), nullable=False, default=AssessmentType.INTERACTIVE_TRAINING.value
@@ -381,8 +401,16 @@ class AssessmentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UniqueConstraint("id", "assessment_id", name="uq_assessment_versions_assessment_scope"),
         CheckConstraint("version_number >= 1", name="version_number_positive"),
         CheckConstraint("status IN ('draft', 'published', 'archived')", name="status_allowed"),
-        CheckConstraint("question_count = 5", name="interactive_question_count"),
-        CheckConstraint("feedback_policy = 'immediate'", name="interactive_feedback_policy"),
+        CheckConstraint(
+            "(lesson_id IS NOT NULL AND lesson_version_id IS NOT NULL "
+            "AND question_count = 5 AND threshold_percent IS NULL "
+            "AND feedback_policy = 'immediate') OR "
+            "(lesson_id IS NULL AND lesson_version_id IS NULL "
+            "AND ((question_count = 10 AND threshold_percent = 40) "
+            "OR (question_count = 20 AND threshold_percent = 70)) "
+            "AND feedback_policy = 'after_final_submission')",
+            name="configuration_matches_scope",
+        ),
         CheckConstraint(
             "jsonb_typeof(sampling_configuration) = 'object'", name="sampling_configuration_object"
         ),
@@ -420,8 +448,8 @@ class AssessmentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     assessment_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     training_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
-    lesson_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
-    lesson_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    lesson_id: Mapped[UUID | None] = mapped_column(_uuid())
+    lesson_version_id: Mapped[UUID | None] = mapped_column(_uuid())
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(
         String(16),
@@ -432,8 +460,9 @@ class AssessmentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     question_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=5, server_default="5"
     )
+    threshold_percent: Mapped[int | None] = mapped_column(Integer)
     feedback_policy: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="immediate", server_default="immediate"
+        String(32), nullable=False, default="immediate", server_default="immediate"
     )
     sampling_configuration: Mapped[dict[str, object]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
@@ -502,7 +531,9 @@ class AssessmentReadiness(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "status IN ('processing', 'ready', 'warning', 'blocked')", name="status_allowed"
         ),
-        CheckConstraint("eligible_count >= 0 AND required_count = 5", name="counts_valid"),
+        CheckConstraint(
+            "eligible_count >= 0 AND required_count IN (5, 10, 20)", name="counts_valid"
+        ),
         CheckConstraint("length(basis_fingerprint) = 64", name="basis_fingerprint_length"),
         CheckConstraint(
             "jsonb_typeof(coverage_evidence) = 'object'", name="coverage_evidence_object"
@@ -552,12 +583,21 @@ class AssessmentAttempt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "training_id",
             name="uq_assessment_attempts_scope",
         ),
+        UniqueConstraint(
+            "id",
+            "employee_profile_id",
+            "assignment_id",
+            "organization_id",
+            "location_id",
+            "training_id",
+            name="uq_assessment_attempts_eligibility_scope",
+        ),
         CheckConstraint(
             "status IN ('in_progress', 'completed', 'expired', 'invalidated')",
             name="status_allowed",
         ),
         CheckConstraint("presentation_locale IN ('uk', 'en')", name="locale_allowed"),
-        CheckConstraint("question_count = 5", name="question_count_five"),
+        CheckConstraint("question_count IN (5, 10, 20)", name="question_count_allowed"),
         CheckConstraint("snapshot_schema_version >= 1", name="snapshot_schema_version_positive"),
         CheckConstraint("expires_at > started_at", name="expiry_after_start"),
         CheckConstraint(
@@ -637,7 +677,7 @@ class AttemptQuestion(UUIDPrimaryKeyMixin, Base):
         UniqueConstraint("attempt_id", "position", name="uq_attempt_questions_position"),
         UniqueConstraint("attempt_id", "question_version_id", name="uq_attempt_questions_version"),
         UniqueConstraint("id", "attempt_id", name="uq_attempt_questions_attempt_scope"),
-        CheckConstraint("position BETWEEN 0 AND 4", name="position_range"),
+        CheckConstraint("position BETWEEN 0 AND 19", name="position_range"),
         CheckConstraint(f"mechanic IN ({MECHANICS})", name="mechanic_allowed"),
         CheckConstraint("jsonb_typeof(prompt_payload) = 'object'", name="prompt_payload_object"),
         CheckConstraint("jsonb_typeof(grading_payload) = 'object'", name="grading_payload_object"),
@@ -759,13 +799,17 @@ class AttemptResult(UUIDPrimaryKeyMixin, Base):
     __table_args__ = (
         UniqueConstraint("attempt_id", name="uq_attempt_results_attempt"),
         CheckConstraint("correct_count BETWEEN 0 AND total_count", name="correct_count_range"),
-        CheckConstraint("total_count = 5", name="total_count_five"),
+        CheckConstraint("total_count IN (5, 10, 20)", name="total_count_allowed"),
         CheckConstraint("score_basis_points BETWEEN 0 AND 10000", name="score_range"),
         CheckConstraint(
             "knowledge_level IN ('very_weak', 'weak', 'good', 'strong')",
             name="knowledge_level_allowed",
         ),
-        CheckConstraint("pass_status IS NULL", name="interactive_pass_status_null"),
+        CheckConstraint(
+            "(total_count IN (5, 10) AND pass_status IS NULL) OR "
+            "(total_count = 20 AND pass_status IN ('passed', 'failed'))",
+            name="pass_status_matches_count",
+        ),
         CheckConstraint(
             "critical_error_count BETWEEN 0 AND total_count", name="critical_error_count_range"
         ),
@@ -792,3 +836,97 @@ class AttemptResult(UUIDPrimaryKeyMixin, Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class AssessmentEligibility(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "assessment_eligibilities"
+    __table_args__ = (
+        UniqueConstraint("earned_by_attempt_id", name="uq_assessment_eligibilities_earned_attempt"),
+        CheckConstraint("status IN ('earned', 'reset')", name="status_allowed"),
+        CheckConstraint(
+            "(status = 'earned' AND reset_at IS NULL AND reset_by_user_id IS NULL "
+            "AND reset_reason IS NULL) OR "
+            "(status = 'reset' AND reset_at IS NOT NULL AND reset_by_user_id IS NOT NULL "
+            "AND length(btrim(reset_reason)) BETWEEN 1 AND 500)",
+            name="status_timestamps_match",
+        ),
+        ForeignKeyConstraint(
+            ["employee_profile_id", "organization_id"],
+            ["employee_profiles.id", "employee_profiles.organization_id"],
+            name="fk_assessment_eligibilities_employee_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["assignment_id", "organization_id", "location_id", "training_id"],
+            [
+                "training_assignments.id",
+                "training_assignments.organization_id",
+                "training_assignments.location_id",
+                "training_assignments.training_id",
+            ],
+            name="fk_assessment_eligibilities_assignment_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["target_assessment_id", "organization_id", "location_id", "training_id"],
+            [
+                "assessments.id",
+                "assessments.organization_id",
+                "assessments.location_id",
+                "assessments.training_id",
+            ],
+            name="fk_assessment_eligibilities_target_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            [
+                "earned_by_attempt_id",
+                "employee_profile_id",
+                "assignment_id",
+                "organization_id",
+                "location_id",
+                "training_id",
+            ],
+            [
+                "assessment_attempts.id",
+                "assessment_attempts.employee_profile_id",
+                "assessment_attempts.assignment_id",
+                "assessment_attempts.organization_id",
+                "assessment_attempts.location_id",
+                "assessment_attempts.training_id",
+            ],
+            name="fk_assessment_eligibilities_attempt_scope",
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "uq_assessment_eligibilities_active",
+            "employee_profile_id",
+            "assignment_id",
+            "target_assessment_id",
+            unique=True,
+            postgresql_where=text("status = 'earned'"),
+        ),
+        Index(
+            "ix_assessment_eligibilities_employee_history",
+            "employee_profile_id",
+            "target_assessment_id",
+            "earned_at",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    training_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    employee_profile_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    assignment_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    target_assessment_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    earned_by_attempt_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="earned", server_default="earned"
+    )
+    earned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reset_by_user_id: Mapped[UUID | None] = mapped_column(
+        _uuid(), ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    reset_reason: Mapped[str | None] = mapped_column(String(500))

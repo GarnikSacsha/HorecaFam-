@@ -22,6 +22,7 @@ from app.models import (
 from tests.factories.assessments import (
     make_assessment,
     make_assessment_attempt,
+    make_assessment_eligibility,
     make_assessment_question_pool,
     make_assessment_readiness,
     make_assessment_version,
@@ -226,6 +227,126 @@ async def test_answer_is_unique_per_attempt_question(db_session: AsyncSession) -
         [
             make_submitted_answer(attempt, attempt_question),
             make_submitted_answer(attempt, attempt_question),
+        ]
+    )
+
+    await _assert_integrity_error(db_session)
+
+
+@pytest.mark.integration
+async def test_practice_persistence_earns_one_durable_final_exam_eligibility(
+    db_session: AsyncSession,
+) -> None:
+    context = await _make_context(db_session)
+    practice = make_assessment(
+        context.training,
+        None,
+        assessment_type="whole_menu_knowledge_check",
+    )
+    final_exam = make_assessment(
+        context.training,
+        None,
+        assessment_type="menu_final_exam",
+    )
+    db_session.add_all([practice, final_exam])
+    await db_session.flush()
+    practice_version = make_assessment_version(
+        practice,
+        context.training_version,
+        None,
+        question_count=10,
+        threshold_percent=40,
+        feedback_policy="after_final_submission",
+    )
+    db_session.add(practice_version)
+    await db_session.flush()
+    completed_at = datetime.now(UTC)
+    attempt = make_assessment_attempt(
+        context.employee,
+        context.assignment,
+        practice_version,
+        status="completed",
+        question_count=10,
+        completed_at=completed_at,
+    )
+    db_session.add(attempt)
+    await db_session.flush()
+    eligibility = make_assessment_eligibility(
+        context.employee,
+        context.assignment,
+        final_exam,
+        attempt,
+        earned_at=completed_at,
+    )
+    db_session.add(eligibility)
+
+    await db_session.commit()
+
+    assert practice.lesson_id is None
+    assert practice_version.threshold_percent == 40
+    assert eligibility.status == "earned"
+
+
+@pytest.mark.integration
+async def test_only_one_active_final_exam_eligibility_survives_database_enforcement(
+    db_session: AsyncSession,
+) -> None:
+    context = await _make_context(db_session)
+    practice = make_assessment(
+        context.training,
+        None,
+        assessment_type="whole_menu_knowledge_check",
+    )
+    final_exam = make_assessment(
+        context.training,
+        None,
+        assessment_type="menu_final_exam",
+    )
+    db_session.add_all([practice, final_exam])
+    await db_session.flush()
+    practice_version = make_assessment_version(
+        practice,
+        context.training_version,
+        None,
+        question_count=10,
+        threshold_percent=40,
+        feedback_policy="after_final_submission",
+    )
+    db_session.add(practice_version)
+    await db_session.flush()
+    completed_at = datetime.now(UTC)
+    first_attempt = make_assessment_attempt(
+        context.employee,
+        context.assignment,
+        practice_version,
+        status="completed",
+        question_count=10,
+        completed_at=completed_at,
+    )
+    second_attempt = make_assessment_attempt(
+        context.employee,
+        context.assignment,
+        practice_version,
+        status="completed",
+        question_count=10,
+        completed_at=completed_at,
+    )
+    db_session.add_all([first_attempt, second_attempt])
+    await db_session.flush()
+    db_session.add_all(
+        [
+            make_assessment_eligibility(
+                context.employee,
+                context.assignment,
+                final_exam,
+                first_attempt,
+            ),
+            make_assessment_eligibility(
+                context.employee,
+                context.assignment,
+                final_exam,
+                second_attempt,
+            ),
         ]
     )
 

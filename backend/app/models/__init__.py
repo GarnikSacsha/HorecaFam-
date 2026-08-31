@@ -1,6 +1,7 @@
 from app.models.assessments import (
     Assessment,
     AssessmentAttempt,
+    AssessmentEligibility,
     AssessmentQuestionPool,
     AssessmentReadiness,
     AssessmentVersion,
@@ -137,6 +138,7 @@ __all__ = [
     "AdminScope",
     "Assessment",
     "AssessmentAttempt",
+    "AssessmentEligibility",
     "AssessmentAttemptStatus",
     "AssessmentQuestionPool",
     "AssessmentReadiness",

@@ -45,6 +45,8 @@ INTERACTIVE_TRAINING_TABLES = {
     "submitted_answers",
 }
 
+PRACTICE_TABLES = {"assessment_eligibilities"}
+
 
 def database_settings() -> Settings:
     database_url = os.getenv("TEST_DATABASE_URL")
@@ -142,6 +144,7 @@ def test_metadata_contains_current_backend_tables() -> None:
         "allergens",
         "api_idempotency_records",
         "assessment_attempts",
+        "assessment_eligibilities",
         "assessment_question_pools",
         "assessment_readiness",
         "assessment_version_translations",
@@ -396,6 +399,31 @@ def test_deterministic_template_seed_migration_downgrades_and_upgrades() -> None
         command.upgrade(config, "head")
         active_rules = asyncio.run(generation_rules(settings))
         assert expected <= active_rules
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_practice_persistence_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        current_tables = asyncio.run(database_table_names(settings))
+        assert current_tables >= PRACTICE_TABLES
+        current_columns = asyncio.run(database_column_names(settings, "assessment_versions"))
+        assert "threshold_percent" in current_columns
+
+        command.downgrade(config, "0013_question_templates")
+        downgraded_tables = asyncio.run(database_table_names(settings))
+        downgraded_columns = asyncio.run(database_column_names(settings, "assessment_versions"))
+
+        assert PRACTICE_TABLES.isdisjoint(downgraded_tables)
+        assert "threshold_percent" not in downgraded_columns
     finally:
         command.upgrade(config, "head")
 
