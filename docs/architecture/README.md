@@ -1,8 +1,8 @@
 # Current Architecture
 
 This document describes the verified accepted implementation through CRA-64 Practice at
-`cc1c05a`. CRA-65 governs repository synchronization and ordinary publication. Canonical product
-behavior and contracts remain in Linear.
+`cc1c05a`, published with CRA-65 synchronization through `4164b9c`, plus the local CRA-67 Final
+Exam acceptance candidate. Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -269,8 +269,25 @@ Latest/Best distinct and idempotently earns eligibility at 4/10 without setting 
 The source-safe Practice pool admits verified component/allergen Questions and deterministic
 missing-component generation using stable Menu Item coverage keys. Category/description remain
 Interactive-only. Assembly/serving remains excluded because the current model has no approved
-structured authority. A target `menu_final_exam` root exists only for the eligibility FK; Final
-Exam Versions, Attempts, Results, routes and certification are not implemented.
+structured authority. A target `menu_final_exam` root originally established the eligibility FK;
+the local CRA-67 candidate now adds its Versions, Attempts, Results, routes and certification
+without a migration.
+
+## CRA-67 local Final Exam and Results candidate
+
+```text
+completed Assignment + durable Practice eligibility + balanced source-safe 20-question pool
+→ immutable Final Exam Attempt + seven-day effective inactivity + one writable device lease
+→ feedback-free idempotent Answers + explicit confirmed atomic finish
+→ exact 70% result + critical-error evidence + certification/history
+→ Employee result/review + Organization-scoped canonical Admin Results
+```
+
+The candidate reuses the accepted assessment persistence graph and `0014_practice_persistence`
+head. It adds no certification table: certification is derived and exposed from the canonical
+Final Exam result boundary. Passed certification does not expose a retake action; failed attempts
+can start an immediate retake in Slice 7. No leaderboard, Attention/Retakes administration,
+provider runtime or deployment is added.
 
 ## Test boundary
 
@@ -281,8 +298,8 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 ## Explicitly absent
 
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
-reference CRUD, Employee disable/reactivate lifecycle administration, Final Exam execution,
-certification Results, Attention/Retakes, provider integration, or deployed worker/resource. The
-frontend lives in [`../../frontend/`](../../frontend/) and includes the accepted CRA-64 Practice
-experience. Adding any absent capability requires a bounded Linear issue and approval. CRA-65 is
-the active bounded synchronization/publication issue; CRA-19 remains a separate visual-only track.
+reference CRUD, Employee disable/reactivate lifecycle administration, Attention/Retakes
+administration, provider integration, or deployed worker/resource. The frontend lives in
+[`../../frontend/`](../../frontend/) and includes accepted CRA-64 Practice plus the local CRA-67
+Final Exam/Admin Results candidate. Adding any absent capability requires a bounded Linear issue
+and approval. CRA-67 is active; CRA-19 remains a separate visual-only track.

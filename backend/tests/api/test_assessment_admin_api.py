@@ -33,6 +33,11 @@ async def test_candidate_generation_requires_admin_csrf_and_idempotency(
 
     monkeypatch.setattr(assessment_routes, "generate_question_candidates", fake_generate)
     monkeypatch.setattr(assessment_routes, "ensure_practice_readiness", fake_practice_readiness)
+    monkeypatch.setattr(
+        assessment_routes,
+        "ensure_final_exam_readiness",
+        fake_practice_readiness,
+    )
     url = (
         f"/api/v1/organizations/{organization_id}/locations/{location_id}/"
         "question-candidates/generate"

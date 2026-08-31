@@ -342,7 +342,7 @@ export function EmployeeFinalExamPage() {
       ) : null}
       {summary?.certification ? (
         <p className="practice-qualified-note" role="status">
-          Сертифікацію отримано. Final Exam можна повторити без втрати досягнутого статусу.
+          Сертифікацію отримано. Результат та незмінна історія спроб залишаються доступними.
         </p>
       ) : null}
       {availability ? (

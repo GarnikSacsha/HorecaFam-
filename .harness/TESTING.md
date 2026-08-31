@@ -25,7 +25,9 @@ CRA-60 planning and CRA-61 Interactive Training are accepted and Done. CRA-61 ev
 CRA-63 Practice planning and CRA-64 implementation are accepted and Done. CRA-64's exact evidence
 is recorded in
 [`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
-CRA-65 governs repository synchronization and ordinary publication.
+CRA-65 synchronization is published through `4164b9c`. CRA-66 Final Exam planning is accepted and
+Done. CRA-67 is a verified local acceptance candidate; exact evidence is recorded in
+[`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).
 
 ## Environment setup
 
@@ -257,5 +259,17 @@ feedback,
 durable Final Exam eligibility, Admin readiness and Employee/browser flows. The mandatory
 forty-scenario matrix and actual gate results are recorded in
 [`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
-CRA-64 is Done; CRA-65 governs documentation synchronization and the authorized ordinary push.
-PR, merge, provider and deployment gates remain separate.
+CRA-64 is Done and CRA-65 synchronization is published through `4164b9c`. Later push, PR, merge,
+provider and deployment gates remain separate.
+
+## CRA-67 Final Exam local candidate evidence
+
+The local eight-checkpoint candidate adds balanced 20-question Final Exam readiness and immutable
+Attempts, seven-day effective inactivity, feedback-free Answers, explicit finish, exact 70%
+passing, critical-error evidence, certification/history, canonical Admin Results and responsive
+Employee/Admin flows. The full real-PostgreSQL regression reports 445 passed, 0 failed, 0 skipped
+at 85% overall coverage; the new focused real-database acceptance test separately reports 1
+passed. Ruff, strict mypy, Prettier, ESLint, TypeScript and production build pass. Full Vitest
+reports 57 passed and full Playwright reports 21 passed; final focused reruns report 2 component
+tests and 3 browser executions passed. Alembic remains at `0014_practice_persistence`, with
+upgrade/current-head/no-drift checks green. CRA-67 is not yet accepted or published.

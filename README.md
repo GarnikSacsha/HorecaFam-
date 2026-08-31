@@ -14,10 +14,11 @@ accepted and Done. The nine CRA-57 checkpoints are fast-forward published throug
 CRA-58 documentation checkpoint follows that range. CRA-60 Slice 5 planning is accepted and Done.
 CRA-61 Interactive Training is accepted and Done as the eleven-commit local range
 `93ce970..614da3d`. CRA-62 is the bounded synchronization/publication checkpoint for that accepted
-range; exact remote publication evidence is recorded in Linear. CRA-63 Practice planning is
-accepted and Done. CRA-64 Practice is accepted and Done as the exact eight-commit local range
-`74c5741..cc1c05a`. CRA-65 is the active synchronization/publication checkpoint; the published
-baseline remains `c79db9d` until its authorized ordinary push completes. PR, merge, deployment,
+range; exact remote publication evidence is recorded in Linear. CRA-63 Practice planning and
+CRA-64 Practice are accepted and Done as the exact eight-commit range `74c5741..cc1c05a`; CRA-65
+synchronization is published through `4164b9c`. CRA-66 Final Exam planning is accepted and Done.
+CRA-67 Final Exam and canonical Results is a verified local eight-checkpoint acceptance candidate
+beginning at `6be8f4d`; it is not yet accepted or published. Push, PR, merge, deployment,
 providers, and production configuration remain separate gates. CRA-42 is unrelated Backlog work.
 
 ## Start here
@@ -34,9 +35,9 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed accepted
-  runtime through CRA-64 Practice.
+  runtime through CRA-64 Practice plus the local CRA-67 acceptance candidate.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright through accepted CRA-64 Practice.
+  Playwright through the local CRA-67 acceptance candidate.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -95,6 +96,9 @@ The accepted range ends at `614da3d`; CRA-62 governs repository synchronization 
 Accepted CRA-64 adds Training-scoped ten-Question Practice with final-only feedback,
 durable Final Exam eligibility, Admin readiness and Employee UI. Its executed evidence is recorded
 in [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
-The accepted range ends at `cc1c05a`; CRA-65 governs repository synchronization and publication.
-Final Exam execution, certification Results, Attention/Retakes, providers and deployment remain
-outside the accepted boundary.
+The accepted range ends at `cc1c05a`, and CRA-65 publishes its synchronization checkpoint through
+`4164b9c`. The local CRA-67 candidate adds 20-question Final Exam execution, final-only feedback,
+exact 70% passing, certification, failed-attempt immediate retake, and canonical Admin Results.
+Its evidence is in
+[`docs/testing/final-exam-slice-7-acceptance.md`](docs/testing/final-exam-slice-7-acceptance.md).
+Attention/Retakes administration, providers and deployment remain outside the local boundary.
