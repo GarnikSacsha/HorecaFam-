@@ -3,7 +3,11 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.training import ContentBlockWrite, validate_content_payload
+from app.schemas.training import (
+    ContentBlockWrite,
+    EmployeeTrainingHomeResponse,
+    validate_content_payload,
+)
 
 
 @pytest.mark.parametrize(
@@ -68,3 +72,17 @@ def test_unknown_fields_and_block_types_are_rejected() -> None:
             payload={"html": "<iframe src='https://example.com'></iframe>"},
             expected_revision=0,
         )
+
+
+def test_employee_home_contract_exposes_final_exam_as_a_bounded_next_action() -> None:
+    response = EmployeeTrainingHomeResponse(
+        assignment=None,
+        training=None,
+        modules=[],
+        progress=None,
+        next_action="open_final_exam",
+        content_locale="uk",
+        translation_fallback=False,
+    )
+
+    assert response.next_action == "open_final_exam"

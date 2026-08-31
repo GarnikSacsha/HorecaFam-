@@ -11,6 +11,14 @@ import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
 function assignmentCopy(response: EmployeeTrainingHomeResponse) {
+  if (response.next_action === "open_final_exam") {
+    return {
+      heading: "Час пройти Final Exam",
+      action: "Відкрити Final Exam",
+      note: "20 запитань без підказок. Результат і правильні відповіді з’являться лише після фінального підтвердження.",
+      to: "/employee/final-exam",
+    };
+  }
   if (response.next_action === "open_practice") {
     return {
       heading: "Час перевірити знання меню",

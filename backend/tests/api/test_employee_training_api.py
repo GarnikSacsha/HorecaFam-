@@ -507,7 +507,7 @@ async def test_employee_training_home_is_assignment_scoped_with_derived_progress
     qualified_home = await auth_client.get("/api/v1/me/training")
 
     assert qualified_home.status_code == 200
-    assert qualified_home.json()["next_action"] == "review_training"
+    assert qualified_home.json()["next_action"] == "open_final_exam"
     assert await db_session.get(AssessmentEligibility, eligibility.id) is not None
 
 

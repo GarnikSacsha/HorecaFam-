@@ -170,7 +170,7 @@ async def list_employee_training(
     next_action = "open_lesson"
     if progress.is_complete:
         next_action = (
-            "review_training"
+            "open_final_exam"
             if await has_final_exam_eligibility(db, assignment=assignment)
             else "open_practice"
         )

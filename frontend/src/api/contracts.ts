@@ -609,7 +609,7 @@ export interface TrainingProgressResponse {
 }
 
 export type EmployeeTrainingNextAction =
-  "open_lesson" | "open_practice" | "review_training" | "none";
+  "open_lesson" | "open_practice" | "open_final_exam" | "review_training" | "none";
 
 export interface EmployeeTrainingModuleSummary {
   id: string;
@@ -946,6 +946,116 @@ export interface FinalExamHistoryResponse {
   latest: FinalExamResultSummary | null;
   best: FinalExamResultSummary | null;
   history: FinalExamResultSummary[];
+}
+
+export interface FinalExamAttemptOption {
+  id: string;
+  position: number;
+  payload: Record<string, unknown>;
+}
+
+export interface FinalExamSavedAnswer {
+  id: string;
+  answer_payload: Record<string, unknown>;
+  submitted_at: string;
+}
+
+export interface FinalExamAttemptQuestion {
+  id: string;
+  position: number;
+  mechanic: string;
+  prompt_payload: Record<string, unknown>;
+  coverage_key: string;
+  options: FinalExamAttemptOption[];
+  saved_answer: FinalExamSavedAnswer | null;
+}
+
+export interface FinalExamAttempt {
+  id: string;
+  assignment_id: string;
+  assessment_version_id: string;
+  status: "in_progress" | "completed" | "expired" | "invalidated";
+  presentation_locale: "uk" | "en";
+  started_at: string;
+  last_activity_at: string;
+  expires_at: string;
+  lease_generation: number;
+  writable: boolean;
+  answered_count: number;
+  questions: FinalExamAttemptQuestion[];
+}
+
+export interface FinalExamAttemptStartResponse {
+  attempt: FinalExamAttempt;
+  created: boolean;
+  replayed: boolean;
+}
+
+export interface FinalExamAttemptTakeoverResponse {
+  attempt_id: string;
+  lease_generation: number;
+  replayed: boolean;
+}
+
+export interface FinalExamSummaryResponse {
+  availability:
+    | "no_assignment"
+    | "training_incomplete"
+    | "practice_required"
+    | "preparing"
+    | "eligible"
+    | "in_progress"
+    | "paused"
+    | "certified";
+  can_start: boolean;
+  reason_codes: string[];
+  readiness_status: "processing" | "ready" | "warning" | "blocked" | null;
+  active_attempt: FinalExamAttempt | null;
+  certification: FinalExamCertification | null;
+  retake_available: boolean;
+}
+
+export interface FinalExamAnswerResponse {
+  answer: FinalExamSavedAnswer;
+  answered_count: number;
+  next_question_id: string | null;
+  attempt_status: "in_progress";
+  replayed: boolean;
+}
+
+export interface FinalExamResult {
+  id: string;
+  correct_count: number;
+  total_count: 20;
+  score_basis_points: number;
+  knowledge_level: InteractiveKnowledgeLevel;
+  pass_status: "passed" | "failed";
+  critical_error_count: number;
+  section_breakdown: Record<string, unknown>;
+  completed_at: string;
+}
+
+export interface FinalExamQuestionReview {
+  attempt_question_id: string;
+  position: number;
+  mechanic: string;
+  prompt_payload: Record<string, unknown>;
+  options: FinalExamAttemptOption[];
+  answer: FinalExamSavedAnswer;
+  is_correct: boolean;
+  correct_option_ids: string[];
+  explanation_payload: Record<string, unknown>;
+  is_critical: boolean;
+  is_critical_error: boolean;
+}
+
+export interface FinalExamFinishResponse {
+  result: FinalExamResult;
+  certification: FinalExamCertification | null;
+  newly_certified: boolean;
+  retake_available: boolean;
+  review: FinalExamQuestionReview[];
+  replayed: boolean;
 }
 
 export interface AdminEmployeeResultRow {
