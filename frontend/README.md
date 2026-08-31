@@ -11,6 +11,9 @@ checkpoints are published through `d4e0184`, with the CRA-58 documentation check
 `5dc459b`.
 Accepted CRA-61 adds the Admin Question Bank/readiness experience and Employee Interactive
 Training flow. CRA-62 governs repository synchronization and publication evidence.
+Accepted CRA-64 adds Admin whole-menu Practice readiness and the responsive Employee Practice
+flow with feedback-free answer saving, explicit finish, final review, durable qualification and
+Latest/Best history. CRA-65 governs repository synchronization and ordinary publication.
 
 The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
@@ -71,8 +74,8 @@ responsive presentation, and the frontend-to-contract request boundary.
   feedback, retry-safe answer saving, resume, device takeover, Result and Latest/Best history.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
-Slice 6 Practice, Final Exam, team Results/analytics, provider delivery, password reset,
-deployment, and production environment configuration remain outside the accepted CRA-61 boundary.
+Final Exam, team Results/analytics, Attention/Retakes, provider delivery, password reset,
+deployment, and production environment configuration remain outside the accepted CRA-64 boundary.
 CRA-57 notification behavior is limited to safe transactional local jobs; it does not call an
 external provider.
 
@@ -86,3 +89,6 @@ desktop, tablet, and mobile projects in
 The accepted CRA-61 gate reports 45 Vitest tests and 15 Playwright executions; exact evidence and
 its remaining source-bound limitations are in
 [`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).
+The accepted CRA-64 gate reports 53 Vitest tests and 18 Playwright executions across the approved
+desktop, compact and mobile projects; exact evidence is in
+[`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).

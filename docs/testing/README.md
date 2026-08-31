@@ -12,7 +12,9 @@ evidence is recorded below. CRA-53 planning and CRA-54 implementation are accept
 CRA-54 is fast-forward published through `d955f6a`, and CRA-55 advances the prior documentation
 baseline to `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is fast-forward published
 through `d4e0184`, followed by CRA-58. CRA-60 planning and CRA-61 Interactive Training are accepted
-and Done; CRA-62 governs repository synchronization and publication evidence.
+and Done; CRA-62 governs their repository synchronization and publication evidence. CRA-63
+planning and CRA-64 Practice are accepted and Done; CRA-65 governs repository synchronization and
+ordinary publication.
 
 ## Current test layout
 
@@ -225,13 +227,14 @@ Denys accepted this evidence and the remaining source-bound generation limitatio
 repository publication and exact remote evidence; PR, merge, provider and deployment actions remain
 separately gated.
 
-## CRA-64 Practice local acceptance candidate
+## Accepted CRA-64 Practice evidence
 
-The 2026-08-31 local candidate implements the accepted CRA-63 forty-scenario Practice boundary:
+The accepted 2026-08-31 eight-checkpoint range implements the CRA-63 forty-scenario Practice
+boundary:
 ten distinct Menu Items, feedback-free Answer saves, explicit finish, Knowledge, critical-allergen
 evidence, durable Final Exam eligibility, Admin readiness and responsive Employee UI. Exact
 executed evidence, RED/GREEN corrections, limitations and the eight-checkpoint boundary are in
 [`practice-slice-6-acceptance.md`](practice-slice-6-acceptance.md).
 
-CRA-64 remains In Progress until Denys accepts the complete local evidence. No publication,
-deployment, provider or production action is implied.
+CRA-64 is Done; CRA-65 governs documentation synchronization and the authorized ordinary push.
+No deployment, provider or production action is implied.

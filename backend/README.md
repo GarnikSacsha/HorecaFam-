@@ -18,6 +18,13 @@ description Candidate generation, Admin review/publication/readiness, immutable 
 Attempts, progressive idempotent Answers with immediate feedback, Results and topic history.
 CRA-62 governs repository synchronization and publication.
 
+CRA-64 Practice is accepted and Done as `74c5741..cc1c05a`. It extends generic assessment
+persistence through Alembic head `0014_practice_persistence`, adds source-safe whole-menu Practice
+readiness, immutable ten-Question Attempts, feedback-free Answers, explicit atomic finish,
+Knowledge, critical-allergen evidence, durable Final Exam eligibility and Latest/Best history.
+CRA-65 governs repository synchronization and ordinary publication. Final Exam execution,
+certification Results and Attention/Retakes remain outside this boundary.
+
 Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository

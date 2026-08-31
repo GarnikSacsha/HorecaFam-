@@ -22,9 +22,10 @@ Done, and fast-forward published through `d4e0184`; its evidence is recorded in
 [`../docs/testing/training-assignment-slice-4-acceptance.md`](../docs/testing/training-assignment-slice-4-acceptance.md).
 CRA-60 planning and CRA-61 Interactive Training are accepted and Done. CRA-61 evidence is recorded in
 [`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).
-CRA-63 Practice planning is accepted and Done. CRA-64 is the active local implementation candidate;
-its evidence is recorded in
+CRA-63 Practice planning and CRA-64 implementation are accepted and Done. CRA-64's exact evidence
+is recorded in
 [`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
+CRA-65 governs repository synchronization and ordinary publication.
 
 ## Environment setup
 
@@ -249,11 +250,12 @@ Denys accepted this evidence and the remaining source-bound generation limitatio
 repository publication and exact remote evidence. No PR, merge, provider, or deployment action is
 authorized by the acceptance.
 
-## CRA-64 Practice candidate evidence
+## Accepted CRA-64 Practice evidence
 
-The 2026-08-31 candidate adds the accepted ten-Question Practice boundary, final-only feedback,
+The accepted 2026-08-31 eight-checkpoint range adds the ten-Question Practice boundary, final-only
+feedback,
 durable Final Exam eligibility, Admin readiness and Employee/browser flows. The mandatory
 forty-scenario matrix and actual gate results are recorded in
 [`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
-CRA-64 remains In Progress pending Denys acceptance; push, PR, merge, provider and deployment gates
-remain separate.
+CRA-64 is Done; CRA-65 governs documentation synchronization and the authorized ordinary push.
+PR, merge, provider and deployment gates remain separate.

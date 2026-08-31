@@ -1,8 +1,8 @@
 # Current Architecture
 
-This document describes the verified accepted implementation through CRA-61 at `614da3d`.
-CRA-62 governs repository synchronization and publication evidence. Canonical product behavior and
-contracts remain in Linear.
+This document describes the verified accepted implementation through CRA-64 Practice at
+`cc1c05a`. CRA-65 governs repository synchronization and ordinary publication. Canonical product
+behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -50,8 +50,9 @@ required environment configuration
   `0009_assignment_completion_rollout.py` creates the accepted CRA-57 Assignment, Completion and
   Rollout schema; accepted CRA-61 migrations `0010_interactive_training`,
   `0011_candidate_provenance`, and `0012_question_rules` add assessment execution, Candidate-owned
-  provenance and the active deterministic category rule. Local amendment migration
-  `0013_question_templates` adds component, allergen and description rules.
+  provenance and the active deterministic category rule. Migration `0013_question_templates` adds
+  component, allergen and description rules; `0014_practice_persistence` adds the accepted
+  Practice/eligibility persistence closure.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -250,7 +251,7 @@ ordering/assembly and matching snapshots, but automated templates for those mech
 absent because current sources do not prove preparation order or verified pair semantics. Slice 6
 Practice, Final Exam, provider execution and deployment remain absent.
 
-## CRA-64 Practice local candidate
+## Accepted CRA-64 Practice boundary
 
 ```text
 current completed Assignment + source-safe item-level Practice pool
@@ -282,6 +283,6 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
 reference CRUD, Employee disable/reactivate lifecycle administration, Final Exam execution,
 certification Results, Attention/Retakes, provider integration, or deployed worker/resource. The
-frontend lives in [`../../frontend/`](../../frontend/) and includes the CRA-64 local Practice
-candidate. Adding any absent capability requires a bounded Linear issue and approval. CRA-64 is
-the active bounded implementation issue; CRA-19 remains a separate visual-only track.
+frontend lives in [`../../frontend/`](../../frontend/) and includes the accepted CRA-64 Practice
+experience. Adding any absent capability requires a bounded Linear issue and approval. CRA-65 is
+the active bounded synchronization/publication issue; CRA-19 remains a separate visual-only track.

@@ -3,11 +3,12 @@
 **Bounded issue:** [CRA-64](https://linear.app/craftspacee/issue/CRA-64)  
 **Canonical plan:** [CRA-63](https://linear.app/craftspacee/issue/CRA-63)  
 **Evidence date:** 2026-08-31  
-**Status:** local acceptance candidate; awaiting Denys acceptance and separate publication approval
+**Status:** accepted by Denys; CRA-65 publication checkpoint in progress
 
 This record maps the mandatory 40-scenario CRA-63 gate to evidence that actually ran. Linear
-remains canonical for product, API, data, RBAC and acceptance contracts. This document does not
-claim acceptance, push, PR, merge, deployment, provider activity or production mutation.
+remains canonical for product, API, data, RBAC and acceptance contracts. CRA-65 owns exact remote
+publication evidence; no PR, merge, deployment, provider activity or production mutation is
+included.
 
 ## Delivered boundary
 
@@ -118,7 +119,7 @@ Environment: Python 3.12.10, native PostgreSQL 16, ignored test-only environment
 
 ## Local checkpoint boundary
 
-The authorized local range starts after published baseline `c79db9d` and contains exactly eight
-selective checkpoints. Checkpoints 1–7 end at `619c26e`; checkpoint 8 records the final evidence
-and synchronized repository/Linear state. Acceptance and any publication remain separate Denys
-gates.
+The accepted local range starts after published baseline `c79db9d` and contains exactly eight
+selective checkpoints. Checkpoints 1–7 end at `619c26e`; checkpoint 8 ends at `cc1c05a` and records
+the final evidence and synchronized repository/Linear state. CRA-65 owns the one documentation
+checkpoint and exact ordinary-publication evidence.

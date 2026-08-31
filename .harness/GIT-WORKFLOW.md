@@ -123,6 +123,7 @@ CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is publi
 `d955f6a`, and CRA-55 follows at `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is
 published through `d4e0184`, followed by the CRA-58 documentation checkpoint. CRA-60 and CRA-61
 are accepted and Done; CRA-62 published the accepted CRA-61 range through documentation endpoint
-`c79db9d`. CRA-63 planning is accepted and Done. CRA-64 is the active bounded local Practice
-implementation candidate under its authorized eight-checkpoint map. Acceptance, every remote
-action and every later product action remain separately gated.
+`c79db9d`. CRA-63 planning and CRA-64 Practice are accepted and Done; the exact local range is
+`74c5741..cc1c05a`. CRA-65 is the active bounded documentation synchronization/publication issue
+with one authorized selective documentation commit and one authorized ordinary non-force push.
+Every later product or remote action remains separately gated.

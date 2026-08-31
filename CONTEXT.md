@@ -16,6 +16,8 @@ CRA-57 adds Assignment, Completion, Progress and Rollout as nine fast-forward-pu
 through `d4e0184`; the CRA-58 documentation checkpoint containing this record follows that range.
 CRA-60 Slice 5 planning is accepted and Done. CRA-61 Interactive Training is accepted and Done as
 the eleven-commit local range `93ce970..614da3d`; CRA-62 governs repository synchronization and
+publication. CRA-63 planning and CRA-64 Practice are accepted and Done; the exact eight-commit
+local range is `74c5741..cc1c05a`, and CRA-65 governs its repository synchronization and
 publication. CRA-42 is unrelated Backlog work. Broader production administration,
 providers/workers, PR, merge, deployment, and production configuration require separate approval
 or later bounded issues.
@@ -139,23 +141,24 @@ CRA-62 is the bounded repository synchronization/publication checkpoint. Deploym
 execution remain separately gated and unperformed.
 
 [CRA-63](https://linear.app/craftspacee/issue/CRA-63) Practice planning is accepted and Done.
-[CRA-64](https://linear.app/craftspacee/issue/CRA-64) is the active bounded implementation issue.
-Its local eight-checkpoint candidate adds generic 5/10/20 assessment persistence through
+[CRA-64](https://linear.app/craftspacee/issue/CRA-64) Practice is accepted and Done. Its exact
+eight-checkpoint range `74c5741..cc1c05a` adds generic 5/10/20 assessment persistence through
 `0014_practice_persistence`, source-safe whole-menu Practice readiness, immutable ten-Question
 Attempts, feedback-free Answers, explicit finish, Knowledge, durable Final Exam eligibility,
 Latest/Best history, Admin readiness and responsive Employee UI. Evidence is in
 [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
-Acceptance and publication remain separate Denys gates.
+[CRA-65](https://linear.app/craftspacee/issue/CRA-65) is the active bounded documentation and
+ordinary-publication checkpoint. Final Exam planning remains a later separate gate.
 
 ## Repository map
 
-- [`backend/app`](backend/app): accepted prior runtime plus the CRA-64 local Practice candidate.
+- [`backend/app`](backend/app): accepted runtime through CRA-64 Practice.
 - [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
   head `0014_practice_persistence`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted prior Admin/Employee experiences plus the CRA-64 local Practice
-  candidate, component tests and Playwright evidence.
+- [`frontend`](frontend): accepted Admin/Employee experiences through CRA-64 Practice, component
+  tests and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

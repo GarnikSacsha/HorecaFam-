@@ -15,10 +15,10 @@ CRA-58 documentation checkpoint follows that range. CRA-60 Slice 5 planning is a
 CRA-61 Interactive Training is accepted and Done as the eleven-commit local range
 `93ce970..614da3d`. CRA-62 is the bounded synchronization/publication checkpoint for that accepted
 range; exact remote publication evidence is recorded in Linear. CRA-63 Practice planning is
-accepted and Done. CRA-64 is the active Slice 6 implementation issue; its eight-checkpoint local
-acceptance candidate is awaiting Denys acceptance and separate publication approval. PR, merge,
-deployment, providers, and production configuration remain separate gates. CRA-42 is unrelated
-Backlog work.
+accepted and Done. CRA-64 Practice is accepted and Done as the exact eight-commit local range
+`74c5741..cc1c05a`. CRA-65 is the active synchronization/publication checkpoint; the published
+baseline remains `c79db9d` until its authorized ordinary push completes. PR, merge, deployment,
+providers, and production configuration remain separate gates. CRA-42 is unrelated Backlog work.
 
 ## Start here
 
@@ -34,9 +34,9 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed accepted
-  runtime through CRA-61 Interactive Training.
+  runtime through CRA-64 Practice.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright through accepted CRA-61.
+  Playwright through accepted CRA-64 Practice.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -92,8 +92,9 @@ Results and Latest/Best history, plus responsive Admin and Employee UI. Its acce
 recorded in
 [`docs/testing/interactive-training-slice-5-acceptance.md`](docs/testing/interactive-training-slice-5-acceptance.md).
 The accepted range ends at `614da3d`; CRA-62 governs repository synchronization and publication.
-CRA-64's local candidate adds Training-scoped ten-Question Practice with final-only feedback,
+Accepted CRA-64 adds Training-scoped ten-Question Practice with final-only feedback,
 durable Final Exam eligibility, Admin readiness and Employee UI. Its executed evidence is recorded
 in [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
+The accepted range ends at `cc1c05a`; CRA-65 governs repository synchronization and publication.
 Final Exam execution, certification Results, Attention/Retakes, providers and deployment remain
-outside this boundary.
+outside the accepted boundary.
