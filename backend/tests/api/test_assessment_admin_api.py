@@ -110,6 +110,7 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         "/api/v1/me/training/practice/attempts/{attempt_id}",
         "/api/v1/me/training/practice/attempts/{attempt_id}/takeover",
         "/api/v1/me/training/practice/attempts/{attempt_id}/answer",
+        "/api/v1/me/training/practice/attempts/{attempt_id}/finish",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training/attempts",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}",
@@ -162,6 +163,16 @@ async def test_employee_answer_route_requires_an_authenticated_employee_session(
     )
     assert response.status_code == 401
     assert response.json()["code"] == "AUTHENTICATION_REQUIRED"
+    finish = await auth_client.post(
+        f"/api/v1/me/training/practice/attempts/{uuid4()}/finish",
+        headers={
+            "Idempotency-Key": "anonymous-practice-finish",
+            "X-CSRF-Token": "not-a-session-token",
+        },
+        json={"lease_generation": 1},
+    )
+    assert finish.status_code == 401
+    assert finish.json()["code"] == "AUTHENTICATION_REQUIRED"
 
 
 async def test_practice_mutations_require_employee_session_csrf_and_idempotency(

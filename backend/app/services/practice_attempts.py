@@ -237,6 +237,15 @@ async def get_practice_summary(
     employee_profile_id: UUID,
     session_id: UUID,
 ) -> PracticeSummaryResponse:
+    # Локальний імпорт розриває цикл: result-сервіс повторно використовує ownership цієї спроби.
+    from app.services.practice_results import get_practice_history
+
+    history = await get_practice_history(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+    )
     participation = await db.scalar(
         select(OrganizationMembership.training_participation_status)
         .join(EmployeeProfile, EmployeeProfile.membership_id == OrganizationMembership.id)
@@ -260,6 +269,9 @@ async def get_practice_summary(
             reason_codes=["ASSIGNMENT_UNAVAILABLE"],
             readiness_status=None,
             active_attempt=None,
+            qualified=history.qualified,
+            latest=history.latest,
+            best=history.best,
         )
     ready_row = await _practice_ready(db, assignment)
     active_attempt = None
@@ -282,6 +294,9 @@ async def get_practice_summary(
             reason_codes=["TRAINING_PAUSED"],
             readiness_status=ready_row[1].status if ready_row is not None else None,
             active_attempt=active_attempt,
+            qualified=history.qualified,
+            latest=history.latest,
+            best=history.best,
         )
     if assignment.status != "completed":
         return PracticeSummaryResponse(
@@ -290,6 +305,9 @@ async def get_practice_summary(
             reason_codes=["TRAINING_INCOMPLETE"],
             readiness_status=ready_row[1].status if ready_row is not None else None,
             active_attempt=active_attempt,
+            qualified=history.qualified,
+            latest=history.latest,
+            best=history.best,
         )
     if ready_row is None or ready_row[1].status not in {"ready", "warning"}:
         return PracticeSummaryResponse(
@@ -298,6 +316,9 @@ async def get_practice_summary(
             reason_codes=["ASSESSMENT_NOT_READY"],
             readiness_status=ready_row[1].status if ready_row is not None else None,
             active_attempt=active_attempt,
+            qualified=history.qualified,
+            latest=history.latest,
+            best=history.best,
         )
     return PracticeSummaryResponse(
         availability="ready",
@@ -305,6 +326,9 @@ async def get_practice_summary(
         reason_codes=[],
         readiness_status=ready_row[1].status,
         active_attempt=active_attempt,
+        qualified=history.qualified,
+        latest=history.latest,
+        best=history.best,
     )
 
 

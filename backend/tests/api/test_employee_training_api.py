@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
+    AssessmentEligibility,
     AuditEvent,
     EmployeeProfile,
     LessonCompletion,
@@ -24,6 +25,12 @@ from tests.api.test_employee_menu_api import attach_employee
 from tests.api.test_menu_admin_api import FIXED_NOW, arrange_admin, mutation_headers
 from tests.api.test_training_admin_api import FakePrivateStorage
 from tests.api.test_training_publication_api import arrange_ready_training, publish_menu
+from tests.factories.assessments import (
+    make_assessment,
+    make_assessment_attempt,
+    make_assessment_eligibility,
+    make_assessment_version,
+)
 from tests.factories.training import make_lesson_completion, make_training_assignment
 
 
@@ -133,7 +140,7 @@ async def test_employee_explicit_completion_is_the_only_progress_write(
         "percentage": 100,
         "is_complete": True,
     }
-    assert completed.json()["next_action"] == "review_training"
+    assert completed.json()["next_action"] == "open_practice"
     replayed = await auth_client.post(
         f"/api/v1/me/training/lessons/{lesson_version.lesson_id}/complete",
         headers={
@@ -455,8 +462,53 @@ async def test_employee_training_home_is_assignment_scoped_with_derived_progress
         "percentage": 100,
         "is_complete": True,
     }
-    assert completed_home.json()["next_action"] == "review_training"
+    assert completed_home.json()["next_action"] == "open_practice"
     assert completed_lesson.json()["completed"] is True
+
+    practice = make_assessment(
+        training,
+        None,
+        assessment_type="whole_menu_knowledge_check",
+    )
+    final_exam = make_assessment(training, None, assessment_type="menu_final_exam")
+    db_session.add_all([practice, final_exam])
+    await db_session.flush()
+    practice_version = make_assessment_version(
+        practice,
+        version,
+        None,
+        question_count=10,
+        threshold_percent=40,
+        feedback_policy="after_final_submission",
+    )
+    db_session.add(practice_version)
+    await db_session.flush()
+    qualifying_attempt = make_assessment_attempt(
+        profile,
+        assignment,
+        practice_version,
+        status="completed",
+        question_count=10,
+        completed_at=FIXED_NOW,
+        last_activity_at=FIXED_NOW,
+    )
+    db_session.add(qualifying_attempt)
+    await db_session.flush()
+    eligibility = make_assessment_eligibility(
+        profile,
+        assignment,
+        final_exam,
+        qualifying_attempt,
+        earned_at=FIXED_NOW,
+    )
+    db_session.add(eligibility)
+    await db_session.commit()
+
+    qualified_home = await auth_client.get("/api/v1/me/training")
+
+    assert qualified_home.status_code == 200
+    assert qualified_home.json()["next_action"] == "review_training"
+    assert await db_session.get(AssessmentEligibility, eligibility.id) is not None
 
 
 async def attach_training_assignment(

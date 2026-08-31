@@ -510,7 +510,7 @@ class EmployeeTrainingHomeResponse(StrictTrainingSchema):
     training: EmployeeTrainingSummary | None
     modules: list[EmployeeTrainingModuleSummary]
     progress: TrainingProgressResponse | None
-    next_action: Literal["open_lesson", "review_training", "none"]
+    next_action: Literal["open_lesson", "open_practice", "review_training", "none"]
     content_locale: Literal["uk", "en"]
     translation_fallback: bool
 
@@ -536,7 +536,7 @@ class LessonCompletionResponse(StrictTrainingSchema):
     completion: LessonCompletionSummary
     assignment: EmployeeTrainingAssignmentSummary
     progress: TrainingProgressResponse
-    next_action: Literal["open_lesson", "review_training", "none"]
+    next_action: Literal["open_lesson", "open_practice", "review_training", "none"]
 
 
 class TrainingRolloutCreate(StrictTrainingSchema):

@@ -387,12 +387,34 @@ class PracticeAttemptTakeoverResponse(StrictAssessmentSchema):
     replayed: bool
 
 
+class PracticeResultSummaryResponse(StrictAssessmentSchema):
+    result_id: UUID
+    attempt_id: UUID
+    assessment_version_id: UUID
+    completed_at: datetime
+    correct_count: int = Field(ge=0, le=10)
+    total_count: Literal[10] = 10
+    score_basis_points: int = Field(ge=0, le=10000)
+    knowledge_level: Literal["very_weak", "weak", "good", "strong"]
+    critical_error_count: int = Field(ge=0, le=10)
+
+
+class PracticeHistoryResponse(StrictAssessmentSchema):
+    qualified: bool
+    latest: PracticeResultSummaryResponse | None
+    best: PracticeResultSummaryResponse | None
+    history: list[PracticeResultSummaryResponse]
+
+
 class PracticeSummaryResponse(StrictAssessmentSchema):
     availability: Literal["ready", "preparing", "unavailable", "paused"]
     can_start: bool
     reason_codes: list[str]
     readiness_status: Literal["processing", "ready", "warning", "blocked"] | None
     active_attempt: PracticeAttemptResponse | None
+    qualified: bool
+    latest: PracticeResultSummaryResponse | None
+    best: PracticeResultSummaryResponse | None
 
 
 class PracticeAnswerRequest(StrictAssessmentSchema):
@@ -406,6 +428,43 @@ class PracticeAnswerResponse(StrictAssessmentSchema):
     answered_count: int = Field(ge=0, le=10)
     next_question_id: UUID | None
     attempt_status: Literal["in_progress"] = "in_progress"
+    replayed: bool
+
+
+class PracticeFinishRequest(StrictAssessmentSchema):
+    lease_generation: int = Field(ge=1)
+
+
+class PracticeResultResponse(StrictAssessmentSchema):
+    id: UUID
+    correct_count: int = Field(ge=0, le=10)
+    total_count: Literal[10] = 10
+    score_basis_points: int = Field(ge=0, le=10000)
+    knowledge_level: Literal["very_weak", "weak", "good", "strong"]
+    pass_status: None = None
+    critical_error_count: int = Field(ge=0, le=10)
+    completed_at: datetime
+
+
+class PracticeQuestionReviewResponse(StrictAssessmentSchema):
+    attempt_question_id: UUID
+    position: int = Field(ge=0, le=9)
+    mechanic: str
+    prompt_payload: dict[str, object]
+    options: list[PracticeAttemptOptionResponse]
+    answer: PracticeSavedAnswerResponse
+    is_correct: bool
+    correct_option_ids: list[UUID]
+    explanation_payload: dict[str, object]
+    is_critical: bool
+    is_critical_error: bool
+
+
+class PracticeFinishResponse(StrictAssessmentSchema):
+    result: PracticeResultResponse
+    qualified: bool
+    eligibility_earned: bool
+    review: list[PracticeQuestionReviewResponse]
     replayed: bool
 
 

@@ -1,11 +1,16 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.config import Settings
 from app.core.errors import APIError
-from app.models import OrganizationMembership, User
-from app.schemas.assessment import SingleChoiceSubmission
+from app.db.session import create_engine, create_session_factory
+from app.models import AssessmentEligibility, OrganizationMembership, User
+from app.schemas.assessment import PracticeFinishResponse, SingleChoiceSubmission
 from app.services.practice_answers import save_practice_answer
 from app.services.practice_attempts import (
     get_practice_attempt,
@@ -13,6 +18,7 @@ from app.services.practice_attempts import (
     start_or_resume_practice_attempt,
     takeover_practice_attempt,
 )
+from app.services.practice_results import finish_practice_attempt, get_practice_history
 from tests.factories.assessments import (
     make_assessment,
     make_assessment_question_pool,
@@ -26,15 +32,32 @@ from tests.factories.auth import make_session
 from tests.integration.test_assessment_persistence import _make_context
 
 
+async def _finish_in_independent_session(
+    session_factory: async_sessionmaker[AsyncSession],
+    **kwargs: Any,
+) -> PracticeFinishResponse | Exception:
+    async with session_factory() as session:
+        try:
+            return await finish_practice_attempt(session, **kwargs)
+        except Exception as exception:
+            return exception
+
+
 @pytest.mark.integration
 async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     db_session: AsyncSession,
+    migrated_test_database: Settings,
 ) -> None:
     context = await _make_context(db_session)
     membership = await db_session.get(OrganizationMembership, context.employee.membership_id)
     assert membership is not None
     employee_user = await db_session.get(User, membership.user_id)
     assert employee_user is not None
+    organization_id = context.assignment.organization_id
+    location_id = context.assignment.location_id
+    employee_profile_id = context.employee.id
+    employee_user_id = employee_user.id
+    assignment_id = context.assignment.id
     now = datetime.now(UTC)
     context.assignment.status = "completed"
     context.assignment.started_at = now
@@ -45,7 +68,12 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
         None,
         assessment_type="whole_menu_knowledge_check",
     )
-    db_session.add(practice)
+    final_exam = make_assessment(
+        context.training,
+        None,
+        assessment_type="menu_final_exam",
+    )
+    db_session.add_all([practice, final_exam])
     await db_session.flush()
     practice_version = make_assessment_version(
         practice,
@@ -62,7 +90,9 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     )
     db_session.add_all([practice_version, first_session])
     await db_session.flush()
+    first_session_id = first_session.id
 
+    context.question_version.is_critical = True
     question_versions = [context.question_version]
     for index in range(1, 10):
         question = make_question(context.candidate)
@@ -150,7 +180,7 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
             location_id=context.assignment.location_id,
             employee_profile_id=context.employee.id,
             actor_user_id=employee_user.id,
-            session_id=first_session.id,
+            session_id=first_session_id,
             attempt_id=started.attempt.id,
             attempt_question_id=attempt_question.id,
             answer_payload=SingleChoiceSubmission(
@@ -196,6 +226,7 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     )
     db_session.add(second_session)
     await db_session.flush()
+    second_session_id = second_session.id
     second_device = await get_practice_attempt(
         db_session,
         organization_id=context.assignment.organization_id,
@@ -221,37 +252,201 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     assert takeover.lease_generation == 2
     assert takeover.replayed is False
 
-    replacement = await start_or_resume_practice_attempt(
-        db_session,
+    finish_kwargs = dict(
         organization_id=context.assignment.organization_id,
         location_id=context.assignment.location_id,
         employee_profile_id=context.employee.id,
         actor_user_id=employee_user.id,
         session_id=second_session.id,
-        presentation_locale="uk",
-        idempotency_key="practice-start-after-expiry",
+        attempt_id=started.attempt.id,
+        lease_generation=2,
+        idempotency_key="practice-finish-1",
         request_id=second_session.id,
-        now=now + timedelta(days=8),
+        now=now + timedelta(minutes=1),
+    )
+    engine = create_engine(migrated_test_database)
+    session_factory = create_session_factory(engine)
+    try:
+        same_key_outcomes = await asyncio.gather(
+            _finish_in_independent_session(session_factory, **finish_kwargs),
+            _finish_in_independent_session(session_factory, **finish_kwargs),
+        )
+    finally:
+        await engine.dispose()
+    assert all(isinstance(outcome, PracticeFinishResponse) for outcome in same_key_outcomes)
+    same_key_responses = [
+        outcome for outcome in same_key_outcomes if isinstance(outcome, PracticeFinishResponse)
+    ]
+    assert {response.replayed for response in same_key_responses} == {False, True}
+    finished = next(response for response in same_key_responses if not response.replayed)
+    assert finished.result.correct_count == 10
+    assert finished.result.total_count == 10
+    assert finished.result.score_basis_points == 10000
+    assert finished.result.knowledge_level == "strong"
+    assert finished.result.pass_status is None
+    assert finished.result.critical_error_count == 0
+    assert finished.qualified is True
+    assert finished.eligibility_earned is True
+    assert finished.replayed is False
+    assert len(finished.review) == 10
+    assert all(item.is_correct for item in finished.review)
+    revealed_json = finished.model_dump_json()
+    assert "correct_option_ids" in revealed_json
+    assert "explanation_payload" in revealed_json
+    assert "grading_payload" not in revealed_json
+    assert "provenance" not in revealed_json
+    await db_session.rollback()
+    finish_replay = await finish_practice_attempt(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=employee_user_id,
+        session_id=second_session_id,
+        attempt_id=started.attempt.id,
+        lease_generation=2,
+        idempotency_key="practice-finish-1",
+        request_id=second_session_id,
+        now=now + timedelta(minutes=1),
+    )
+    assert finish_replay.replayed is True
+    assert finish_replay.result.id == finished.result.id
+
+    replacement = await start_or_resume_practice_attempt(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=employee_user_id,
+        session_id=second_session_id,
+        presentation_locale="uk",
+        idempotency_key="practice-start-after-finish",
+        request_id=second_session_id,
+        now=now + timedelta(minutes=2),
     )
     assert replacement.created is True
     assert replacement.attempt.id != started.attempt.id
     with pytest.raises(APIError) as device_conflict:
         await save_practice_answer(
             db_session,
-            organization_id=context.assignment.organization_id,
-            location_id=context.assignment.location_id,
-            employee_profile_id=context.employee.id,
-            actor_user_id=employee_user.id,
-            session_id=first_session.id,
+            organization_id=organization_id,
+            location_id=location_id,
+            employee_profile_id=employee_profile_id,
+            actor_user_id=employee_user_id,
+            session_id=first_session_id,
             attempt_id=replacement.attempt.id,
             attempt_question_id=replacement.attempt.questions[0].id,
             answer_payload=SingleChoiceSubmission(
                 mechanic="single_choice",
-                option_id=replacement.attempt.questions[0].options[0].id,
+                option_id=replacement.attempt.questions[0].options[1].id,
             ),
             lease_generation=1,
             idempotency_key="practice-answer-stale-device",
-            request_id=first_session.id,
-            now=now + timedelta(days=8),
+            request_id=second_session_id,
+            now=now + timedelta(minutes=2),
         )
     assert device_conflict.value.code == "ATTEMPT_DEVICE_CONFLICT"
+
+    for index, attempt_question in enumerate(replacement.attempt.questions):
+        await save_practice_answer(
+            db_session,
+            organization_id=organization_id,
+            location_id=location_id,
+            employee_profile_id=employee_profile_id,
+            actor_user_id=employee_user_id,
+            session_id=second_session_id,
+            attempt_id=replacement.attempt.id,
+            attempt_question_id=attempt_question.id,
+            answer_payload=SingleChoiceSubmission(
+                mechanic="single_choice", option_id=attempt_question.options[1].id
+            ),
+            lease_generation=1,
+            idempotency_key=f"practice-retry-answer-{index}",
+            request_id=second_session_id,
+            now=now + timedelta(minutes=2),
+        )
+    weak_finish_kwargs = dict(
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=employee_user_id,
+        session_id=second_session_id,
+        attempt_id=replacement.attempt.id,
+        lease_generation=1,
+        request_id=second_session_id,
+        now=now + timedelta(minutes=3),
+    )
+    engine = create_engine(migrated_test_database)
+    session_factory = create_session_factory(engine)
+    try:
+        different_key_outcomes = await asyncio.gather(
+            _finish_in_independent_session(
+                session_factory,
+                **weak_finish_kwargs,
+                idempotency_key="practice-finish-2-a",
+            ),
+            _finish_in_independent_session(
+                session_factory,
+                **weak_finish_kwargs,
+                idempotency_key="practice-finish-2-b",
+            ),
+        )
+    finally:
+        await engine.dispose()
+    weak_responses = [
+        outcome for outcome in different_key_outcomes if isinstance(outcome, PracticeFinishResponse)
+    ]
+    weak_conflicts = [
+        outcome for outcome in different_key_outcomes if isinstance(outcome, APIError)
+    ]
+    assert len(weak_responses) == 1
+    assert len(weak_conflicts) == 1
+    assert weak_conflicts[0].code == "ATTEMPT_ALREADY_COMPLETED"
+    weaker = weak_responses[0]
+    await db_session.rollback()
+    assert weaker.result.correct_count == 0
+    assert weaker.result.knowledge_level == "very_weak"
+    assert weaker.result.critical_error_count == 1
+    assert weaker.qualified is True
+    assert weaker.eligibility_earned is False
+
+    history = await get_practice_history(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+    )
+    assert history.qualified is True
+    assert history.latest is not None and history.latest.attempt_id == replacement.attempt.id
+    assert history.best is not None and history.best.attempt_id == started.attempt.id
+    assert [item.attempt_id for item in history.history] == [
+        replacement.attempt.id,
+        started.attempt.id,
+    ]
+    assert (
+        len(
+            list(
+                await db_session.scalars(
+                    select(AssessmentEligibility).where(
+                        AssessmentEligibility.employee_profile_id == employee_profile_id,
+                        AssessmentEligibility.assignment_id == assignment_id,
+                        AssessmentEligibility.status == "earned",
+                    )
+                )
+            )
+        )
+        == 1
+    )
+
+    completed_summary = await get_practice_summary(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        session_id=second_session_id,
+    )
+    assert completed_summary.qualified is True
+    assert completed_summary.latest is not None
+    assert completed_summary.latest.attempt_id == replacement.attempt.id
+    assert completed_summary.best is not None
+    assert completed_summary.best.attempt_id == started.attempt.id

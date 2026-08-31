@@ -30,6 +30,7 @@ from app.schemas.training import (
     EmployeeTrainingModuleSummary,
     EmployeeTrainingSummary,
 )
+from app.services.practice_results import has_final_exam_eligibility
 from app.services.private_storage import PrivateStorage
 from app.services.training_assets import ACCESS_EXPIRES_SECONDS
 from app.services.training_content import resolve_localized_payload
@@ -166,6 +167,13 @@ async def list_employee_training(
         requested_locale=requested_locale,
     )
     progress = await derive_training_progress(db, assignment=assignment)
+    next_action = "open_lesson"
+    if progress.is_complete:
+        next_action = (
+            "review_training"
+            if await has_final_exam_eligibility(db, assignment=assignment)
+            else "open_practice"
+        )
     return EmployeeTrainingHomeResponse(
         assignment=EmployeeTrainingAssignmentSummary(
             id=assignment.id,
@@ -181,7 +189,7 @@ async def list_employee_training(
         ),
         modules=modules,
         progress=progress,
-        next_action="review_training" if progress.is_complete else "open_lesson",
+        next_action=next_action,
         content_locale=(
             "en"
             if requested_locale == "en" and all(module.content_locale == "en" for module in modules)

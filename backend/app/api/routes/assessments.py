@@ -27,6 +27,9 @@ from app.schemas.assessment import (
     PracticeAttemptResponse,
     PracticeAttemptStartResponse,
     PracticeAttemptTakeoverResponse,
+    PracticeFinishRequest,
+    PracticeFinishResponse,
+    PracticeHistoryResponse,
     PracticeSummaryResponse,
     QuestionCandidateApprovalResponse,
     QuestionCandidateApproveRequest,
@@ -57,6 +60,7 @@ from app.services.practice_attempts import (
     start_or_resume_practice_attempt,
     takeover_practice_attempt,
 )
+from app.services.practice_results import finish_practice_attempt, get_practice_history
 from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
@@ -124,6 +128,20 @@ async def start_practice_attempt_route(
         idempotency_key=idempotency_key.strip(),
         request_id=UUID(get_request_id()),
         now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.get("/me/training/practice/attempts", response_model=PracticeHistoryResponse)
+async def get_practice_history_route(
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeHistoryResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_practice_history(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
     )
 
 
@@ -201,6 +219,38 @@ async def save_practice_answer_route(
         attempt_id=attempt_id,
         attempt_question_id=payload.attempt_question_id,
         answer_payload=payload.answer_payload,
+        lease_generation=payload.lease_generation,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.post(
+    "/me/training/practice/attempts/{attempt_id}/finish",
+    response_model=PracticeFinishResponse,
+)
+async def finish_practice_attempt_route(
+    attempt_id: UUID,
+    payload: PracticeFinishRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeFinishResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await finish_practice_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        attempt_id=attempt_id,
         lease_generation=payload.lease_generation,
         idempotency_key=idempotency_key.strip(),
         request_id=UUID(get_request_id()),

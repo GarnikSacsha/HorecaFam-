@@ -25,6 +25,7 @@ from app.services.idempotency import (
     request_fingerprint,
     reserve_idempotency,
 )
+from app.services.practice_results import has_final_exam_eligibility
 from app.services.training_progress import derive_training_progress
 
 
@@ -137,11 +138,18 @@ async def _completion_response(
     completion: LessonCompletion,
 ) -> LessonCompletionResponse:
     progress = await derive_training_progress(db, assignment=assignment)
+    next_action = "open_lesson"
+    if progress.is_complete:
+        next_action = (
+            "review_training"
+            if await has_final_exam_eligibility(db, assignment=assignment)
+            else "open_practice"
+        )
     return LessonCompletionResponse(
         completion=_completion_summary(completion),
         assignment=_assignment_summary(assignment),
         progress=progress,
-        next_action="review_training" if progress.is_complete else "open_lesson",
+        next_action=next_action,
     )
 
 
@@ -270,11 +278,10 @@ async def _complete_employee_training_lesson(
         )
     )
     await db.commit()
-    return LessonCompletionResponse(
-        completion=_completion_summary(completion),
-        assignment=_assignment_summary(assignment),
-        progress=progress,
-        next_action="review_training" if progress.is_complete else "open_lesson",
+    return await _completion_response(
+        db,
+        assignment=assignment,
+        completion=completion,
     )
 
 

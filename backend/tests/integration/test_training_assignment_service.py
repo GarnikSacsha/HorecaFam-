@@ -256,7 +256,7 @@ async def test_explicit_completion_transitions_assignment_from_in_progress_to_co
     assert second.assignment.started_at == FIXED_NOW
     assert second.assignment.completed_at == FIXED_NOW
     assert second.progress.percentage == 100
-    assert second.next_action == "review_training"
+    assert second.next_action == "open_practice"
     assert await db_session.scalar(select(func.count()).select_from(LessonCompletion)) == 2
 
 
