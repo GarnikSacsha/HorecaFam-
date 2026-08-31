@@ -419,6 +419,80 @@ class PracticeAttemptTakeoverResponse(StrictAssessmentSchema):
     replayed: bool
 
 
+class FinalExamAttemptOptionResponse(StrictAssessmentSchema):
+    id: UUID
+    position: int = Field(ge=0)
+    payload: dict[str, object]
+
+
+class FinalExamSavedAnswerResponse(StrictAssessmentSchema):
+    id: UUID
+    answer_payload: dict[str, object]
+    submitted_at: datetime
+
+
+class FinalExamAttemptQuestionResponse(StrictAssessmentSchema):
+    id: UUID
+    position: int = Field(ge=0, le=19)
+    mechanic: str
+    prompt_payload: dict[str, object]
+    coverage_key: str
+    options: list[FinalExamAttemptOptionResponse]
+    saved_answer: FinalExamSavedAnswerResponse | None = None
+
+
+class FinalExamAttemptResponse(StrictAssessmentSchema):
+    id: UUID
+    assignment_id: UUID
+    assessment_version_id: UUID
+    status: Literal["in_progress", "completed", "expired", "invalidated"]
+    presentation_locale: Literal["uk", "en"]
+    started_at: datetime
+    last_activity_at: datetime
+    expires_at: datetime
+    lease_generation: int = Field(ge=1)
+    writable: bool
+    answered_count: int = Field(ge=0, le=20)
+    questions: list[FinalExamAttemptQuestionResponse]
+
+
+class FinalExamAttemptStartResponse(StrictAssessmentSchema):
+    attempt: FinalExamAttemptResponse
+    created: bool
+    replayed: bool
+
+
+class FinalExamAttemptTakeoverResponse(StrictAssessmentSchema):
+    attempt_id: UUID
+    lease_generation: int = Field(ge=1)
+    replayed: bool
+
+
+class FinalExamCertificationResponse(StrictAssessmentSchema):
+    result_id: UUID
+    attempt_id: UUID
+    certified_at: datetime
+
+
+class FinalExamSummaryResponse(StrictAssessmentSchema):
+    availability: Literal[
+        "no_assignment",
+        "training_incomplete",
+        "practice_required",
+        "preparing",
+        "eligible",
+        "in_progress",
+        "paused",
+        "certified",
+    ]
+    can_start: bool
+    reason_codes: list[str]
+    readiness_status: Literal["processing", "ready", "warning", "blocked"] | None
+    active_attempt: FinalExamAttemptResponse | None
+    certification: FinalExamCertificationResponse | None
+    retake_available: bool = False
+
+
 class PracticeResultSummaryResponse(StrictAssessmentSchema):
     result_id: UUID
     attempt_id: UUID

@@ -15,7 +15,11 @@ from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.models import AuditEvent
 from app.schemas.assessment import (
+    FinalExamAttemptResponse,
+    FinalExamAttemptStartResponse,
+    FinalExamAttemptTakeoverResponse,
     FinalExamReadinessResponse,
+    FinalExamSummaryResponse,
     InteractiveAnswerRequest,
     InteractiveAnswerResponse,
     InteractiveAttemptResponse,
@@ -42,6 +46,12 @@ from app.schemas.assessment import (
     QuestionCandidateGenerateResponse,
     QuestionCandidateRejectRequest,
     QuestionCandidateResponse,
+)
+from app.services.final_exam_attempts import (
+    get_final_exam_attempt,
+    get_final_exam_summary,
+    start_or_resume_final_exam_attempt,
+    takeover_final_exam_attempt,
 )
 from app.services.final_exam_readiness import (
     ensure_final_exam_readiness,
@@ -93,6 +103,99 @@ def _employee_scope(authorization: AuthorizationContext) -> tuple[UUID, UUID, UU
         authorization.organization_id,
         authorization.location_id,
         authorization.employee_profile_id,
+    )
+
+
+@router.get("/me/training/final-exam", response_model=FinalExamSummaryResponse)
+async def get_final_exam_summary_route(
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamSummaryResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_final_exam_summary(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        session_id=authorization.session.id,
+    )
+
+
+@router.post("/me/training/final-exam/attempts", response_model=FinalExamAttemptStartResponse)
+async def start_final_exam_attempt_route(
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    locale: Literal["uk", "en"] | None = None,
+) -> FinalExamAttemptStartResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    presentation_locale = locale or ("en" if authorization.user.preferred_locale == "en" else "uk")
+    return await start_or_resume_final_exam_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        presentation_locale=presentation_locale,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.get(
+    "/me/training/final-exam/attempts/{attempt_id}",
+    response_model=FinalExamAttemptResponse,
+)
+async def get_final_exam_attempt_route(
+    attempt_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamAttemptResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_final_exam_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        attempt_id=attempt_id,
+        session_id=authorization.session.id,
+    )
+
+
+@router.post(
+    "/me/training/final-exam/attempts/{attempt_id}/takeover",
+    response_model=FinalExamAttemptTakeoverResponse,
+)
+async def takeover_final_exam_attempt_route(
+    attempt_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamAttemptTakeoverResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await takeover_final_exam_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        attempt_id=attempt_id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
     )
 
 
