@@ -3,7 +3,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import APIError
 from app.models import OrganizationMembership, User
+from app.schemas.assessment import SingleChoiceSubmission
+from app.services.practice_answers import save_practice_answer
 from app.services.practice_attempts import (
     get_practice_attempt,
     get_practice_summary,
@@ -140,6 +143,52 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     assert replay.replayed is True
     assert replay.attempt.id == started.attempt.id
 
+    for index, attempt_question in enumerate(started.attempt.questions):
+        answer = await save_practice_answer(
+            db_session,
+            organization_id=context.assignment.organization_id,
+            location_id=context.assignment.location_id,
+            employee_profile_id=context.employee.id,
+            actor_user_id=employee_user.id,
+            session_id=first_session.id,
+            attempt_id=started.attempt.id,
+            attempt_question_id=attempt_question.id,
+            answer_payload=SingleChoiceSubmission(
+                mechanic="single_choice", option_id=attempt_question.options[0].id
+            ),
+            lease_generation=1,
+            idempotency_key=f"practice-answer-{index}",
+            request_id=first_session.id,
+            now=now,
+        )
+        assert answer.attempt_status == "in_progress"
+        safe_answer = answer.model_dump_json()
+        assert "is_correct" not in safe_answer
+        assert "correct_option" not in safe_answer
+        assert "explanation" not in safe_answer
+        assert "grading" not in safe_answer
+        assert "provenance" not in safe_answer
+    answer_replay = await save_practice_answer(
+        db_session,
+        organization_id=context.assignment.organization_id,
+        location_id=context.assignment.location_id,
+        employee_profile_id=context.employee.id,
+        actor_user_id=employee_user.id,
+        session_id=first_session.id,
+        attempt_id=started.attempt.id,
+        attempt_question_id=started.attempt.questions[0].id,
+        answer_payload=SingleChoiceSubmission(
+            mechanic="single_choice",
+            option_id=started.attempt.questions[0].options[0].id,
+        ),
+        lease_generation=1,
+        idempotency_key="practice-answer-0",
+        request_id=first_session.id,
+        now=now,
+    )
+    assert answer_replay.replayed is True
+    assert answer_replay.answered_count == 10
+
     second_session = make_session(
         employee_user,
         token_hash="7" * 64,
@@ -186,3 +235,23 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     )
     assert replacement.created is True
     assert replacement.attempt.id != started.attempt.id
+    with pytest.raises(APIError) as device_conflict:
+        await save_practice_answer(
+            db_session,
+            organization_id=context.assignment.organization_id,
+            location_id=context.assignment.location_id,
+            employee_profile_id=context.employee.id,
+            actor_user_id=employee_user.id,
+            session_id=first_session.id,
+            attempt_id=replacement.attempt.id,
+            attempt_question_id=replacement.attempt.questions[0].id,
+            answer_payload=SingleChoiceSubmission(
+                mechanic="single_choice",
+                option_id=replacement.attempt.questions[0].options[0].id,
+            ),
+            lease_generation=1,
+            idempotency_key="practice-answer-stale-device",
+            request_id=first_session.id,
+            now=now + timedelta(days=8),
+        )
+    assert device_conflict.value.code == "ATTEMPT_DEVICE_CONFLICT"

@@ -109,6 +109,7 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         "/api/v1/me/training/practice/attempts",
         "/api/v1/me/training/practice/attempts/{attempt_id}",
         "/api/v1/me/training/practice/attempts/{attempt_id}/takeover",
+        "/api/v1/me/training/practice/attempts/{attempt_id}/answer",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training",
         "/api/v1/me/training/lessons/{lesson_id}/interactive-training/attempts",
         "/api/v1/me/training/interactive-training/attempts/{attempt_id}",
@@ -134,6 +135,11 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
         "properties"
     ]
     assert "is_correct" not in practice_option_properties
+    practice_answer_properties = openapi["components"]["schemas"]["PracticeAnswerResponse"][
+        "properties"
+    ]
+    assert "feedback" not in practice_answer_properties
+    assert "result" not in practice_answer_properties
 
 
 async def test_employee_answer_route_requires_an_authenticated_employee_session(

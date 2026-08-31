@@ -395,6 +395,20 @@ class PracticeSummaryResponse(StrictAssessmentSchema):
     active_attempt: PracticeAttemptResponse | None
 
 
+class PracticeAnswerRequest(StrictAssessmentSchema):
+    attempt_question_id: UUID
+    answer_payload: InteractiveAnswerPayload
+    lease_generation: int = Field(ge=1)
+
+
+class PracticeAnswerResponse(StrictAssessmentSchema):
+    answer: PracticeSavedAnswerResponse
+    answered_count: int = Field(ge=0, le=10)
+    next_question_id: UUID | None
+    attempt_status: Literal["in_progress"] = "in_progress"
+    replayed: bool
+
+
 class InteractiveAnswerRequest(StrictAssessmentSchema):
     attempt_question_id: UUID
     answer_payload: InteractiveAnswerPayload

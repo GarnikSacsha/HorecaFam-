@@ -22,6 +22,8 @@ from app.schemas.assessment import (
     InteractiveAttemptTakeoverResponse,
     InteractiveTrainingReadinessResponse,
     LessonInteractiveTrainingSummaryResponse,
+    PracticeAnswerRequest,
+    PracticeAnswerResponse,
     PracticeAttemptResponse,
     PracticeAttemptStartResponse,
     PracticeAttemptTakeoverResponse,
@@ -48,6 +50,7 @@ from app.services.interactive_attempts import (
     takeover_interactive_attempt,
 )
 from app.services.interactive_history import get_lesson_interactive_training_summary
+from app.services.practice_answers import save_practice_answer
 from app.services.practice_attempts import (
     get_practice_attempt,
     get_practice_summary,
@@ -165,6 +168,40 @@ async def takeover_practice_attempt_route(
         actor_user_id=authorization.user.id,
         session_id=authorization.session.id,
         attempt_id=attempt_id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.post(
+    "/me/training/practice/attempts/{attempt_id}/answer",
+    response_model=PracticeAnswerResponse,
+)
+async def save_practice_answer_route(
+    attempt_id: UUID,
+    payload: PracticeAnswerRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeAnswerResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await save_practice_answer(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        attempt_id=attempt_id,
+        attempt_question_id=payload.attempt_question_id,
+        answer_payload=payload.answer_payload,
+        lease_generation=payload.lease_generation,
         idempotency_key=idempotency_key.strip(),
         request_id=UUID(get_request_id()),
         now=cast(Clock, request.app.state.clock)(),
