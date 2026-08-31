@@ -5,6 +5,7 @@ import type {
   InteractiveTrainingReadinessResponse,
   LocationSummary,
   MenuVersionCollection,
+  PracticeReadinessResponse,
   QuestionCandidateCollection,
   QuestionCandidateEditedPayload,
   QuestionCandidateGenerateResponse,
@@ -286,6 +287,9 @@ export function AdminQuestionBankPage() {
   const [candidateTotal, setCandidateTotal] = useState(0);
   const [candidateFilter, setCandidateFilter] = useState<CandidateFilter>("needs_review");
   const [readiness, setReadiness] = useState<InteractiveTrainingReadinessResponse | null>(null);
+  const [practiceReadiness, setPracticeReadiness] = useState<PracticeReadinessResponse | null>(
+    null,
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -318,13 +322,21 @@ export function AdminQuestionBankPage() {
         setCandidates(queue.items);
         setCandidateTotal(queue.total);
         setSelectedIds(new Set());
-        setReadiness(
-          publishedTraining
-            ? await client.request<InteractiveTrainingReadinessResponse>(
-                `${base}/training-versions/${publishedTraining.id}/interactive-training/readiness`,
-              )
-            : null,
-        );
+        if (publishedTraining) {
+          const [lessonReadiness, wholeMenuReadiness] = await Promise.all([
+            client.request<InteractiveTrainingReadinessResponse>(
+              `${base}/training-versions/${publishedTraining.id}/interactive-training/readiness`,
+            ),
+            client.request<PracticeReadinessResponse>(
+              `${base}/training-versions/${publishedTraining.id}/practice/readiness`,
+            ),
+          ]);
+          setReadiness(lessonReadiness);
+          setPracticeReadiness(wholeMenuReadiness);
+        } else {
+          setReadiness(null);
+          setPracticeReadiness(null);
+        }
       } catch {
         setError("Не вдалося завантажити Банк питань. Перевірте з’єднання та повторіть.");
       } finally {
@@ -549,6 +561,37 @@ export function AdminQuestionBankPage() {
             </span>
           ) : null}
         </div>
+        {practiceReadiness ? (
+          <article
+            className="readiness-card practice-readiness-card"
+            aria-labelledby="practice-readiness-title"
+          >
+            <div className="readiness-card-heading">
+              <div>
+                <p className="eyebrow">Усе Published меню</p>
+                <h3 id="practice-readiness-title">Готовність Практики</h3>
+              </div>
+              <StatusPill tone={readinessTone(practiceReadiness.status)}>
+                {practiceReadiness.status}
+              </StatusPill>
+            </div>
+            <p className="practice-readiness-count" role="status" aria-atomic="true">
+              <strong>
+                {practiceReadiness.eligible_count} / {practiceReadiness.required_count}
+              </strong>{" "}
+              різних позицій меню
+            </p>
+            <p>
+              Повна ротація від {practiceReadiness.rotation_target_count}:{" "}
+              {practiceReadiness.rotation_supported ? "підтримується" : "ще обмежена"}
+            </p>
+            {[...practiceReadiness.blocking_codes, ...practiceReadiness.warning_codes].map(
+              (code) => (
+                <code key={code}>{code}</code>
+              ),
+            )}
+          </article>
+        ) : null}
         {readiness?.lessons.length ? (
           <div className="readiness-grid">
             {readiness.lessons.map((lesson) => (

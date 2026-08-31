@@ -30,6 +30,7 @@ from app.schemas.assessment import (
     PracticeFinishRequest,
     PracticeFinishResponse,
     PracticeHistoryResponse,
+    PracticeReadinessResponse,
     PracticeSummaryResponse,
     QuestionCandidateApprovalResponse,
     QuestionCandidateApproveRequest,
@@ -65,7 +66,9 @@ from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
     approve_question_candidate_batch,
+    ensure_practice_readiness,
     get_interactive_training_readiness,
+    get_practice_readiness,
     get_question_candidate,
     list_question_candidates,
     reject_question_candidate,
@@ -434,6 +437,14 @@ async def generate_question_candidates_route(
         menu_version_id=payload.menu_version_id,
         training_version_id=payload.training_version_id,
     )
+    await ensure_practice_readiness(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        training_version_id=payload.training_version_id,
+        actor_user_id=authorization.user.id,
+        now=now,
+    )
     if replay is None:
         await reserve_idempotency(
             db,
@@ -609,6 +620,26 @@ async def interactive_training_readiness_route(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> InteractiveTrainingReadinessResponse:
     return await get_interactive_training_readiness(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        training_version_id=version_id,
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/practice/readiness",
+    response_model=PracticeReadinessResponse,
+)
+async def practice_readiness_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PracticeReadinessResponse:
+    return await get_practice_readiness(
         db,
         organization_id=organization_id,
         location_id=location_id,

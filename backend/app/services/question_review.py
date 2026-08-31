@@ -33,6 +33,7 @@ from app.schemas.assessment import (
     CandidateSourceResponse,
     InteractiveTrainingReadinessResponse,
     LessonAssessmentReadinessResponse,
+    PracticeReadinessResponse,
     QuestionCandidateApprovalResponse,
     QuestionCandidateBatchApprovalResponse,
     QuestionCandidateBatchItem,
@@ -88,12 +89,14 @@ async def ensure_practice_readiness(
     now: datetime,
 ) -> AssessmentReadiness:
     training_version = await db.scalar(
-        select(TrainingVersion).where(
+        select(TrainingVersion)
+        .where(
             TrainingVersion.id == training_version_id,
             TrainingVersion.organization_id == organization_id,
             TrainingVersion.location_id == location_id,
             TrainingVersion.status == "published",
         )
+        .with_for_update()
     )
     if training_version is None:
         raise _not_found()
@@ -112,6 +115,23 @@ async def ensure_practice_readiness(
             assessment_type="whole_menu_knowledge_check",
         )
         db.add(assessment)
+        await db.flush()
+    final_exam = await db.scalar(
+        select(Assessment).where(
+            Assessment.training_id == training_version.training_id,
+            Assessment.assessment_type == "menu_final_exam",
+        )
+    )
+    if final_exam is None:
+        db.add(
+            Assessment(
+                organization_id=organization_id,
+                location_id=location_id,
+                training_id=training_version.training_id,
+                lesson_id=None,
+                assessment_type="menu_final_exam",
+            )
+        )
         await db.flush()
     version = await db.scalar(
         select(AssessmentVersion).where(
@@ -272,6 +292,73 @@ async def ensure_practice_readiness(
             setattr(readiness, key, value)
     await db.flush()
     return readiness
+
+
+async def get_practice_readiness(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    training_version_id: UUID,
+) -> PracticeReadinessResponse:
+    version = await db.scalar(
+        select(TrainingVersion).where(
+            TrainingVersion.id == training_version_id,
+            TrainingVersion.organization_id == organization_id,
+            TrainingVersion.location_id == location_id,
+        )
+    )
+    if version is None:
+        raise _not_found()
+    row = (
+        await db.execute(
+            select(AssessmentVersion, AssessmentReadiness)
+            .join(Assessment, Assessment.id == AssessmentVersion.assessment_id)
+            .join(
+                AssessmentReadiness,
+                AssessmentReadiness.assessment_version_id == AssessmentVersion.id,
+            )
+            .where(
+                AssessmentVersion.training_version_id == training_version_id,
+                AssessmentVersion.status == "published",
+                Assessment.assessment_type == "whole_menu_knowledge_check",
+            )
+            .order_by(AssessmentVersion.version_number.desc())
+            .limit(1)
+        )
+    ).first()
+    if row is None:
+        return PracticeReadinessResponse(
+            training_version_id=training_version_id,
+            assessment_version_id=None,
+            status="processing",
+            eligible_count=0,
+            required_count=10,
+            coverage_evidence={"distinct_menu_item_count": 0, "coverage_keys": []},
+            rotation_supported=False,
+            rotation_target_count=20,
+            basis_fingerprint=None,
+            blocking_codes=["ASSESSMENT_NOT_CONFIGURED"],
+            warning_codes=[],
+            computed_at=None,
+            can_start=False,
+        )
+    assessment_version, readiness = row._tuple()
+    return PracticeReadinessResponse(
+        training_version_id=training_version_id,
+        assessment_version_id=assessment_version.id,
+        status=readiness.status,
+        eligible_count=readiness.eligible_count,
+        required_count=10,
+        coverage_evidence=readiness.coverage_evidence,
+        rotation_supported=readiness.rotation_supported,
+        rotation_target_count=20,
+        basis_fingerprint=readiness.basis_fingerprint,
+        blocking_codes=readiness.blocking_codes,
+        warning_codes=readiness.warning_codes,
+        computed_at=readiness.computed_at,
+        can_start=readiness.status in {"ready", "warning"},
+    )
 
 
 def _candidate_response(
@@ -674,6 +761,14 @@ async def _publish_candidate(
     candidate.revision += 1
     await db.flush()
     readiness = await recompute_readiness(db, assessment_version, now=now)
+    await ensure_practice_readiness(
+        db,
+        organization_id=candidate.organization_id,
+        location_id=candidate.location_id,
+        training_version_id=candidate.training_version_id,
+        actor_user_id=actor_user_id,
+        now=now,
+    )
     db.add(
         AuditEvent(
             organization_id=candidate.organization_id,

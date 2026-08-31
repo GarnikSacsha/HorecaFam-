@@ -229,6 +229,22 @@ class InteractiveTrainingReadinessResponse(StrictAssessmentSchema):
     lessons: list[LessonAssessmentReadinessResponse]
 
 
+class PracticeReadinessResponse(StrictAssessmentSchema):
+    training_version_id: UUID
+    assessment_version_id: UUID | None
+    status: Literal["processing", "ready", "warning", "blocked"]
+    eligible_count: int = Field(ge=0)
+    required_count: Literal[10] = 10
+    coverage_evidence: dict[str, object]
+    rotation_supported: bool
+    rotation_target_count: Literal[20] = 20
+    basis_fingerprint: str | None
+    blocking_codes: list[str]
+    warning_codes: list[str]
+    computed_at: datetime | None
+    can_start: bool
+
+
 class QuestionCandidateApprovalResponse(StrictAssessmentSchema):
     candidate: QuestionCandidateResponse
     question_version_id: UUID

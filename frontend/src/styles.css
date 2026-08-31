@@ -1889,6 +1889,21 @@ h1 {
   padding: 1rem;
 }
 
+.practice-readiness-card {
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--brand-provisional) 34%, var(--border-subtle));
+  background: color-mix(in srgb, var(--info-soft) 52%, var(--surface-raised));
+}
+
+.practice-readiness-card h3,
+.practice-readiness-card p {
+  margin: 0;
+}
+
+.practice-readiness-count {
+  font-size: 1.05rem;
+}
+
 .readiness-card-heading,
 .question-candidate-heading {
   justify-content: space-between;

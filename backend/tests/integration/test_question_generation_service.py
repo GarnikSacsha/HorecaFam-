@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
+    Assessment,
     QuestionCandidate,
     QuestionGenerationRule,
     QuestionSourceLink,
@@ -18,6 +19,7 @@ from app.services.question_review import (
     approve_question_candidate,
     approve_question_candidate_batch,
     ensure_practice_readiness,
+    get_practice_readiness,
 )
 from tests.factories.identity import make_location, make_organization, make_user
 from tests.factories.menu import (
@@ -354,6 +356,36 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     assert practice_readiness.eligible_count == 1
     assert practice_readiness.required_count == 10
     assert practice_readiness.coverage_evidence["distinct_menu_item_count"] == 1
+    practice_readiness_response = await get_practice_readiness(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        training_version_id=training_version.id,
+    )
+    assert (
+        practice_readiness_response.assessment_version_id
+        == practice_readiness.assessment_version_id
+    )
+    assert practice_readiness_response.status == "blocked"
+    assert practice_readiness_response.eligible_count == 1
+    assert practice_readiness_response.required_count == 10
+    assert practice_readiness_response.rotation_target_count == 20
+    assert practice_readiness_response.can_start is False
+    with pytest.raises(APIError) as foreign_readiness:
+        await get_practice_readiness(
+            db_session,
+            organization_id=actor.id,
+            location_id=location.id,
+            training_version_id=training_version.id,
+        )
+    assert foreign_readiness.value.status_code == 404
+    final_exam = await db_session.scalar(
+        select(Assessment).where(
+            Assessment.training_id == training.id,
+            Assessment.assessment_type == "menu_final_exam",
+        )
+    )
+    assert final_exam is not None
 
     replay = await generate_question_candidates(db_session, **scope)
     soup_version.price_minor = 99999

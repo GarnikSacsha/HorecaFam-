@@ -28,7 +28,11 @@ async def test_candidate_generation_requires_admin_csrf_and_idempotency(
             stale_question_count=0,
         )
 
+    async def fake_practice_readiness(*_args: object, **_kwargs: object) -> None:
+        return None
+
     monkeypatch.setattr(assessment_routes, "generate_question_candidates", fake_generate)
+    monkeypatch.setattr(assessment_routes, "ensure_practice_readiness", fake_practice_readiness)
     url = (
         f"/api/v1/organizations/{organization_id}/locations/{location_id}/"
         "question-candidates/generate"
@@ -101,6 +105,7 @@ async def test_assessment_admin_routes_are_present_and_foreign_scope_is_hidden(
             "question-candidates/{candidate_id}/approve",
             "question-candidates/{candidate_id}/reject",
             "training-versions/{version_id}/interactive-training/readiness",
+            "training-versions/{version_id}/practice/readiness",
         )
     }
     assert expected_paths <= set(openapi["paths"])

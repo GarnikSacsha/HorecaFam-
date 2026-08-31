@@ -767,6 +767,22 @@ export interface InteractiveTrainingReadinessResponse {
   lessons: LessonAssessmentReadiness[];
 }
 
+export interface PracticeReadinessResponse {
+  training_version_id: string;
+  assessment_version_id: string | null;
+  status: "processing" | "ready" | "warning" | "blocked";
+  eligible_count: number;
+  required_count: 10;
+  coverage_evidence: Record<string, unknown>;
+  rotation_supported: boolean;
+  rotation_target_count: 20;
+  basis_fingerprint: string | null;
+  blocking_codes: string[];
+  warning_codes: string[];
+  computed_at: string | null;
+  can_start: boolean;
+}
+
 export type InteractiveKnowledgeLevel = "very_weak" | "weak" | "good" | "strong";
 
 export interface InteractiveAttemptOption {

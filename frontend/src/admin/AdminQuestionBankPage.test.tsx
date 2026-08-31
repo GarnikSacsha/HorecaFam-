@@ -105,6 +105,22 @@ const readiness = {
   ],
 };
 
+const practiceReadiness = {
+  training_version_id: "training-version-1",
+  assessment_version_id: "practice-version-1",
+  status: "blocked",
+  eligible_count: 1,
+  required_count: 10,
+  coverage_evidence: { distinct_menu_item_count: 1 },
+  rotation_supported: false,
+  rotation_target_count: 20,
+  basis_fingerprint: "d".repeat(64),
+  blocking_codes: ["INSUFFICIENT_QUESTION_POOL"],
+  warning_codes: [],
+  computed_at: "2030-08-29T10:00:00Z",
+  can_start: false,
+};
+
 function questionBankClient(
   requests: Array<{ path: string; options?: RequestOptions }>,
   staleApproval = false,
@@ -141,6 +157,7 @@ function questionBankClient(
           archived: [],
         } as T);
       if (path.includes("/interactive-training/readiness")) return Promise.resolve(readiness as T);
+      if (path.includes("/practice/readiness")) return Promise.resolve(practiceReadiness as T);
       if (path.includes("/question-candidates?") || path.endsWith("/question-candidates"))
         return Promise.resolve({ items: candidates, total: 2 } as T);
       if (path.endsWith("/generate"))
@@ -189,6 +206,10 @@ describe("Admin Question Bank", () => {
     expect(screen.getByText("menu-item-version-1")).toBeInTheDocument();
     expect(screen.getAllByText("Один варіант")[0]).toBeInTheDocument();
     expect(screen.getByText("REPEAT_ROTATION_LIMITED")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Готовність Практики" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("1 / 10 різних позицій меню");
+    expect(screen.getByText("INSUFFICIENT_QUESTION_POOL")).toBeInTheDocument();
+    expect(requests.some(({ path }) => path.endsWith("/practice/readiness"))).toBe(true);
 
     await user.click(screen.getByRole("button", { name: "Згенерувати кандидатів" }));
     const generated = requests.find(({ path }) => path.endsWith("/generate"));
