@@ -1,9 +1,9 @@
-# MVP Vertical Slice 5 — Interactive Training acceptance candidate
+# MVP Vertical Slice 5 — Interactive Training accepted evidence
 
 **Bounded issue:** [CRA-61](https://linear.app/craftspacee/issue/CRA-61)  
 **Canonical plan:** [CRA-60](https://linear.app/craftspacee/issue/CRA-60)  
-**Candidate date:** 2026-08-29  
-**Status:** local candidate; Denys acceptance and every publication action remain pending
+**Evidence date:** 2026-08-29  
+**Status:** accepted and Done locally as `93ce970..614da3d`; CRA-62 governs publication evidence
 
 This record maps the mandatory 27-scenario Slice 5 gate to evidence that actually ran. It does
 not replace the Linear contracts and makes no acceptance, push, deployment, provider, PR, or merge
@@ -105,8 +105,8 @@ Environment: Python 3.12.10, native PostgreSQL 16, ignored test-only environment
   rewrite occurred.
 - Protected `Photos/` and local `outputs/` remain untracked, untouched, unstaged and unpublished.
 
-## Approval boundary
+## Acceptance and publication boundary
 
-This is a local acceptance candidate. CRA-61 must remain In Progress until Denys explicitly
-accepts this multi-template evidence and its remaining source-bound limitation. Push, PR, merge,
-deployment and provider activity remain separate approval gates.
+Denys explicitly accepted this multi-template evidence and its remaining source-bound limitation.
+CRA-61 is Done. CRA-62 governs repository synchronization, ordinary publication and exact remote
+evidence. PR, merge, deployment and provider activity remain separate approval gates.

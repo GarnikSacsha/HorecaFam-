@@ -20,8 +20,7 @@ CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54 is publi
 CRA-55 documentation synchronization and CRA-56 Slice 4 planning are Done. CRA-57 is accepted,
 Done, and fast-forward published through `d4e0184`; its evidence is recorded in
 [`../docs/testing/training-assignment-slice-4-acceptance.md`](../docs/testing/training-assignment-slice-4-acceptance.md).
-CRA-60 planning is accepted and Done. CRA-61 is a local Interactive Training acceptance candidate;
-its evidence is recorded in
+CRA-60 planning and CRA-61 Interactive Training are accepted and Done. CRA-61 evidence is recorded in
 [`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).
 
 ## Environment setup
@@ -234,7 +233,7 @@ Denys accepted the implementation and authorized ordinary fast-forward publicati
 checkpoint range `5823a0e..d4e0184`. The range is published without history rewriting. No PR,
 merge, provider, deployment, production configuration, or production-data action was performed.
 
-## Local CRA-61 candidate evidence
+## Accepted CRA-61 evidence
 
 The 2026-08-29 local gate reports 424 passed, 0 failed, 0 skipped with 88% overall
 statement/branch coverage and 86% aggregate coverage across the predeclared five critical Slice 5
@@ -243,5 +242,6 @@ Alembic head is `0013_question_templates`; 13 migration tests, clean upgrade, cu
 and metadata no-drift pass. The frontend reports 45 Vitest tests and 15 Playwright executions,
 with Prettier, ESLint, TypeScript and production build green.
 
-This is not accepted or published evidence until Denys explicitly accepts CRA-61. No push, PR,
-merge, provider or deployment action was performed.
+Denys accepted this evidence and the remaining source-bound generation limitation. CRA-62 governs
+repository publication and exact remote evidence. No PR, merge, provider, or deployment action is
+authorized by the acceptance.

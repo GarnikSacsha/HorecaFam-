@@ -1,8 +1,8 @@
 # Current Architecture
 
-This document describes the verified accepted implementation published through CRA-57 at
-`d4e0184` and the separate local CRA-61 acceptance candidate. CRA-61 is not yet accepted or
-published. Canonical product behavior and contracts remain in Linear.
+This document describes the verified accepted implementation through CRA-61 at `614da3d`.
+CRA-62 governs repository synchronization and publication evidence. Canonical product behavior and
+contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -48,7 +48,7 @@ required environment configuration
   `0006_menu_source_of_truth.py` and `0007_menu_import_review.py` create the accepted CRA-49 Menu
   schema; `0008_training_content.py` creates the accepted CRA-54 Training content schema;
   `0009_assignment_completion_rollout.py` creates the accepted CRA-57 Assignment, Completion and
-  Rollout schema; local candidate migrations `0010_interactive_training`,
+  Rollout schema; accepted CRA-61 migrations `0010_interactive_training`,
   `0011_candidate_provenance`, and `0012_question_rules` add assessment execution, Candidate-owned
   provenance and the active deterministic category rule. Local amendment migration
   `0013_question_templates` adds component, allergen and description rules.
@@ -225,7 +225,7 @@ read contract. CRA-57 therefore does not add an unsafe browser editor that could
 unknown existing role selections. Practice, Knowledge, Final Exam, scoring, certification,
 deadlines, analytics, external delivery, and deployment remain absent.
 
-## Local CRA-61 Interactive Training candidate
+## Accepted CRA-61 Interactive Training
 
 ```text
 verified Menu fact + versioned rule
@@ -262,5 +262,5 @@ There is no invitation list/detail workflow, password recovery, MFA enrollment, 
 reference CRUD, Employee disable/reactivate lifecycle administration, Practice/exam workflow,
 provider integration, or deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/)
 and includes accepted CRA-49/CRA-54/CRA-57 experiences. Adding any absent
-capability requires a bounded Linear issue and approval. CRA-61 remains the active bounded issue
-until its local evidence is explicitly accepted or amended.
+capability requires a bounded Linear issue and approval. CRA-62 is the active bounded repository
+synchronization/publication issue; CRA-19 remains a separate visual-only track.

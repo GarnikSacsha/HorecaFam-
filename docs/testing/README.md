@@ -11,8 +11,8 @@ CRA-49 is accepted and fast-forward published through corrective checkpoint `802
 evidence is recorded below. CRA-53 planning and CRA-54 implementation are accepted and Done.
 CRA-54 is fast-forward published through `d955f6a`, and CRA-55 advances the prior documentation
 baseline to `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is fast-forward published
-through `d4e0184`, followed by CRA-58. CRA-60 planning is accepted and Done; CRA-61 is a local
-Interactive Training acceptance candidate and remains In Progress pending Denys acceptance.
+through `d4e0184`, followed by CRA-58. CRA-60 planning and CRA-61 Interactive Training are accepted
+and Done; CRA-62 governs repository synchronization and publication evidence.
 
 ## Current test layout
 
@@ -212,7 +212,7 @@ tests, and 12 Playwright executions across desktop, compact, and mobile projects
 authorized ordinary fast-forward publication of `5823a0e..d4e0184`; no deployment, provider, PR,
 merge, or production action was performed.
 
-## Local CRA-61 acceptance candidate
+## Accepted CRA-61 evidence
 
 The 2026-08-29 local gate reports 424 backend tests, 88% overall statement/branch coverage, 86%
 aggregate coverage across the predeclared five-file Slice 5 service set, Alembic head
@@ -221,5 +221,6 @@ desktop, compact and mobile projects. The complete 27-scenario mapping, exact lo
 security review and remaining source-bound generation limitations are in
 [`interactive-training-slice-5-acceptance.md`](interactive-training-slice-5-acceptance.md).
 
-This evidence is a candidate, not an accepted or published checkpoint. CRA-61 remains In Progress;
-push, PR, merge, provider and deployment actions were not performed.
+Denys accepted this evidence and the remaining source-bound generation limitations. CRA-62 governs
+repository publication and exact remote evidence; PR, merge, provider and deployment actions remain
+separately gated.

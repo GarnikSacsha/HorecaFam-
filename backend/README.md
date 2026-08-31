@@ -12,11 +12,11 @@ replacement-Version Rollout, transactional provider-free notification jobs, Admi
 rollout controls, and assignment-aware Employee Learning. Its nine checkpoints are published
 through `d4e0184`, with the CRA-58 documentation checkpoint at `5dc459b`.
 
-CRA-61 Interactive Training is now a local acceptance candidate. It adds assessment persistence
-through Alembic head `0012_question_rules`, deterministic provenance-bound category Candidate
-generation, Admin review/publication/readiness, immutable five-question Attempts, progressive
-idempotent Answers with immediate feedback, Results and topic history. It is not yet accepted or
-published.
+CRA-61 Interactive Training is accepted and Done. It adds assessment persistence through Alembic
+head `0013_question_templates`, deterministic provenance-bound category, component, allergen and
+description Candidate generation, Admin review/publication/readiness, immutable five-question
+Attempts, progressive idempotent Answers with immediate feedback, Results and topic history.
+CRA-62 governs repository synchronization and publication.
 
 Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
@@ -59,9 +59,9 @@ state, plus CRA-49 Menu versions, hierarchy, facts/provenance, deltas, import re
 records, and CRA-54 Training versions, Modules, Lessons, translations, content blocks, assets, and
 publication records, plus CRA-57 Training audiences, Assignments, Lesson Completions, Rollouts,
 rollout rules, completion provenance, and transactional notification jobs. Alembic is the only
-schema-management path; runtime and tests must not call `create_all`. The local CRA-61 candidate
-adds Question Candidate/Bank, assessment configuration/readiness, Attempt/Answer/device lease and
-Result history tables plus the active versioned category-generation rule.
+schema-management path; runtime and tests must not call `create_all`. Accepted CRA-61 adds Question
+Candidate/Bank, assessment configuration/readiness, Attempt/Answer/device lease and Result history
+tables plus active versioned category, component, allergen and description generation rules.
 
 ## Quality and test commands
 
@@ -105,8 +105,8 @@ Exam, Results, provider delivery, staging, and deployment remain outside the acc
 boundary. See
 [`../docs/testing/training-assignment-slice-4-acceptance.md`](../docs/testing/training-assignment-slice-4-acceptance.md).
 
-The local CRA-61 candidate gate reports 417 backend tests, 88% overall statement/branch coverage,
-85% aggregate coverage across the predeclared five critical Slice 5 services, Alembic head
-`0012_question_rules`, and no metadata drift. Exact scenario mapping, frontend evidence and the
-pending acceptance limitation are in
+The accepted CRA-61 gate reports 424 backend tests, 88% overall statement/branch coverage, 86%
+aggregate coverage across the predeclared five critical Slice 5 services, Alembic head
+`0013_question_templates`, and no metadata drift. Exact scenario mapping, frontend evidence and
+remaining accepted source-bound limitations are in
 [`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).

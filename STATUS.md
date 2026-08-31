@@ -11,11 +11,10 @@ containing this record follows the accepted CRA-57 range. The canonical routing 
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Local unpublished candidate:** CRA-60 planning is accepted and Done. CRA-61 Interactive
-Training is implemented as ten authorized implementation checkpoints plus evidence synchronization
-and remains In Progress pending Denys acceptance of the executed multi-template gate and remaining
-source-bound limitation. No CRA-61 push, PR,
-merge, deployment, provider call, or production action has occurred.
+**Accepted local boundary:** CRA-60 planning and CRA-61 Interactive Training are accepted and Done.
+CRA-61 is the eleven-commit range `93ce970..614da3d`, including the accepted multi-template
+amendment and synchronized evidence. CRA-62 governs repository synchronization and ordinary
+publication. PR, merge, deployment, provider calls, and production actions remain separate gates.
 
 ## Accepted implementation and planning checkpoints
 
@@ -63,8 +62,8 @@ merge, deployment, provider call, or production action has occurred.
 - CRA-57 Slice 4 implementation is accepted, Done, and published through `d4e0184`.
 - CRA-58 is the documentation checkpoint that records CRA-57 acceptance and publication.
 - CRA-60 Slice 5 planning and its nine-checkpoint implementation map are accepted and Done.
-- CRA-61 Slice 5 Interactive Training is a complete local multi-template acceptance candidate;
-  Denys acceptance and publication remain pending.
+- CRA-61 Slice 5 Interactive Training is accepted and Done as `93ce970..614da3d`; CRA-62 owns its
+  repository synchronization and publication evidence.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -280,7 +279,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   untouched and unstaged.
 - Exact matrix and limitations: [`docs/testing/menu-slice-2-acceptance.md`](docs/testing/menu-slice-2-acceptance.md).
 
-## Local CRA-61 acceptance candidate
+## Accepted CRA-61 Interactive Training
 
 - Scope: provenance-bound deterministic Question Candidates, Admin review/publication/readiness,
   immutable five-question Interactive Training Attempts, progressive idempotent Answers,
@@ -299,8 +298,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   components/multiple-choice, allergens/recognition and description/recognition templates from
   verified, unambiguous source facts. Ordering/assembly and matching templates are not generated
   because the current menu model does not prove preparation order or verified pair semantics.
-- CRA-61 remains In Progress until Denys explicitly accepts this evidence. Nothing from the local
-  CRA-61 range is published.
+- Denys explicitly accepted this evidence and its remaining source-bound limitation. The accepted
+  range ends at `614da3d`; CRA-62 owns publication and exact remote evidence.
 
 ## Protected uncommitted material
 
@@ -317,7 +316,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- The active bounded issue is CRA-61 until Denys accepts or amends its local acceptance candidate.
+- The active bounded repository issue is CRA-62. CRA-19 remains a separate visual-only track.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization
   are recorded in CRA-26. Further staging or commits require a new bounded map and explicit

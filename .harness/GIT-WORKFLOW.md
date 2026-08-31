@@ -14,8 +14,10 @@ CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54's nine c
 published through `d955f6a`, and CRA-55 advances the documentation baseline to `afc607a`. CRA-56
 planning and CRA-57 implementation are accepted and Done. CRA-57's nine checkpoints are
 fast-forward published through `d4e0184`; the CRA-58 documentation checkpoint containing this
-record follows that range. CRA-42 is unrelated Backlog work. `origin` points to the approved
-HoReCa GitHub repository, and local `main` has upstream tracking.
+record follows that range. CRA-60 planning and CRA-61 Interactive Training are accepted and Done;
+the accepted CRA-61 range ends at `614da3d`, and CRA-62 governs its repository synchronization and
+publication. CRA-42 is unrelated Backlog work. `origin` points to the approved HoReCa GitHub
+repository, and local `main` has upstream tracking.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -119,5 +121,7 @@ issue is active. CRA-46 is Done and published as the repository documentation ch
 CRA-49 implementation and corrective acceptance tail are accepted and published through `8028d6e`.
 CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is published through
 `d955f6a`, and CRA-55 follows at `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is
-published through `d4e0184`, followed by the CRA-58 documentation checkpoint. Every later remote
-or product action remains separately gated.
+published through `d4e0184`, followed by the CRA-58 documentation checkpoint. CRA-60 and CRA-61
+are accepted and Done; CRA-62 is the active bounded synchronization/publication issue for the
+accepted CRA-61 range through `614da3d`. Every later remote or product action remains separately
+gated.
