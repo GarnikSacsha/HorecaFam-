@@ -30,7 +30,7 @@ describe("application shells", () => {
     expect(trigger).toHaveFocus();
   });
 
-  it("shows the approved four Employee destinations with Learning enabled", () => {
+  it("shows the approved four Employee destinations with Learning and Practice enabled", () => {
     render(
       <MemoryRouter>
         <EmployeeShell>
@@ -46,6 +46,10 @@ describe("application shells", () => {
     expect(screen.getByRole("link", { name: "Навчання" })).toHaveAttribute(
       "href",
       "/employee/learning",
+    );
+    expect(screen.getByRole("link", { name: "Практика" })).toHaveAttribute(
+      "href",
+      "/employee/practice",
     );
   });
 });

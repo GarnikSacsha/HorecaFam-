@@ -11,11 +11,20 @@ import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
 function assignmentCopy(response: EmployeeTrainingHomeResponse) {
+  if (response.next_action === "open_practice") {
+    return {
+      heading: "Час перевірити знання меню",
+      action: "Відкрити Практику",
+      note: "Дайте відповіді на 10 запитань. Результат з’явиться лише після явного завершення.",
+      to: "/employee/practice",
+    };
+  }
   if (response.assignment?.status === "completed") {
     return {
       heading: "Навчання завершено",
       action: "Переглянути матеріали",
       note: "Призначені матеріали залишаються доступними для повторення.",
+      to: "/employee/learning",
     };
   }
   if (response.assignment?.status === "in_progress") {
@@ -23,12 +32,14 @@ function assignmentCopy(response: EmployeeTrainingHomeResponse) {
       heading: "Продовжуйте навчання",
       action: "Продовжити навчання",
       note: "Поверніться до призначеної версії з того місця, де зупинилися.",
+      to: "/employee/learning",
     };
   }
   return {
     heading: "Розпочніть навчання",
     action: "Розпочати навчання",
     note: "Для вас уже підготовлено перший навчальний крок.",
+    to: "/employee/learning",
   };
 }
 
@@ -129,7 +140,7 @@ export function ActiveHomePage() {
             <span style={{ width: `${assignedTraining.progress.percentage}%` }} />
           </div>
           <p className="quiet-note">{assignedTraining.copy.note}</p>
-          <Link className="button button-primary next-action-link" to="/employee/learning">
+          <Link className="button button-primary next-action-link" to={assignedTraining.copy.to}>
             {assignedTraining.copy.action}
           </Link>
         </section>

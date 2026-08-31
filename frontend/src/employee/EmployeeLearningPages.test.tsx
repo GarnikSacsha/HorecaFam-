@@ -43,6 +43,47 @@ function renderWithClient(
 }
 
 describe("Employee Training reference", () => {
+  it("offers whole-menu Practice as the next step after completed training", async () => {
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>() =>
+        Promise.resolve({
+          assignment: {
+            id: "assignment-1",
+            status: "completed",
+            assigned_at: "2030-08-28T08:00:00Z",
+            started_at: "2030-08-28T09:00:00Z",
+            completed_at: "2030-08-28T10:00:00Z",
+          },
+          training: {
+            id: "training-1",
+            version_number: 3,
+            published_at: "2030-08-28T08:00:00Z",
+          },
+          modules: [],
+          progress: {
+            required_lesson_count: 1,
+            completed_required_lesson_count: 1,
+            percentage: 100,
+            is_complete: true,
+          },
+          next_action: "open_practice",
+          content_locale: "uk",
+          translation_fallback: false,
+        } as T),
+    };
+
+    renderWithClient(client, "/employee/learning", "/employee/learning", <EmployeeLearningPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Практика по всьому меню" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Відкрити Практику" })).toHaveAttribute(
+      "href",
+      "/employee/practice",
+    );
+  });
+
   it("lists current published modules and exposes the truthful empty state", async () => {
     const requests: string[] = [];
     const client: ApiClient = {

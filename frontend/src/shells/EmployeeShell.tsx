@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 const destinations = [
   { label: "Головна", to: "/employee", enabled: true },
   { label: "Навчання", to: "/employee/learning", enabled: true },
-  { label: "Практика", to: "/employee/practice", enabled: false },
+  { label: "Практика", to: "/employee/practice", enabled: true },
   { label: "Профіль", to: "/employee/profile", enabled: false },
 ];
 

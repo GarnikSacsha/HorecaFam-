@@ -95,6 +95,16 @@ export function EmployeeLearningPage() {
           <p className="quiet-note">{copy.note}</p>
         </section>
       ) : null}
+      {response?.next_action === "open_practice" ? (
+        <aside className="learning-practice-cta" aria-labelledby="learning-practice-title">
+          <p className="eyebrow">Наступний крок</p>
+          <h2 id="learning-practice-title">Практика по всьому меню</h2>
+          <p>Навчання завершено. Перевірте знання у 10 запитаннях без підказок до фінішу.</p>
+          <Link className="button button-primary" to="/employee/practice">
+            Відкрити Практику
+          </Link>
+        </aside>
+      ) : null}
       {response?.training && response.modules.length === 0 ? (
         <div className="empty-state">
           <h2>У цій версії немає модулів</h2>

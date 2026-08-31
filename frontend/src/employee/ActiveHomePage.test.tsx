@@ -171,4 +171,70 @@ describe("Active Employee Home", () => {
     expect(screen.queryByRole("link", { name: /іспит|практик/i })).not.toBeInTheDocument();
     expect(requests).toContain("/me/training?locale=uk");
   });
+
+  it("opens whole-menu Practice after all required training is complete", async () => {
+    const profiles: OwnEmployeeProfilesResponse = {
+      profiles: [
+        {
+          id: "employee-1",
+          organization: { id: "organization-1", name: "Bacara Kyiv" },
+          membership_status: "active",
+          first_name: "Анна",
+          last_name: "Коваль",
+          operational_role: null,
+          location: null,
+          profile_complete: true,
+          updated_at: "2026-08-27T00:00:00Z",
+        },
+      ],
+    };
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(activeSession),
+      request: <T,>(path: string) =>
+        Promise.resolve(
+          (path === "/me/profile"
+            ? profiles
+            : {
+                assignment: {
+                  id: "assignment-1",
+                  status: "completed",
+                  assigned_at: "2026-08-28T08:00:00Z",
+                  started_at: "2026-08-28T09:00:00Z",
+                  completed_at: "2026-08-28T10:00:00Z",
+                },
+                training: {
+                  id: "training-1",
+                  version_number: 2,
+                  published_at: "2026-08-28T08:00:00Z",
+                },
+                modules: [],
+                progress: {
+                  required_lesson_count: 3,
+                  completed_required_lesson_count: 3,
+                  percentage: 100,
+                  is_complete: true,
+                },
+                next_action: "open_practice",
+                content_locale: "uk",
+                translation_fallback: false,
+              }) as T,
+        ),
+    };
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <ActiveHomePage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Час перевірити знання меню" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Відкрити Практику" })).toHaveAttribute(
+      "href",
+      "/employee/practice",
+    );
+  });
 });

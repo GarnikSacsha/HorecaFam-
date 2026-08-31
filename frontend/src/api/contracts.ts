@@ -608,7 +608,8 @@ export interface TrainingProgressResponse {
   is_complete: boolean;
 }
 
-export type EmployeeTrainingNextAction = "open_lesson" | "review_training" | "none";
+export type EmployeeTrainingNextAction =
+  "open_lesson" | "open_practice" | "review_training" | "none";
 
 export interface EmployeeTrainingModuleSummary {
   id: string;
@@ -765,6 +766,128 @@ export interface LessonAssessmentReadiness {
 export interface InteractiveTrainingReadinessResponse {
   training_version_id: string;
   lessons: LessonAssessmentReadiness[];
+}
+
+export type PracticeKnowledgeLevel = InteractiveKnowledgeLevel;
+
+export interface PracticeAttemptOption {
+  id: string;
+  position: number;
+  payload: Record<string, unknown>;
+}
+
+export interface PracticeSavedAnswer {
+  id: string;
+  answer_payload: Record<string, unknown>;
+  submitted_at: string;
+}
+
+export interface PracticeAttemptQuestion {
+  id: string;
+  position: number;
+  mechanic: string;
+  prompt_payload: Record<string, unknown>;
+  coverage_key: string;
+  options: PracticeAttemptOption[];
+  saved_answer: PracticeSavedAnswer | null;
+}
+
+export interface PracticeAttempt {
+  id: string;
+  assignment_id: string;
+  assessment_version_id: string;
+  status: "in_progress" | "completed" | "expired" | "invalidated";
+  presentation_locale: "uk" | "en";
+  started_at: string;
+  last_activity_at: string;
+  expires_at: string;
+  lease_generation: number;
+  writable: boolean;
+  answered_count: number;
+  questions: PracticeAttemptQuestion[];
+}
+
+export interface PracticeAttemptStartResponse {
+  attempt: PracticeAttempt;
+  created: boolean;
+  replayed: boolean;
+}
+
+export interface PracticeAttemptTakeoverResponse {
+  attempt_id: string;
+  lease_generation: number;
+  replayed: boolean;
+}
+
+export interface PracticeResultSummary {
+  result_id: string;
+  attempt_id: string;
+  assessment_version_id: string;
+  completed_at: string;
+  correct_count: number;
+  total_count: 10;
+  score_basis_points: number;
+  knowledge_level: PracticeKnowledgeLevel;
+  critical_error_count: number;
+}
+
+export interface PracticeHistoryResponse {
+  qualified: boolean;
+  latest: PracticeResultSummary | null;
+  best: PracticeResultSummary | null;
+  history: PracticeResultSummary[];
+}
+
+export interface PracticeSummaryResponse {
+  availability: "ready" | "preparing" | "unavailable" | "paused";
+  can_start: boolean;
+  reason_codes: string[];
+  readiness_status: "processing" | "ready" | "warning" | "blocked" | null;
+  active_attempt: PracticeAttempt | null;
+  qualified: boolean;
+  latest: PracticeResultSummary | null;
+  best: PracticeResultSummary | null;
+}
+
+export interface PracticeAnswerResponse {
+  answer: PracticeSavedAnswer;
+  answered_count: number;
+  next_question_id: string | null;
+  attempt_status: "in_progress";
+  replayed: boolean;
+}
+
+export interface PracticeResult {
+  id: string;
+  correct_count: number;
+  total_count: 10;
+  score_basis_points: number;
+  knowledge_level: PracticeKnowledgeLevel;
+  pass_status: null;
+  critical_error_count: number;
+  completed_at: string;
+}
+
+export interface PracticeQuestionReview {
+  attempt_question_id: string;
+  position: number;
+  mechanic: string;
+  prompt_payload: Record<string, unknown>;
+  options: PracticeAttemptOption[];
+  answer: PracticeSavedAnswer;
+  is_correct: boolean;
+  correct_option_ids: string[];
+  explanation_payload: Record<string, unknown>;
+  is_critical: boolean;
+  is_critical_error: boolean;
+}
+
+export interface PracticeFinishResponse {
+  result: PracticeResult;
+  qualified: boolean;
+  eligibility_earned: boolean;
+  review: PracticeQuestionReview[];
+  replayed: boolean;
 }
 
 export interface PracticeReadinessResponse {

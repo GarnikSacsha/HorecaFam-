@@ -13,6 +13,7 @@ import { EmployeeMenuPage } from "../employee/EmployeeMenuPage";
 import { EmployeeLearningLessonPage } from "../employee/EmployeeLearningLessonPage";
 import { EmployeeLearningModulePage } from "../employee/EmployeeLearningModulePage";
 import { EmployeeLearningPage } from "../employee/EmployeeLearningPage";
+import { EmployeePracticePage } from "../employee/EmployeePracticePage";
 import { InvitationAcceptPage } from "../invitations/InvitationAcceptPage";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
@@ -143,6 +144,16 @@ export function App() {
               <ProtectedRoute audience="active-employee">
                 <EmployeeShell>
                   <EmployeeLearningLessonPage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/practice"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeePracticePage />
                 </EmployeeShell>
               </ProtectedRoute>
             }
