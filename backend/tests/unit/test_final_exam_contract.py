@@ -27,6 +27,11 @@ def test_final_exam_attempt_lifecycle_is_exposed_without_answer_keys() -> None:
     answer = openapi["components"]["schemas"]["FinalExamAnswerResponse"]["properties"]
     assert "feedback" not in answer
     assert "result" not in answer
+    assert {
+        "/api/v1/organizations/{organization_id}/results",
+        "/api/v1/organizations/{organization_id}/results/employees/{employee_id}",
+        "/api/v1/organizations/{organization_id}/results/final-exams/{attempt_id}",
+    } <= set(openapi["paths"])
 
 
 def test_final_exam_exact_pass_boundary() -> None:

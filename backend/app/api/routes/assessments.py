@@ -15,6 +15,8 @@ from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.models import AuditEvent
 from app.schemas.assessment import (
+    AdminEmployeeResultsDetailResponse,
+    AdminResultsOverviewResponse,
     FinalExamAnswerRequest,
     FinalExamAnswerResponse,
     FinalExamAttemptResponse,
@@ -51,6 +53,11 @@ from app.schemas.assessment import (
     QuestionCandidateGenerateResponse,
     QuestionCandidateRejectRequest,
     QuestionCandidateResponse,
+)
+from app.services.admin_results import (
+    get_admin_employee_results,
+    get_admin_final_exam_result,
+    get_admin_results_overview,
 )
 from app.services.final_exam_answers import save_final_exam_answer
 from app.services.final_exam_attempts import (
@@ -100,6 +107,51 @@ from app.services.question_review import (
 )
 
 router = APIRouter(tags=["assessments"])
+
+
+@router.get(
+    "/organizations/{organization_id}/results",
+    response_model=AdminResultsOverviewResponse,
+)
+async def admin_results_overview_route(
+    organization_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    location_id: UUID | None = None,
+) -> AdminResultsOverviewResponse:
+    return await get_admin_results_overview(
+        db, organization_id=organization_id, location_id=location_id
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/results/employees/{employee_id}",
+    response_model=AdminEmployeeResultsDetailResponse,
+)
+async def admin_employee_results_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> AdminEmployeeResultsDetailResponse:
+    return await get_admin_employee_results(
+        db, organization_id=organization_id, employee_profile_id=employee_id
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/results/final-exams/{attempt_id}",
+    response_model=FinalExamFinishResponse,
+)
+async def admin_final_exam_result_route(
+    organization_id: UUID,
+    attempt_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamFinishResponse:
+    return await get_admin_final_exam_result(
+        db, organization_id=organization_id, attempt_id=attempt_id
+    )
 
 
 def _employee_scope(authorization: AuthorizationContext) -> tuple[UUID, UUID, UUID]:

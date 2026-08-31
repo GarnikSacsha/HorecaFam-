@@ -566,6 +566,29 @@ class FinalExamFinishResponse(StrictAssessmentSchema):
     replayed: bool
 
 
+class AdminEmployeeResultRow(StrictAssessmentSchema):
+    employee_id: UUID
+    first_name: str | None
+    last_name: str | None
+    location_id: UUID | None
+    current_training_status: str | None
+    latest_practice_score_basis_points: int | None = Field(default=None, ge=0, le=10000)
+    certification: FinalExamCertificationResponse | None
+    latest_final_exam: FinalExamResultSummaryResponse | None
+    critical_error_count: int = Field(ge=0, le=20)
+
+
+class AdminResultsOverviewResponse(StrictAssessmentSchema):
+    items: list[AdminEmployeeResultRow]
+    total: int = Field(ge=0)
+    next_cursor: str | None = None
+
+
+class AdminEmployeeResultsDetailResponse(StrictAssessmentSchema):
+    employee: AdminEmployeeResultRow
+    final_exam: FinalExamHistoryResponse
+
+
 class PracticeResultSummaryResponse(StrictAssessmentSchema):
     result_id: UUID
     attempt_id: UUID
