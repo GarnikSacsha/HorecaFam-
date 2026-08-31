@@ -15,6 +15,7 @@ from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.models import AuditEvent
 from app.schemas.assessment import (
+    FinalExamReadinessResponse,
     InteractiveAnswerRequest,
     InteractiveAnswerResponse,
     InteractiveAttemptResponse,
@@ -41,6 +42,10 @@ from app.schemas.assessment import (
     QuestionCandidateGenerateResponse,
     QuestionCandidateRejectRequest,
     QuestionCandidateResponse,
+)
+from app.services.final_exam_readiness import (
+    ensure_final_exam_readiness,
+    get_final_exam_readiness,
 )
 from app.services.idempotency import (
     find_idempotency_replay,
@@ -445,6 +450,14 @@ async def generate_question_candidates_route(
         actor_user_id=authorization.user.id,
         now=now,
     )
+    await ensure_final_exam_readiness(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        training_version_id=payload.training_version_id,
+        actor_user_id=authorization.user.id,
+        now=now,
+    )
     if replay is None:
         await reserve_idempotency(
             db,
@@ -640,6 +653,26 @@ async def practice_readiness_route(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> PracticeReadinessResponse:
     return await get_practice_readiness(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        training_version_id=version_id,
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/final-exam/readiness",
+    response_model=FinalExamReadinessResponse,
+)
+async def final_exam_readiness_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamReadinessResponse:
+    return await get_final_exam_readiness(
         db,
         organization_id=organization_id,
         location_id=location_id,

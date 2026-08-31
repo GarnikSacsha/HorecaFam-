@@ -769,6 +769,17 @@ async def _publish_candidate(
         actor_user_id=actor_user_id,
         now=now,
     )
+    # Один Published Question одночасно оновлює готовність Practice та Final Exam.
+    from app.services.final_exam_readiness import ensure_final_exam_readiness
+
+    await ensure_final_exam_readiness(
+        db,
+        organization_id=candidate.organization_id,
+        location_id=candidate.location_id,
+        training_version_id=candidate.training_version_id,
+        actor_user_id=actor_user_id,
+        now=now,
+    )
     db.add(
         AuditEvent(
             organization_id=candidate.organization_id,
