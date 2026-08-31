@@ -8,9 +8,9 @@ entry is the Linear
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Current local boundary:** CRA-66 Slice 7 planning is accepted and Done. CRA-67 is In Progress;
-its authorized eight-checkpoint Final Exam and canonical Results implementation is a verified local
-acceptance candidate beginning at `6be8f4d`. It is not yet accepted or published. PR, push, merge,
+**Current local boundary:** CRA-66 planning and CRA-67 Final Exam/canonical Results are accepted and
+Done. CRA-67 is the exact eight-checkpoint range `6be8f4d..703872b`. CRA-68 is In Progress and owns
+this selective documentation checkpoint plus the authorized ordinary non-force push. PR, merge,
 deployment, provider calls and production actions remain separate gates.
 
 ## Accepted implementation and planning checkpoints
@@ -68,8 +68,8 @@ deployment, provider calls and production actions remain separate gates.
 - CRA-65 is accepted, Done and published through `4164b9c`.
 - CRA-66 Slice 7 Final Exam planning and its eight-checkpoint implementation map are accepted and
   Done.
-- CRA-67 Slice 7 Final Exam and canonical Results is In Progress as a verified local acceptance
-  candidate; Denys's acceptance and any publication remain separate gates.
+- CRA-67 Slice 7 Final Exam and canonical Results is accepted and Done as
+  `6be8f4d..703872b`; CRA-68 owns documentation synchronization and ordinary publication.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -207,8 +207,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 ## Repository and runtime state
 
 - Branch: `main`; `origin/main` is the accepted CRA-65 published baseline `4164b9c`. Local `main`
-  contains the seven implementation checkpoints of the CRA-67 candidate plus this evidence
-  checkpoint once committed.
+  contains the accepted eight CRA-67 checkpoints plus this documentation checkpoint once committed;
+  CRA-68 owns the authorized ordinary publication.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
   checkpoints, CRA-49 through `8028d6e`, CRA-54 through `d955f6a`, CRA-55 through `afc607a`, and
@@ -220,8 +220,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted Practice baseline plus the local CRA-67 Admin Results/readiness and
-  Employee Final Exam acceptance candidate.
+- `frontend/`: accepted CRA-67 Admin Results/readiness and Employee Final Exam implementation.
 
 ## Accepted and published CRA-57 checkpoint
 
@@ -320,11 +319,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   assembly/serving remains excluded without a structured approved source.
 - Exact forty-scenario evidence and limitations:
   [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
-- Final Exam execution/certification and canonical management Results are implemented only in the
-  local CRA-67 acceptance candidate. Attention/Retakes, providers, deployment and real Bacara
-  ingestion remain absent.
+- Final Exam execution/certification and canonical management Results are accepted in CRA-67.
+  Attention/Retakes, providers, deployment and real Bacara ingestion remain absent.
 
-## CRA-67 local Final Exam acceptance candidate
+## Accepted CRA-67 Final Exam checkpoint
 
 - Scope: readiness and a balanced immutable 20-question pool, eligibility, seven effective
   inactivity days, device takeover, feedback-free Answer saves, explicit confirmed finish,
@@ -346,10 +344,10 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Remaining to a functional and pilot-ready MVP
 
-Following local completion of the CRA-67 candidate, the functional product core still needs:
+Following CRA-67 acceptance, the functional product core still needs:
 
-1. CRA-67 acceptance and repository publication: an approval/synchronization step, not another
-   product implementation slice.
+1. CRA-68 repository synchronization/publication, currently In Progress and not another product
+   implementation slice.
 2. Slice 8 Attention and Retakes: about 4–6 focused days.
 3. Pilot-critical access/admin/content closure: about 5–9 focused days, including elevated-user
    recovery/enrollment, Employee lifecycle administration, minimum venue setup, validated Bacara
@@ -360,7 +358,7 @@ current approval/checkpoint rhythm, to a local functional MVP after CRA-67 accep
 infrastructure, provider,
 observability, backup/security/performance hardening and real-venue UAT add roughly 10–20 focused
 days plus external latency. The credible pilot-ready window is therefore still about 5–9 calendar
-weeks from this candidate; real verified content and external approvals are the largest risks.
+weeks from CRA-67 acceptance; real verified content and external approvals are the largest risks.
 
 ## Protected uncommitted material
 
@@ -377,9 +375,9 @@ weeks from this candidate; real verified content and external approvals are the 
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- The active bounded repository issue is CRA-67. CRA-19 remains a separate visual-only track.
-- CRA-67 authorizes only its agreed eight local checkpoint commits. Acceptance, Linear evidence
-  publication, Git push, PR, merge, deployment and provider actions remain separate gates.
+- The active bounded repository issue is CRA-68. CRA-19 remains a separate visual-only track.
+- CRA-68 authorizes only acceptance documentation synchronization, one selective local checkpoint,
+  one ordinary non-force push and remote SHA verification. Slice 8 planning remains a later gate.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization
   are recorded in CRA-26. Further staging or commits require a new bounded map and explicit

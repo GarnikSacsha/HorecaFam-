@@ -14,8 +14,8 @@ baseline to `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is fast-f
 through `d4e0184`, followed by CRA-58. CRA-60 planning and CRA-61 Interactive Training are accepted
 and Done; CRA-62 governs their repository synchronization and publication evidence. CRA-63
 planning and CRA-64 Practice are accepted and Done; CRA-65 synchronization is published through
-`4164b9c`. CRA-66 Final Exam planning is accepted and Done. CRA-67 is a verified local acceptance
-candidate and remains In Progress pending Denys's acceptance.
+`4164b9c`. CRA-66 Final Exam planning and CRA-67 implementation are accepted and Done. CRA-68
+governs acceptance synchronization and ordinary publication.
 
 ## Current test layout
 
@@ -240,13 +240,13 @@ executed evidence, RED/GREEN corrections, limitations and the eight-checkpoint b
 CRA-64 is Done and CRA-65 synchronization is published through `4164b9c`. No later push,
 deployment, provider or production action is implied.
 
-## CRA-67 Final Exam local acceptance candidate
+## Accepted CRA-67 Final Exam evidence
 
-The authorized eight-checkpoint candidate implements balanced 20-question Final Exam readiness,
+The accepted eight-checkpoint range implements balanced 20-question Final Exam readiness,
 eligibility, feedback-free answer saves, confirmed atomic finish, exact 70% passing, certification,
 history, responsive Employee execution and canonical Admin Results. The executed regression,
 focused PostgreSQL concurrency proof, browser matrix, limitations and checkpoint boundary are in
 [`final-exam-slice-7-acceptance.md`](final-exam-slice-7-acceptance.md).
 
-CRA-67 is not yet accepted or published. No push, PR, merge, migration, provider or deployment is
-implied by this local evidence checkpoint.
+CRA-67 is Done; CRA-68 governs its documentation synchronization and authorized ordinary push. No
+PR, merge, migration, provider or deployment is implied by this checkpoint.

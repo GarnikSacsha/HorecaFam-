@@ -1,8 +1,9 @@
 # Current Architecture
 
 This document describes the verified accepted implementation through CRA-64 Practice at
-`cc1c05a`, published with CRA-65 synchronization through `4164b9c`, plus the local CRA-67 Final
-Exam acceptance candidate. Canonical product behavior and contracts remain in Linear.
+`cc1c05a`, published with CRA-65 synchronization through `4164b9c`, plus accepted CRA-67 Final
+Exam and Results at `703872b`. CRA-68 governs publication. Canonical product behavior and contracts
+remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -270,10 +271,10 @@ The source-safe Practice pool admits verified component/allergen Questions and d
 missing-component generation using stable Menu Item coverage keys. Category/description remain
 Interactive-only. Assembly/serving remains excluded because the current model has no approved
 structured authority. A target `menu_final_exam` root originally established the eligibility FK;
-the local CRA-67 candidate now adds its Versions, Attempts, Results, routes and certification
+accepted CRA-67 now adds its Versions, Attempts, Results, routes and certification
 without a migration.
 
-## CRA-67 local Final Exam and Results candidate
+## Accepted CRA-67 Final Exam and Results
 
 ```text
 completed Assignment + durable Practice eligibility + balanced source-safe 20-question pool
@@ -283,7 +284,7 @@ completed Assignment + durable Practice eligibility + balanced source-safe 20-qu
 → Employee result/review + Organization-scoped canonical Admin Results
 ```
 
-The candidate reuses the accepted assessment persistence graph and `0014_practice_persistence`
+The accepted implementation reuses the assessment persistence graph and `0014_practice_persistence`
 head. It adds no certification table: certification is derived and exposed from the canonical
 Final Exam result boundary. Passed certification does not expose a retake action; failed attempts
 can start an immediate retake in Slice 7. No leaderboard, Attention/Retakes administration,
@@ -300,6 +301,6 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
 reference CRUD, Employee disable/reactivate lifecycle administration, Attention/Retakes
 administration, provider integration, or deployed worker/resource. The frontend lives in
-[`../../frontend/`](../../frontend/) and includes accepted CRA-64 Practice plus the local CRA-67
-Final Exam/Admin Results candidate. Adding any absent capability requires a bounded Linear issue
-and approval. CRA-67 is active; CRA-19 remains a separate visual-only track.
+[`../../frontend/`](../../frontend/) and includes accepted CRA-67 Final Exam/Admin Results. Adding
+any absent capability requires a bounded Linear issue and approval. CRA-68 is active; CRA-19
+remains a separate visual-only track.

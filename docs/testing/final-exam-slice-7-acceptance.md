@@ -6,8 +6,7 @@
 
 **Evidence date:** 2026-08-31
 
-**Status:** verified local acceptance candidate; awaiting Denys's acceptance and separate
-publication authorization
+**Status:** accepted by Denys; CRA-68 publication checkpoint in progress
 
 This record describes only evidence that actually ran for the authorized CRA-67 checkpoint map.
 The canonical product, API, data, RBAC and acceptance contracts remain in Linear.
@@ -81,8 +80,8 @@ The canonical product, API, data, RBAC and acceptance contracts remain in Linear
   Organization-scoped and preserve existing MFA/RBAC guards.
 - Pre-finish responses contain no grading payload, explanation or correctness. Finish remains
   idempotent under a real concurrent same-key PostgreSQL race.
-- The candidate adds no migration, dependency, provider call, worker, deployment, production
-  configuration, leaderboard or separate certification persistence.
+- The accepted implementation adds no migration, dependency, provider call, worker, deployment,
+  production configuration, leaderboard or separate certification persistence.
 - Automated question sourcing remains limited to verified structured menu facts. Preparation order
   and serving/assembly questions remain excluded because current sources do not prove them.
 - Slice 8 Attention/Retakes administration, pilot access/admin/content closure and real Bacara
@@ -97,8 +96,7 @@ The canonical product, API, data, RBAC and acceptance contracts remain in Linear
 5. `f28c9bd` — canonical Admin result read models.
 6. `2f68844` — Admin Final Exam readiness and Results UI.
 7. `3038810` — Employee Final Exam experience.
-8. This documentation/evidence checkpoint — acceptance matrix, browser journey and regression
-   closure; its exact hash is recorded after the local commit.
+8. `703872b` — acceptance matrix, browser journey and regression closure.
 
-No CRA-67 commit has been pushed. Acceptance, a Linear evidence comment, ordinary push, PR, merge,
-provider and deployment each remain separately authorized actions.
+Denys accepted CRA-67 and its exact evidence is recorded in Linear. CRA-68 exclusively governs the
+authorized ordinary push. PR, merge, provider and deployment remain separate gates.
