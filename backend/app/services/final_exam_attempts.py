@@ -352,6 +352,19 @@ async def get_final_exam_summary(
         else:
             availability = "eligible"
             reasons = []
+    latest_pass_status = await db.scalar(
+        select(AttemptResult.pass_status)
+        .join(AssessmentAttempt, AssessmentAttempt.id == AttemptResult.attempt_id)
+        .join(AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id)
+        .join(Assessment, Assessment.id == AssessmentVersion.assessment_id)
+        .where(
+            AssessmentAttempt.employee_profile_id == employee_profile_id,
+            AssessmentAttempt.training_id == assignment.training_id,
+            Assessment.assessment_type == "menu_final_exam",
+        )
+        .order_by(AttemptResult.completed_at.desc(), AttemptResult.id.desc())
+        .limit(1)
+    )
     return FinalExamSummaryResponse(
         availability=cast(
             Literal[
@@ -371,6 +384,7 @@ async def get_final_exam_summary(
         readiness_status=readiness_status,
         active_attempt=active_attempt,
         certification=certification,
+        retake_available=certification is None and latest_pass_status == "failed",
     )
 
 

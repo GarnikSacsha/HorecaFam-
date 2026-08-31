@@ -507,6 +507,65 @@ class FinalExamAnswerResponse(StrictAssessmentSchema):
     replayed: bool
 
 
+class FinalExamFinishRequest(StrictAssessmentSchema):
+    lease_generation: int = Field(ge=1)
+
+
+class FinalExamResultSummaryResponse(StrictAssessmentSchema):
+    result_id: UUID
+    attempt_id: UUID
+    assessment_version_id: UUID
+    completed_at: datetime
+    correct_count: int = Field(ge=0, le=20)
+    total_count: Literal[20] = 20
+    score_basis_points: int = Field(ge=0, le=10000)
+    knowledge_level: Literal["very_weak", "weak", "good", "strong"]
+    pass_status: Literal["passed", "failed"]
+    critical_error_count: int = Field(ge=0, le=20)
+
+
+class FinalExamHistoryResponse(StrictAssessmentSchema):
+    certification: FinalExamCertificationResponse | None
+    latest: FinalExamResultSummaryResponse | None
+    best: FinalExamResultSummaryResponse | None
+    history: list[FinalExamResultSummaryResponse]
+
+
+class FinalExamResultResponse(StrictAssessmentSchema):
+    id: UUID
+    correct_count: int = Field(ge=0, le=20)
+    total_count: Literal[20] = 20
+    score_basis_points: int = Field(ge=0, le=10000)
+    knowledge_level: Literal["very_weak", "weak", "good", "strong"]
+    pass_status: Literal["passed", "failed"]
+    critical_error_count: int = Field(ge=0, le=20)
+    section_breakdown: dict[str, object]
+    completed_at: datetime
+
+
+class FinalExamQuestionReviewResponse(StrictAssessmentSchema):
+    attempt_question_id: UUID
+    position: int = Field(ge=0, le=19)
+    mechanic: str
+    prompt_payload: dict[str, object]
+    options: list[FinalExamAttemptOptionResponse]
+    answer: FinalExamSavedAnswerResponse
+    is_correct: bool
+    correct_option_ids: list[UUID]
+    explanation_payload: dict[str, object]
+    is_critical: bool
+    is_critical_error: bool
+
+
+class FinalExamFinishResponse(StrictAssessmentSchema):
+    result: FinalExamResultResponse
+    certification: FinalExamCertificationResponse | None
+    newly_certified: bool
+    retake_available: bool
+    review: list[FinalExamQuestionReviewResponse]
+    replayed: bool
+
+
 class PracticeResultSummaryResponse(StrictAssessmentSchema):
     result_id: UUID
     attempt_id: UUID

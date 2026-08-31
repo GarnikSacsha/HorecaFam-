@@ -1,5 +1,6 @@
 from app.core.config import Settings
 from app.main import create_app
+from app.services.final_exam_results import final_exam_pass_status
 
 
 def test_final_exam_attempt_lifecycle_is_exposed_without_answer_keys() -> None:
@@ -12,6 +13,7 @@ def test_final_exam_attempt_lifecycle_is_exposed_without_answer_keys() -> None:
         "/api/v1/me/training/final-exam/attempts/{attempt_id}",
         "/api/v1/me/training/final-exam/attempts/{attempt_id}/takeover",
         "/api/v1/me/training/final-exam/attempts/{attempt_id}/answer",
+        "/api/v1/me/training/final-exam/attempts/{attempt_id}/finish",
     }
 
     assert expected <= set(openapi["paths"])
@@ -25,3 +27,8 @@ def test_final_exam_attempt_lifecycle_is_exposed_without_answer_keys() -> None:
     answer = openapi["components"]["schemas"]["FinalExamAnswerResponse"]["properties"]
     assert "feedback" not in answer
     assert "result" not in answer
+
+
+def test_final_exam_exact_pass_boundary() -> None:
+    assert final_exam_pass_status(13, 20) == "failed"
+    assert final_exam_pass_status(14, 20) == "passed"

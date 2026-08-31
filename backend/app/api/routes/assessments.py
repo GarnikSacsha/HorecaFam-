@@ -20,6 +20,9 @@ from app.schemas.assessment import (
     FinalExamAttemptResponse,
     FinalExamAttemptStartResponse,
     FinalExamAttemptTakeoverResponse,
+    FinalExamFinishRequest,
+    FinalExamFinishResponse,
+    FinalExamHistoryResponse,
     FinalExamReadinessResponse,
     FinalExamSummaryResponse,
     InteractiveAnswerRequest,
@@ -59,6 +62,10 @@ from app.services.final_exam_attempts import (
 from app.services.final_exam_readiness import (
     ensure_final_exam_readiness,
     get_final_exam_readiness,
+)
+from app.services.final_exam_results import (
+    finish_final_exam_attempt,
+    get_final_exam_history,
 )
 from app.services.idempotency import (
     find_idempotency_replay,
@@ -229,6 +236,55 @@ async def save_final_exam_answer_route(
         attempt_id=attempt_id,
         attempt_question_id=payload.attempt_question_id,
         answer_payload=payload.answer_payload,
+        lease_generation=payload.lease_generation,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.get(
+    "/me/training/final-exam/attempts",
+    response_model=FinalExamHistoryResponse,
+)
+async def get_final_exam_history_route(
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamHistoryResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_final_exam_history(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+    )
+
+
+@router.post(
+    "/me/training/final-exam/attempts/{attempt_id}/finish",
+    response_model=FinalExamFinishResponse,
+)
+async def finish_final_exam_attempt_route(
+    attempt_id: UUID,
+    payload: FinalExamFinishRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamFinishResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await finish_final_exam_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        session_id=authorization.session.id,
+        attempt_id=attempt_id,
         lease_generation=payload.lease_generation,
         idempotency_key=idempotency_key.strip(),
         request_id=UUID(get_request_id()),
