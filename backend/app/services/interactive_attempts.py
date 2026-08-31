@@ -54,7 +54,9 @@ class PoolCandidate:
     mechanic: str
 
 
-def _ordered_selection(candidates: list[PoolCandidate], offset: int) -> list[PoolCandidate]:
+def _ordered_selection(
+    candidates: list[PoolCandidate], offset: int, question_count: int
+) -> list[PoolCandidate]:
     ordered = sorted(
         candidates,
         key=lambda row: (row.coverage_key, row.mechanic, str(row.question_version_id)),
@@ -69,13 +71,13 @@ def _ordered_selection(candidates: list[PoolCandidate], offset: int) -> list[Poo
             continue
         selected.append(row)
         used_coverage.add(row.coverage_key)
-        if len(selected) == 5:
+        if len(selected) == question_count:
             return selected
     for row in ordered:
         if row in selected:
             continue
         selected.append(row)
-        if len(selected) == 5:
+        if len(selected) == question_count:
             return selected
     return selected
 
@@ -84,14 +86,19 @@ def select_attempt_questions(
     candidates: list[PoolCandidate],
     *,
     previous_order: list[UUID],
+    question_count: int = 5,
 ) -> list[PoolCandidate]:
     distinct = {row.question_version_id for row in candidates}
-    if len(distinct) < 5:
+    distinct_coverage = {row.coverage_key for row in candidates}
+    if len(distinct) < question_count or len(distinct_coverage) < question_count:
         return []
-    selected = _ordered_selection(candidates, 0)
-    if len(candidates) > 5 and [row.question_version_id for row in selected] == previous_order:
+    selected = _ordered_selection(candidates, 0, question_count)
+    if (
+        len(candidates) > question_count
+        and [row.question_version_id for row in selected] == previous_order
+    ):
         for offset in range(1, len(candidates)):
-            rotated = _ordered_selection(candidates, offset)
+            rotated = _ordered_selection(candidates, offset, question_count)
             if [row.question_version_id for row in rotated] != previous_order:
                 return rotated
     return selected

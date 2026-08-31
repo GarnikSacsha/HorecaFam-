@@ -18,3 +18,19 @@ def test_readiness_state_requires_one_attempt_then_rotation(
     expected: tuple[str, bool, list[str], list[str]],
 ) -> None:
     assert derive_readiness_state(eligible_count) == expected
+
+
+@pytest.mark.parametrize(
+    ("distinct_item_count", "expected"),
+    [
+        (9, ("blocked", False, ["INSUFFICIENT_QUESTION_POOL"], [])),
+        (10, ("warning", False, [], ["REPEAT_ROTATION_LIMITED"])),
+        (19, ("warning", False, [], ["REPEAT_ROTATION_LIMITED"])),
+        (20, ("ready", True, [], [])),
+    ],
+)
+def test_practice_readiness_requires_ten_distinct_menu_items(
+    distinct_item_count: int,
+    expected: tuple[str, bool, list[str], list[str]],
+) -> None:
+    assert derive_readiness_state(distinct_item_count, required_count=10) == expected

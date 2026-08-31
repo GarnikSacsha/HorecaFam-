@@ -249,6 +249,89 @@ def build_component_candidate(
     )
 
 
+def build_missing_component_candidate(
+    scope: GenerationScope,
+    rule: ComponentGenerationRule,
+    target_item_version_id: UUID,
+    facts: list[ComponentFact],
+) -> GeneratedCandidate | None:
+    target_rows = [fact for fact in facts if fact.menu_item_version_id == target_item_version_id]
+    if not target_rows or any(
+        not fact.verified or not fact.item_name.strip() or not fact.component_name.strip()
+        for fact in target_rows
+    ):
+        return None
+
+    target_keys = {f"component:{fact.menu_component_version_id}" for fact in target_rows}
+    alternatives = sorted(
+        (
+            fact
+            for fact in facts
+            if fact.verified
+            and fact.menu_item_version_id != target_item_version_id
+            and fact.component_name.strip()
+            and f"component:{fact.menu_component_version_id}" not in target_keys
+        ),
+        key=lambda fact: (fact.component_name.casefold(), str(fact.menu_component_version_id)),
+    )
+    if not alternatives:
+        return None
+    missing = alternatives[0]
+    option_facts = [*target_rows, missing]
+    normalized_labels = [fact.component_name.casefold() for fact in option_facts]
+    if len(normalized_labels) != len(set(normalized_labels)) or len(option_facts) > 20:
+        return None
+
+    options = sorted(
+        [
+            CandidateOption(
+                stable_key=f"component:{fact.menu_component_version_id}",
+                text=fact.component_name,
+            )
+            for fact in option_facts
+        ],
+        key=lambda option: (option.text.casefold(), option.stable_key),
+    )
+    missing_key = f"component:{missing.menu_component_version_id}"
+    item_name = target_rows[0].item_name
+    sources = [
+        CandidateSource(
+            source_role="correct_fact",
+            menu_item_version_component_id=missing.menu_item_version_component_id,
+        ),
+        CandidateSource(
+            source_role="explanation_source",
+            menu_item_version_id=target_item_version_id,
+        ),
+        *[
+            CandidateSource(
+                source_role="distractor_basis",
+                menu_item_version_component_id=fact.menu_item_version_component_id,
+            )
+            for fact in sorted(target_rows, key=lambda row: row.position)
+        ],
+    ]
+    return _candidate(
+        scope=scope,
+        rule_code=f"{rule.code}.missing",
+        rule_version=rule.version,
+        mechanic=rule.mechanic,
+        stem=f"Якого компонента немає у підтвердженому складі позиції «{item_name}»?",
+        options=options,
+        correct_option_keys=[missing_key],
+        explanation=(
+            f"Компонент «{missing.component_name}» не входить "
+            f"до підтвердженого складу «{item_name}»."
+        ),
+        sources=sources,
+        target_payload={
+            "menu_item_version_id": str(target_item_version_id),
+            "included_component_keys": sorted(target_keys),
+            "missing_component_key": missing_key,
+        },
+    )
+
+
 def build_allergen_candidate(
     scope: GenerationScope,
     rule: AllergenGenerationRule,
@@ -726,19 +809,25 @@ def _generated_candidates_for_rule(
         )
         target_ids = sorted({fact.menu_item_version_id for fact in component_facts}, key=str)
         component_rule = ComponentGenerationRule(code=rule_row.code, version=rule_row.version)
-        return [
-            candidate
-            for target_id in target_ids
-            if (
-                candidate := build_component_candidate(
-                    scope,
-                    component_rule,
-                    target_id,
-                    component_facts,
-                )
+        generated: list[GeneratedCandidate] = []
+        for target_id in target_ids:
+            component_candidate = build_component_candidate(
+                scope,
+                component_rule,
+                target_id,
+                component_facts,
             )
-            is not None
-        ]
+            missing_candidate = build_missing_component_candidate(
+                scope,
+                component_rule,
+                target_id,
+                component_facts,
+            )
+            if component_candidate is not None:
+                generated.append(component_candidate)
+            if missing_candidate is not None:
+                generated.append(missing_candidate)
+        return generated
 
     if rule_row.code == "menu.allergens":
         allergen_facts = sorted(

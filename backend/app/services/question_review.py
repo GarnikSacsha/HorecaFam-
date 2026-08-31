@@ -14,8 +14,10 @@ from app.models import (
     AssessmentVersion,
     AuditEvent,
     LessonVersion,
+    MenuItemVersion,
     Question,
     QuestionCandidate,
+    QuestionGenerationRule,
     QuestionOption,
     QuestionOptionTranslation,
     QuestionSourceLink,
@@ -62,14 +64,214 @@ def _provenance_invalid() -> APIError:
 
 def derive_readiness_state(
     eligible_count: int,
+    *,
+    required_count: int = 5,
 ) -> tuple[str, bool, list[str], list[str]]:
-    rotation_supported = eligible_count >= 10
-    blocking_codes = ["INSUFFICIENT_QUESTION_POOL"] if eligible_count < 5 else []
+    rotation_supported = eligible_count >= required_count * 2
+    blocking_codes = ["INSUFFICIENT_QUESTION_POOL"] if eligible_count < required_count else []
     warning_codes = (
-        ["REPEAT_ROTATION_LIMITED"] if eligible_count >= 5 and not rotation_supported else []
+        ["REPEAT_ROTATION_LIMITED"]
+        if eligible_count >= required_count and not rotation_supported
+        else []
     )
     status = "blocked" if blocking_codes else "warning" if warning_codes else "ready"
     return status, rotation_supported, blocking_codes, warning_codes
+
+
+async def ensure_practice_readiness(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    training_version_id: UUID,
+    actor_user_id: UUID,
+    now: datetime,
+) -> AssessmentReadiness:
+    training_version = await db.scalar(
+        select(TrainingVersion).where(
+            TrainingVersion.id == training_version_id,
+            TrainingVersion.organization_id == organization_id,
+            TrainingVersion.location_id == location_id,
+            TrainingVersion.status == "published",
+        )
+    )
+    if training_version is None:
+        raise _not_found()
+    assessment = await db.scalar(
+        select(Assessment).where(
+            Assessment.training_id == training_version.training_id,
+            Assessment.assessment_type == "whole_menu_knowledge_check",
+        )
+    )
+    if assessment is None:
+        assessment = Assessment(
+            organization_id=organization_id,
+            location_id=location_id,
+            training_id=training_version.training_id,
+            lesson_id=None,
+            assessment_type="whole_menu_knowledge_check",
+        )
+        db.add(assessment)
+        await db.flush()
+    version = await db.scalar(
+        select(AssessmentVersion).where(
+            AssessmentVersion.assessment_id == assessment.id,
+            AssessmentVersion.training_version_id == training_version_id,
+            AssessmentVersion.status == "published",
+        )
+    )
+    if version is None:
+        version_number = (
+            await db.scalar(
+                select(func.coalesce(func.max(AssessmentVersion.version_number), 0)).where(
+                    AssessmentVersion.assessment_id == assessment.id
+                )
+            )
+            or 0
+        ) + 1
+        version = AssessmentVersion(
+            organization_id=organization_id,
+            location_id=location_id,
+            assessment_id=assessment.id,
+            training_version_id=training_version_id,
+            lesson_id=None,
+            lesson_version_id=None,
+            version_number=version_number,
+            status="published",
+            question_count=10,
+            threshold_percent=40,
+            feedback_policy="after_final_submission",
+            sampling_configuration={
+                "strategy": "distinct_menu_item_coverage_first",
+                "rotation_minimum": 20,
+            },
+            published_by_user_id=actor_user_id,
+            published_at=now,
+        )
+        db.add(version)
+        await db.flush()
+
+    eligible_rows = list(
+        (
+            await db.execute(
+                select(QuestionVersion, MenuItemVersion.menu_item_id)
+                .join(QuestionCandidate, QuestionCandidate.id == QuestionVersion.candidate_id)
+                .join(
+                    QuestionGenerationRule,
+                    QuestionGenerationRule.id == QuestionCandidate.generation_rule_id,
+                )
+                .join(
+                    QuestionSourceLink,
+                    (QuestionSourceLink.question_version_id == QuestionVersion.id)
+                    & (QuestionSourceLink.source_role == "explanation_source"),
+                )
+                .join(
+                    MenuItemVersion,
+                    MenuItemVersion.id == QuestionSourceLink.menu_item_version_id,
+                )
+                .where(
+                    QuestionCandidate.training_version_id == training_version_id,
+                    QuestionVersion.status == "published",
+                    QuestionGenerationRule.code.in_(["menu.components", "menu.allergens"]),
+                )
+            )
+        ).all()
+    )
+    current_pools = {
+        row.question_version_id: row
+        for row in await db.scalars(
+            select(AssessmentQuestionPool).where(
+                AssessmentQuestionPool.assessment_version_id == version.id
+            )
+        )
+    }
+    eligible_question_ids: set[UUID] = set()
+    for question, menu_item_id in eligible_rows:
+        eligible_question_ids.add(question.id)
+        pool = current_pools.get(question.id)
+        values = {
+            "coverage_key": f"menu_item:{menu_item_id}",
+            "mechanic": question.mechanic,
+            "eligible": True,
+            "exclusion_reason": None,
+        }
+        if pool is None:
+            db.add(
+                AssessmentQuestionPool(
+                    assessment_version_id=version.id,
+                    question_version_id=question.id,
+                    weight=1,
+                    **values,
+                )
+            )
+        else:
+            for key, value in values.items():
+                setattr(pool, key, value)
+    for question_id, pool in current_pools.items():
+        if question_id not in eligible_question_ids:
+            pool.eligible = False
+            pool.exclusion_reason = "SOURCE_NOT_ELIGIBLE"
+    await db.flush()
+
+    pool_rows = list(
+        (
+            await db.execute(
+                select(AssessmentQuestionPool, QuestionVersion)
+                .join(
+                    QuestionVersion,
+                    QuestionVersion.id == AssessmentQuestionPool.question_version_id,
+                )
+                .where(
+                    AssessmentQuestionPool.assessment_version_id == version.id,
+                    AssessmentQuestionPool.eligible.is_(True),
+                    QuestionVersion.status == "published",
+                )
+            )
+        ).all()
+    )
+    coverage_keys = sorted({pool.coverage_key for pool, _question in pool_rows})
+    mechanics = sorted({pool.mechanic for pool, _question in pool_rows})
+    status, rotation_supported, blocking_codes, warning_codes = derive_readiness_state(
+        len(coverage_keys), required_count=10
+    )
+    basis_payload = [
+        {
+            "id": str(question.id),
+            "fingerprint": question.source_fingerprint,
+            "coverage_key": pool.coverage_key,
+            "mechanic": pool.mechanic,
+        }
+        for pool, question in sorted(pool_rows, key=lambda row: str(row[1].id))
+    ]
+    basis_fingerprint = hashlib.sha256(
+        json.dumps(basis_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    readiness = await db.scalar(
+        select(AssessmentReadiness).where(AssessmentReadiness.assessment_version_id == version.id)
+    )
+    values = {
+        "status": status,
+        "eligible_count": len(coverage_keys),
+        "required_count": 10,
+        "coverage_evidence": {
+            "distinct_menu_item_count": len(coverage_keys),
+            "coverage_keys": coverage_keys,
+            "mechanics": mechanics,
+        },
+        "rotation_supported": rotation_supported,
+        "basis_fingerprint": basis_fingerprint,
+        "blocking_codes": blocking_codes,
+        "warning_codes": warning_codes,
+        "computed_at": now,
+    }
+    if readiness is None:
+        readiness = AssessmentReadiness(assessment_version_id=version.id, **values)
+        db.add(readiness)
+    else:
+        for key, value in values.items():
+            setattr(readiness, key, value)
+    await db.flush()
+    return readiness
 
 
 def _candidate_response(

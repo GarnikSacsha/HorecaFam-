@@ -18,6 +18,7 @@ from app.services.question_generation import (
     build_category_candidate,
     build_component_candidate,
     build_description_candidate,
+    build_missing_component_candidate,
 )
 
 
@@ -280,6 +281,55 @@ def test_description_generation_rejects_duplicate_descriptions() -> None:
             rule,
             target,
             [target, other.model_copy(update={"description": target.description.casefold()})],
+        )
+        is None
+    )
+
+
+def test_missing_component_generation_uses_complete_verified_component_sets() -> None:
+    target_item_version_id = uuid4()
+    included = ComponentFact(
+        menu_item_version_component_id=uuid4(),
+        menu_component_version_id=uuid4(),
+        menu_item_version_id=target_item_version_id,
+        menu_item_id=uuid4(),
+        item_name="Борщ",
+        component_name="Буряк",
+        position=0,
+        verified=True,
+    )
+    missing = included.model_copy(
+        update={
+            "menu_item_version_component_id": uuid4(),
+            "menu_component_version_id": uuid4(),
+            "menu_item_version_id": uuid4(),
+            "menu_item_id": uuid4(),
+            "item_name": "Цезар",
+            "component_name": "Пармезан",
+        }
+    )
+
+    candidate = build_missing_component_candidate(
+        _scope(),
+        ComponentGenerationRule(code="menu.components", version=1),
+        target_item_version_id,
+        [included, missing],
+    )
+
+    assert candidate is not None
+    assert candidate.answer_payload.correct_option_keys == [
+        f"component:{missing.menu_component_version_id}"
+    ]
+    assert (
+        candidate.sources[0].menu_item_version_component_id
+        == missing.menu_item_version_component_id
+    )
+    assert (
+        build_missing_component_candidate(
+            _scope(),
+            ComponentGenerationRule(code="menu.components", version=1),
+            target_item_version_id,
+            [included, missing.model_copy(update={"verified": False})],
         )
         is None
     )

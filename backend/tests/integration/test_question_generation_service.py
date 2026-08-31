@@ -17,6 +17,7 @@ from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
     approve_question_candidate_batch,
+    ensure_practice_readiness,
 )
 from tests.factories.identity import make_location, make_organization, make_user
 from tests.factories.menu import (
@@ -289,8 +290,8 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     }
     first = await generate_question_candidates(db_session, **scope)
     await db_session.flush()
-    assert first.created_count == 7
-    assert await db_session.scalar(select(func.count()).select_from(QuestionSourceLink)) == 22
+    assert first.created_count == 9
+    assert await db_session.scalar(select(func.count()).select_from(QuestionSourceLink)) == 29
     published_candidate = await db_session.scalar(
         select(QuestionCandidate)
         .join(
@@ -317,11 +318,48 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     question_version = await db_session.get(QuestionVersion, approval.question_version_id)
     assert question_version is not None
 
+    practice_candidate = await db_session.scalar(
+        select(QuestionCandidate)
+        .join(
+            QuestionGenerationRule,
+            QuestionGenerationRule.id == QuestionCandidate.generation_rule_id,
+        )
+        .where(
+            QuestionCandidate.status == "needs_review",
+            QuestionGenerationRule.code == "menu.components",
+        )
+        .limit(1)
+    )
+    assert practice_candidate is not None
+    await approve_question_candidate(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        candidate_id=practice_candidate.id,
+        expected_revision=practice_candidate.revision,
+        edited_payload=None,
+        actor_user_id=actor.id,
+        request_id=practice_candidate.id,
+        now=now,
+    )
+    practice_readiness = await ensure_practice_readiness(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        training_version_id=training_version.id,
+        actor_user_id=actor.id,
+        now=now,
+    )
+    assert practice_readiness.status == "blocked"
+    assert practice_readiness.eligible_count == 1
+    assert practice_readiness.required_count == 10
+    assert practice_readiness.coverage_evidence["distinct_menu_item_count"] == 1
+
     replay = await generate_question_candidates(db_session, **scope)
     soup_version.price_minor = 99999
     price_only = await generate_question_candidates(db_session, **scope)
-    assert replay.existing_count == 7
-    assert price_only.existing_count == 7
+    assert replay.existing_count == 9
+    assert price_only.existing_count == 9
     assert price_only.created_count == 0
     assert price_only.stale_candidate_count == 0
 
@@ -354,7 +392,7 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     changed = await generate_question_candidates(db_session, **scope)
     await db_session.flush()
     assert changed.created_count == 2
-    assert changed.existing_count == 5
+    assert changed.existing_count == 7
     assert changed.stale_candidate_count == 2
     assert changed.stale_question_count == 1
     assert question_version.status == "stale"
@@ -374,7 +412,7 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
             .order_by(QuestionCandidate.id)
         )
     )
-    assert len(reviewable) == 7
+    assert len(reviewable) == 8
     reviewable[1].status = "stale"
     await db_session.flush()
     with pytest.raises(APIError) as raised:
