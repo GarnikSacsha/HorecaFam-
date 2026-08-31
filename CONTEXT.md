@@ -138,15 +138,24 @@ source-bound limitations are recorded in
 CRA-62 is the bounded repository synchronization/publication checkpoint. Deployment and provider
 execution remain separately gated and unperformed.
 
+[CRA-63](https://linear.app/craftspacee/issue/CRA-63) Practice planning is accepted and Done.
+[CRA-64](https://linear.app/craftspacee/issue/CRA-64) is the active bounded implementation issue.
+Its local eight-checkpoint candidate adds generic 5/10/20 assessment persistence through
+`0014_practice_persistence`, source-safe whole-menu Practice readiness, immutable ten-Question
+Attempts, feedback-free Answers, explicit finish, Knowledge, durable Final Exam eligibility,
+Latest/Best history, Admin readiness and responsive Employee UI. Evidence is in
+[`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
+Acceptance and publication remain separate Denys gates.
+
 ## Repository map
 
-- [`backend/app`](backend/app): accepted Stage 0–6 and CRA-49/CRA-54/CRA-57/CRA-61 runtime.
+- [`backend/app`](backend/app): accepted prior runtime plus the CRA-64 local Practice candidate.
 - [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
-  head `0013_question_templates`.
+  head `0014_practice_persistence`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted CRA-43/CRA-49/CRA-54/CRA-57/CRA-61 Admin and Employee
-  experiences, component tests and Playwright evidence.
+- [`frontend`](frontend): accepted prior Admin/Employee experiences plus the CRA-64 local Practice
+  candidate, component tests and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

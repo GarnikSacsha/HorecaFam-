@@ -122,6 +122,7 @@ CRA-49 implementation and corrective acceptance tail are accepted and published 
 CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is published through
 `d955f6a`, and CRA-55 follows at `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is
 published through `d4e0184`, followed by the CRA-58 documentation checkpoint. CRA-60 and CRA-61
-are accepted and Done; CRA-62 is the active bounded synchronization/publication issue for the
-accepted CRA-61 range through `614da3d`. Every later remote or product action remains separately
-gated.
+are accepted and Done; CRA-62 published the accepted CRA-61 range through documentation endpoint
+`c79db9d`. CRA-63 planning is accepted and Done. CRA-64 is the active bounded local Practice
+implementation candidate under its authorized eight-checkpoint map. Acceptance, every remote
+action and every later product action remain separately gated.

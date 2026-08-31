@@ -264,7 +264,7 @@ async def get_practice_summary(
     )
     if participation is None or assignment is None:
         return PracticeSummaryResponse(
-            availability="unavailable",
+            availability="no_assignment",
             can_start=False,
             reason_codes=["ASSIGNMENT_UNAVAILABLE"],
             readiness_status=None,
@@ -300,7 +300,7 @@ async def get_practice_summary(
         )
     if assignment.status != "completed":
         return PracticeSummaryResponse(
-            availability="unavailable",
+            availability="training_incomplete",
             can_start=False,
             reason_codes=["TRAINING_INCOMPLETE"],
             readiness_status=ready_row[1].status if ready_row is not None else None,

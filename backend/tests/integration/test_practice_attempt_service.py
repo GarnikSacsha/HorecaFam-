@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import Settings
 from app.core.errors import APIError
 from app.db.session import create_engine, create_session_factory
-from app.models import AssessmentEligibility, OrganizationMembership, User
+from app.models import AssessmentEligibility, Organization, OrganizationMembership, User
 from app.schemas.assessment import PracticeFinishResponse, SingleChoiceSubmission
 from app.services.practice_answers import save_practice_answer
 from app.services.practice_attempts import (
@@ -29,6 +29,7 @@ from tests.factories.assessments import (
     make_question_version,
 )
 from tests.factories.auth import make_session
+from tests.factories.identity import make_employee_profile, make_membership, make_user
 from tests.integration.test_assessment_persistence import _make_context
 
 
@@ -59,9 +60,6 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
     employee_user_id = employee_user.id
     assignment_id = context.assignment.id
     now = datetime.now(UTC)
-    context.assignment.status = "completed"
-    context.assignment.started_at = now
-    context.assignment.completed_at = now
 
     practice = make_assessment(
         context.training,
@@ -125,6 +123,42 @@ async def test_practice_start_resume_snapshot_and_takeover_are_tenant_safe(
             required_count=10,
         )
     )
+    await db_session.flush()
+
+    incomplete_summary = await get_practice_summary(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        session_id=first_session.id,
+    )
+    assert incomplete_summary.availability == "training_incomplete"
+    assert incomplete_summary.reason_codes == ["TRAINING_INCOMPLETE"]
+
+    organization = await db_session.get(Organization, organization_id)
+    assert organization is not None
+    unassigned_user = make_user(email_normalized="practice-unassigned@example.com")
+    unassigned_membership = make_membership(organization, unassigned_user)
+    unassigned_employee = make_employee_profile(
+        unassigned_membership,
+        organization_id,
+        location_id=location_id,
+    )
+    db_session.add_all([unassigned_user, unassigned_membership, unassigned_employee])
+    await db_session.flush()
+    unassigned_summary = await get_practice_summary(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=unassigned_employee.id,
+        session_id=first_session.id,
+    )
+    assert unassigned_summary.availability == "no_assignment"
+    assert unassigned_summary.reason_codes == ["ASSIGNMENT_UNAVAILABLE"]
+
+    context.assignment.status = "completed"
+    context.assignment.started_at = now
+    context.assignment.completed_at = now
     await db_session.flush()
 
     summary = await get_practice_summary(

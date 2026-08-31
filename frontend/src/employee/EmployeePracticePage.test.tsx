@@ -95,6 +95,74 @@ function renderPractice(client: ApiClient) {
 }
 
 describe("Employee Practice", () => {
+  it.each([
+    ["no_assignment", "Навчання ще не призначено", false],
+    ["training_incomplete", "Спочатку завершіть навчання", true],
+  ] as const)(
+    "renders the accepted %s availability state",
+    async (availability, heading, linksToLearning) => {
+      const client: ApiClient = {
+        getSession: () => Promise.resolve(session),
+        request: <T,>(path: string) => {
+          if (path === "/me/training/practice") {
+            return Promise.resolve({
+              ...readySummary,
+              availability,
+              can_start: false,
+              reason_codes: [],
+            } as T);
+          }
+          if (path === "/me/training/practice/attempts") {
+            return Promise.resolve(emptyHistory as T);
+          }
+          throw new Error(`Unexpected request: ${path}`);
+        },
+      };
+
+      renderPractice(client);
+
+      expect(await screen.findByText(heading)).toBeInTheDocument();
+      const learningLink = screen.queryByRole("link", { name: "Перейти до навчання" });
+      if (linksToLearning) expect(learningLink).toHaveAttribute("href", "/employee/learning");
+      else expect(learningLink).not.toBeInTheDocument();
+    },
+  );
+
+  it("shows the accepted label for a very weak result", async () => {
+    const veryWeak = {
+      result_id: "result-weak",
+      attempt_id: "attempt-weak",
+      assessment_version_id: "assessment-version-1",
+      completed_at: "2030-08-29T08:05:00Z",
+      correct_count: 3,
+      total_count: 10 as const,
+      score_basis_points: 3000,
+      knowledge_level: "very_weak" as const,
+      critical_error_count: 0,
+    };
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) => {
+        if (path === "/me/training/practice") {
+          return Promise.resolve({ ...readySummary, latest: veryWeak, best: veryWeak } as T);
+        }
+        if (path === "/me/training/practice/attempts") {
+          return Promise.resolve({
+            qualified: false,
+            latest: veryWeak,
+            best: veryWeak,
+            history: [veryWeak],
+          } as T);
+        }
+        throw new Error(`Unexpected request: ${path}`);
+      },
+    };
+
+    renderPractice(client);
+
+    expect((await screen.findAllByText("Не пройдено")).length).toBeGreaterThanOrEqual(2);
+  });
+
   it("starts exactly ten questions and saves an answer without revealing feedback", async () => {
     const user = userEvent.setup();
     const requests: Array<{ path: string; options?: RequestOptions }> = [];

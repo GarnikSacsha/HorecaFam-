@@ -292,7 +292,7 @@ describe("Admin Employee flow", () => {
     expect(
       await screen.findByRole("heading", { name: "Призначення навчання" }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Призначити поточну версію" }));
+    await user.click(await screen.findByRole("button", { name: "Призначити поточну версію" }));
     expect(await screen.findByText("Навчання призначено")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Причина відкликання"), "Зміна програми");

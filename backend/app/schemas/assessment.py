@@ -423,7 +423,13 @@ class PracticeHistoryResponse(StrictAssessmentSchema):
 
 
 class PracticeSummaryResponse(StrictAssessmentSchema):
-    availability: Literal["ready", "preparing", "unavailable", "paused"]
+    availability: Literal[
+        "no_assignment",
+        "training_incomplete",
+        "preparing",
+        "ready",
+        "paused",
+    ]
     can_start: bool
     reason_codes: list[str]
     readiness_status: Literal["processing", "ready", "warning", "blocked"] | None

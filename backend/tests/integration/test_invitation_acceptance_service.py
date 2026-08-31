@@ -30,7 +30,7 @@ from tests.factories import (
     make_user,
 )
 
-FIXED_NOW = datetime(2026, 8, 27, 9, 30, tzinfo=UTC)
+FIXED_NOW = datetime(2030, 8, 27, 9, 30, tzinfo=UTC)
 
 
 async def arrange_invitation(

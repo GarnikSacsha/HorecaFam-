@@ -1,20 +1,18 @@
 # HoReCa Repository Status
 
-**Snapshot date:** 2026-08-29
-**Published product implementation:** CRA-57 MVP Vertical Slice 4 — Assignment, Completion and
-Rollout is accepted, Done, and fast-forward published through `d4e0184`. Backend MVP Vertical
-Slice 1 through CRA-40, Frontend MVP Vertical Slice 1 through CRA-43, CRA-49 Menu Source of Truth,
-CRA-54 Training Content, and CRA-57 are accepted and published. CRA-55 advances the prior
-documentation baseline to `afc607a`; CRA-56 planning is Done; the CRA-58 documentation checkpoint
-containing this record follows the accepted CRA-57 range. The canonical routing entry is the Linear
+**Snapshot date:** 2026-08-31
+**Published product implementation:** CRA-61 Interactive Training and CRA-62 synchronization are
+accepted, Done and fast-forward published on `origin/main` through `c79db9d`. The canonical routing
+entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Accepted local boundary:** CRA-60 planning and CRA-61 Interactive Training are accepted and Done.
-CRA-61 is the eleven-commit range `93ce970..614da3d`, including the accepted multi-template
-amendment and synchronized evidence. CRA-62 governs repository synchronization and ordinary
-publication. PR, merge, deployment, provider calls, and production actions remain separate gates.
+**Current local boundary:** CRA-63 Practice planning is accepted and Done. CRA-64 is In Progress;
+Denys authorized its accepted eight-checkpoint map. The local acceptance candidate starts at
+`74c5741`, checkpoints 1–7 end at `619c26e`, and this checkpoint records final evidence and
+repository/Linear synchronization. Acceptance, push, PR, merge, deployment, provider calls and
+production actions remain separate gates.
 
 ## Accepted implementation and planning checkpoints
 
@@ -64,6 +62,10 @@ publication. PR, merge, deployment, provider calls, and production actions remai
 - CRA-60 Slice 5 planning and its nine-checkpoint implementation map are accepted and Done.
 - CRA-61 Slice 5 Interactive Training is accepted and Done as `93ce970..614da3d`; CRA-62 owns its
   repository synchronization and publication evidence.
+- CRA-62 is accepted, Done and published through `c79db9d`.
+- CRA-63 Slice 6 Practice planning and its forty-scenario/eight-checkpoint map are accepted and Done.
+- CRA-64 Slice 6 Practice is the active local acceptance candidate; it is not yet accepted or
+  published.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -200,8 +202,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; the accepted CRA-57 implementation range is published through `d4e0184`, and the
-  CRA-58 documentation checkpoint containing this snapshot follows it on `origin/main`.
+- Branch: `main`; `origin/main` is the accepted CRA-62 published baseline `c79db9d`. Local `main`
+  contains the authorized CRA-64 eight-checkpoint candidate and is not published.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
   checkpoints, CRA-49 through `8028d6e`, CRA-54 through `d955f6a`, CRA-55 through `afc607a`, and
@@ -213,8 +215,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted CRA-43/CRA-49/CRA-54/CRA-57 implementation with Admin assignment/rollout
-  and assignment-aware Employee Learning.
+- `frontend/`: accepted prior implementation plus the local CRA-64 Admin readiness and Employee
+  Practice candidate.
 
 ## Accepted and published CRA-57 checkpoint
 
@@ -301,6 +303,37 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Denys explicitly accepted this evidence and its remaining source-bound limitation. The accepted
   range ends at `614da3d`; CRA-62 owns publication and exact remote evidence.
 
+## CRA-64 Practice local acceptance candidate
+
+- Scope: Training-scoped `whole_menu_knowledge_check`, ten distinct Menu Items, final-only
+  feedback, seven effective inactivity days with pause freeze/takeover, explicit atomic finish,
+  Knowledge, critical-allergen evidence, durable Final Exam eligibility, Latest/Best/history,
+  Admin readiness and Employee UI.
+- Persistence head: `0014_practice_persistence`, including generic 5/10/20 assessment constraints
+  and tenant-owned immutable eligibility.
+- Source boundary: verified components, allergens and deterministic missing-component facts only;
+  assembly/serving remains excluded without a structured approved source.
+- Exact forty-scenario evidence and limitations:
+  [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
+- Final Exam execution/certification, management Results, Attention/Retakes, providers,
+  deployment and real Bacara ingestion remain absent.
+
+## Remaining to a functional and pilot-ready MVP
+
+After CRA-64 acceptance, the functional product core still needs:
+
+1. Slice 7 Final Exam and canonical Results: about 5–8 focused engineering days.
+2. Slice 8 Attention and Retakes: about 4–6 focused days.
+3. Pilot-critical access/admin/content closure: about 5–9 focused days, including elevated-user
+   recovery/enrollment, Employee lifecycle administration, minimum venue setup, validated Bacara
+   content and the complete synthetic end-to-end chain.
+
+That leaves approximately 14–23 focused engineering days, or roughly 3–5 calendar weeks at the
+current approval/checkpoint rhythm, to a local functional MVP. Pilot infrastructure, provider,
+observability, backup/security/performance hardening and real-venue UAT add roughly 10–20 focused
+days plus external latency. The credible pilot-ready window is therefore still about 5–9 calendar
+weeks after CRA-64 acceptance; real verified content and external approvals are the largest risks.
+
 ## Protected uncommitted material
 
 - `Photos/` contains seven project-asset JPG files for
@@ -316,7 +349,9 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- The active bounded repository issue is CRA-62. CRA-19 remains a separate visual-only track.
+- The active bounded repository issue is CRA-64. CRA-19 remains a separate visual-only track.
+- CRA-64 may move to Done only after Denys accepts the complete local evidence. No next product
+  implementation, publication or remote action is authorized by a green local gate alone.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization
   are recorded in CRA-26. Further staging or commits require a new bounded map and explicit

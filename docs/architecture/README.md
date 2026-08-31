@@ -250,6 +250,27 @@ ordering/assembly and matching snapshots, but automated templates for those mech
 absent because current sources do not prove preparation order or verified pair semantics. Slice 6
 Practice, Final Exam, provider execution and deployment remain absent.
 
+## CRA-64 Practice local candidate
+
+```text
+current completed Assignment + source-safe item-level Practice pool
+→ immutable ten-Question/ten-Menu-Item Attempt
+→ feedback-free confirmed Answers → explicit atomic finish
+→ Knowledge + critical-allergen evidence + durable Final Exam eligibility
+```
+
+Practice uses the existing assessment graph with Training-scoped `whole_menu_knowledge_check`
+roots and Versions, exact ten-item snapshots, one active Attempt per Employee/Assignment/Version,
+seven effective inactivity days, pause freeze and device takeover. Each Answer is append-only and
+returns no correctness. Explicit finish grades once, exposes the completed review, keeps
+Latest/Best distinct and idempotently earns eligibility at 4/10 without setting `pass_status`.
+
+The source-safe Practice pool admits verified component/allergen Questions and deterministic
+missing-component generation using stable Menu Item coverage keys. Category/description remain
+Interactive-only. Assembly/serving remains excluded because the current model has no approved
+structured authority. A target `menu_final_exam` root exists only for the eligibility FK; Final
+Exam Versions, Attempts, Results, routes and certification are not implemented.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -259,8 +280,8 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 ## Explicitly absent
 
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
-reference CRUD, Employee disable/reactivate lifecycle administration, Practice/exam workflow,
-provider integration, or deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/)
-and includes accepted CRA-49/CRA-54/CRA-57 experiences. Adding any absent
-capability requires a bounded Linear issue and approval. CRA-62 is the active bounded repository
-synchronization/publication issue; CRA-19 remains a separate visual-only track.
+reference CRUD, Employee disable/reactivate lifecycle administration, Final Exam execution,
+certification Results, Attention/Retakes, provider integration, or deployed worker/resource. The
+frontend lives in [`../../frontend/`](../../frontend/) and includes the CRA-64 local Practice
+candidate. Adding any absent capability requires a bounded Linear issue and approval. CRA-64 is
+the active bounded implementation issue; CRA-19 remains a separate visual-only track.

@@ -839,7 +839,7 @@ export interface PracticeHistoryResponse {
 }
 
 export interface PracticeSummaryResponse {
-  availability: "ready" | "preparing" | "unavailable" | "paused";
+  availability: "no_assignment" | "training_incomplete" | "preparing" | "ready" | "paused";
   can_start: boolean;
   reason_codes: string[];
   readiness_status: "processing" | "ready" | "warning" | "blocked" | null;

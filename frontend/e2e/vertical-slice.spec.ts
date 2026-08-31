@@ -326,7 +326,10 @@ test("admin invitation, pending setup, activation and active employee home", asy
   await expect(page.getByRole("heading", { name: "Вітаємо, Анна" })).toBeVisible();
   await expect(page.getByText("Навчання ще не призначено")).toBeVisible();
   await expect(page.getByText(/%/)).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Практика" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Практика" })).toHaveAttribute(
+    "href",
+    "/employee/practice",
+  );
   await expect(page.getByRole("button", { name: /розпочати.*(іспит|практик)/i })).toHaveCount(0);
 });
 

@@ -23,7 +23,7 @@ import { StatusPill } from "../ui/States";
 type BusyAction = "load" | "start" | "answer" | "takeover" | "finish" | null;
 
 const knowledgeLabels: Record<PracticeKnowledgeLevel, string> = {
-  very_weak: "Дуже слабке знання",
+  very_weak: "Не пройдено",
   weak: "Слабке знання",
   good: "Добре знання",
   strong: "Сильне знання",
@@ -361,7 +361,9 @@ export function EmployeePracticePage() {
       return ["Навчання призупинено", "Історія доступна, нові відповіді тимчасово недоступні."];
     if (summary.availability === "preparing")
       return ["Практика готується", "Банк питань ще не готовий. Поверніться пізніше."];
-    if (summary.availability === "unavailable")
+    if (summary.availability === "no_assignment")
+      return ["Навчання ще не призначено", "Практика стане доступною після призначення навчання."];
+    if (summary.availability === "training_incomplete")
       return [
         "Спочатку завершіть навчання",
         "Практика відкриється після всіх обов’язкових уроків.",
@@ -402,6 +404,11 @@ export function EmployeePracticePage() {
         <div className="interactive-availability" role="status">
           <strong>{availability[0]}</strong>
           <span>{availability[1]}</span>
+          {summary?.availability === "training_incomplete" ? (
+            <Link className="button button-secondary" to="/employee/learning">
+              Перейти до навчання
+            </Link>
+          ) : null}
         </div>
       ) : null}
 

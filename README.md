@@ -14,8 +14,11 @@ accepted and Done. The nine CRA-57 checkpoints are fast-forward published throug
 CRA-58 documentation checkpoint follows that range. CRA-60 Slice 5 planning is accepted and Done.
 CRA-61 Interactive Training is accepted and Done as the eleven-commit local range
 `93ce970..614da3d`. CRA-62 is the bounded synchronization/publication checkpoint for that accepted
-range; exact remote publication evidence is recorded in Linear. PR, merge, deployment, providers,
-and production configuration remain separate gates. CRA-42 is unrelated Backlog work.
+range; exact remote publication evidence is recorded in Linear. CRA-63 Practice planning is
+accepted and Done. CRA-64 is the active Slice 6 implementation issue; its eight-checkpoint local
+acceptance candidate is awaiting Denys acceptance and separate publication approval. PR, merge,
+deployment, providers, and production configuration remain separate gates. CRA-42 is unrelated
+Backlog work.
 
 ## Start here
 
@@ -89,4 +92,8 @@ Results and Latest/Best history, plus responsive Admin and Employee UI. Its acce
 recorded in
 [`docs/testing/interactive-training-slice-5-acceptance.md`](docs/testing/interactive-training-slice-5-acceptance.md).
 The accepted range ends at `614da3d`; CRA-62 governs repository synchronization and publication.
-Slice 6 Practice, Final Exam, providers and deployment remain outside this boundary.
+CRA-64's local candidate adds Training-scoped ten-Question Practice with final-only feedback,
+durable Final Exam eligibility, Admin readiness and Employee UI. Its executed evidence is recorded
+in [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
+Final Exam execution, certification Results, Attention/Retakes, providers and deployment remain
+outside this boundary.

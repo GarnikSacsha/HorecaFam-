@@ -26,7 +26,7 @@ from app.services.invitation_acceptance import (
 )
 from tests.factories import make_invitation, make_membership, make_organization, make_user
 
-FIXED_NOW = datetime(2026, 8, 27, 11, 0, tzinfo=UTC)
+FIXED_NOW = datetime(2030, 8, 27, 11, 0, tzinfo=UTC)
 
 
 async def make_invitation_with_token(

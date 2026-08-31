@@ -224,3 +224,14 @@ security review and remaining source-bound generation limitations are in
 Denys accepted this evidence and the remaining source-bound generation limitations. CRA-62 governs
 repository publication and exact remote evidence; PR, merge, provider and deployment actions remain
 separately gated.
+
+## CRA-64 Practice local acceptance candidate
+
+The 2026-08-31 local candidate implements the accepted CRA-63 forty-scenario Practice boundary:
+ten distinct Menu Items, feedback-free Answer saves, explicit finish, Knowledge, critical-allergen
+evidence, durable Final Exam eligibility, Admin readiness and responsive Employee UI. Exact
+executed evidence, RED/GREEN corrections, limitations and the eight-checkpoint boundary are in
+[`practice-slice-6-acceptance.md`](practice-slice-6-acceptance.md).
+
+CRA-64 remains In Progress until Denys accepts the complete local evidence. No publication,
+deployment, provider or production action is implied.
