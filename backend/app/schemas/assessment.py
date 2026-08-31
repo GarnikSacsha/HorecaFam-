@@ -493,6 +493,20 @@ class FinalExamSummaryResponse(StrictAssessmentSchema):
     retake_available: bool = False
 
 
+class FinalExamAnswerRequest(StrictAssessmentSchema):
+    attempt_question_id: UUID
+    answer_payload: InteractiveAnswerPayload
+    lease_generation: int = Field(ge=1)
+
+
+class FinalExamAnswerResponse(StrictAssessmentSchema):
+    answer: FinalExamSavedAnswerResponse
+    answered_count: int = Field(ge=0, le=20)
+    next_question_id: UUID | None
+    attempt_status: Literal["in_progress"] = "in_progress"
+    replayed: bool
+
+
 class PracticeResultSummaryResponse(StrictAssessmentSchema):
     result_id: UUID
     attempt_id: UUID

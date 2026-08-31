@@ -11,6 +11,7 @@ def test_final_exam_attempt_lifecycle_is_exposed_without_answer_keys() -> None:
         "/api/v1/me/training/final-exam/attempts",
         "/api/v1/me/training/final-exam/attempts/{attempt_id}",
         "/api/v1/me/training/final-exam/attempts/{attempt_id}/takeover",
+        "/api/v1/me/training/final-exam/attempts/{attempt_id}/answer",
     }
 
     assert expected <= set(openapi["paths"])
@@ -21,3 +22,6 @@ def test_final_exam_attempt_lifecycle_is_exposed_without_answer_keys() -> None:
     assert "provenance_snapshot" not in question
     assert "is_critical" not in question
     assert "is_correct" not in option
+    answer = openapi["components"]["schemas"]["FinalExamAnswerResponse"]["properties"]
+    assert "feedback" not in answer
+    assert "result" not in answer
