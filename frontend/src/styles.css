@@ -148,6 +148,10 @@ h1 {
   background: var(--surface-raised);
 }
 
+.auth-panel-wide {
+  width: min(100%, 38rem);
+}
+
 .auth-panel .brand-mark {
   margin-bottom: 2.75rem;
 }
@@ -166,6 +170,69 @@ h1 {
 
 .form-stack {
   gap: 1.25rem;
+}
+
+.auth-link {
+  justify-self: center;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.auth-success {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.auth-success h2,
+.auth-success p {
+  margin: 0;
+}
+
+.auth-success p,
+.field-hint,
+.auth-steps {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.auth-steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+  padding-left: 1.25rem;
+}
+
+.setup-secret {
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.recovery-code-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.recovery-code-list li {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.65rem;
+  text-align: center;
+  background: var(--surface-page);
+}
+
+@media (max-width: 28rem) {
+  .recovery-code-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .field-group label {

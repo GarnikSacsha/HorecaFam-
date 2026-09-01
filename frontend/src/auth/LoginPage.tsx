@@ -1,15 +1,26 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
-import type { FieldError, MfaRequiredResponse, SessionResponse } from "../api/contracts";
+import type {
+  FieldError,
+  MfaEnrollmentRequiredResponse,
+  MfaRequiredResponse,
+  SessionResponse,
+} from "../api/contracts";
 import { useSession } from "../session/SessionContext";
 import { ErrorSummary } from "../ui/ErrorSummary";
 import { fieldError, formErrors } from "../ui/formErrors";
 
 function isMfaRequired(
-  response: SessionResponse | MfaRequiredResponse,
+  response: SessionResponse | MfaRequiredResponse | MfaEnrollmentRequiredResponse,
 ): response is MfaRequiredResponse {
   return "status" in response && response.status === "mfa_required";
+}
+
+function isMfaEnrollmentRequired(
+  response: SessionResponse | MfaRequiredResponse | MfaEnrollmentRequiredResponse,
+): response is MfaEnrollmentRequiredResponse {
+  return "status" in response && response.status === "mfa_enrollment_required";
 }
 
 export function LoginPage() {
@@ -27,12 +38,16 @@ export function LoginPage() {
     setErrors([]);
     setSubmitting(true);
     try {
-      const response = await client.request<SessionResponse | MfaRequiredResponse>("/auth/login", {
+      const response = await client.request<
+        SessionResponse | MfaRequiredResponse | MfaEnrollmentRequiredResponse
+      >("/auth/login", {
         method: "POST",
         body: { email, password },
       });
       if (isMfaRequired(response)) {
         void navigate("/mfa", { replace: true });
+      } else if (isMfaEnrollmentRequired(response)) {
+        void navigate("/mfa/enroll", { replace: true });
       } else {
         setSession(response);
         void navigate("/", { replace: true });
@@ -97,6 +112,9 @@ export function LoginPage() {
           <button className="button button-primary button-full" type="submit" disabled={submitting}>
             {submitting ? "Входимо…" : "Увійти"}
           </button>
+          <Link className="auth-link" to="/forgot-password">
+            Забули пароль?
+          </Link>
         </form>
       </section>
     </main>

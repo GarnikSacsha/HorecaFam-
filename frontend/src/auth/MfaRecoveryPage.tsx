@@ -6,7 +6,7 @@ import { useSession } from "../session/SessionContext";
 import { ErrorSummary } from "../ui/ErrorSummary";
 import { fieldError, formErrors } from "../ui/formErrors";
 
-export function MfaPage() {
+export function MfaRecoveryPage() {
   const navigate = useNavigate();
   const { client, setSession } = useSession();
   const [code, setCode] = useState("");
@@ -16,17 +16,25 @@ export function MfaPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrors([]);
-    if (!/^\d{6}$/.test(code)) {
-      setErrors([{ field: "code", code: "INVALID_MFA_CODE", message: "Введіть шість цифр." }]);
+    const normalizedCode = code.replace(/\s/g, "").toUpperCase();
+    if (normalizedCode.length < 16) {
+      setErrors([
+        {
+          field: "code",
+          code: "INVALID_RECOVERY_CODE",
+          message: "Введіть повний резервний код.",
+        },
+      ]);
       return;
     }
     setSubmitting(true);
     try {
-      const response = await client.request<SessionResponse>("/auth/mfa/verify", {
+      const session = await client.request<SessionResponse>("/auth/mfa/recovery/verify", {
         method: "POST",
-        body: { code },
+        body: { code: normalizedCode },
       });
-      setSession(response);
+      setCode("");
+      setSession(session);
       void navigate("/", { replace: true });
     } catch (error) {
       setErrors(formErrors(error, "code"));
@@ -38,24 +46,24 @@ export function MfaPage() {
   const codeError = fieldError(errors, "code");
   return (
     <main aria-label="Bacara Academy" className="auth-page">
-      <section className="auth-panel" aria-labelledby="mfa-title">
-        <p className="eyebrow">Безпечний вхід</p>
-        <h1 id="mfa-title">Підтвердження входу</h1>
-        <p className="form-intro">Введіть шестизначний код із застосунку автентифікації.</p>
+      <section className="auth-panel" aria-labelledby="mfa-recovery-title">
+        <p className="eyebrow">Резервний вхід</p>
+        <h1 id="mfa-recovery-title">Використайте резервний код</h1>
+        <p className="form-intro">
+          Код спрацює лише один раз. Після входу використаний код стане недійсним.
+        </p>
         <form className="form-stack" onSubmit={(event) => void handleSubmit(event)} noValidate>
           <ErrorSummary errors={errors} />
           <div className="field-group">
-            <label htmlFor="code">Код підтвердження</label>
+            <label htmlFor="code">Резервний код</label>
             <input
               id="code"
               name="code"
               type="text"
-              inputMode="numeric"
               autoComplete="one-time-code"
-              pattern="[0-9]{6}"
-              maxLength={6}
+              spellCheck={false}
               value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+              onChange={(event) => setCode(event.target.value)}
               aria-invalid={Boolean(codeError)}
               aria-describedby={codeError ? "code-error" : undefined}
               required
@@ -67,10 +75,10 @@ export function MfaPage() {
             ) : null}
           </div>
           <button className="button button-primary button-full" type="submit" disabled={submitting}>
-            {submitting ? "Перевіряємо…" : "Підтвердити"}
+            {submitting ? "Перевіряємо…" : "Увійти з резервним кодом"}
           </button>
-          <Link className="auth-link" to="/mfa/recovery">
-            Використати резервний код
+          <Link className="auth-link" to="/mfa">
+            Повернутися до коду з застосунку
           </Link>
         </form>
       </section>

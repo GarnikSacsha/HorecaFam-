@@ -53,4 +53,34 @@ describe("authentication flow", () => {
       },
     ]);
   });
+
+  it("routes a privileged first login to mandatory MFA enrollment", async () => {
+    const client: ApiClient = {
+      getSession: () =>
+        Promise.reject(Object.assign(new Error("Unauthenticated"), { status: 401 })),
+      request: <T,>() =>
+        Promise.resolve({
+          status: "mfa_enrollment_required",
+          expires_at: "2031-01-01T00:05:00Z",
+        } as T),
+    };
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/mfa/enroll" element={<p>Налаштування MFA</p>} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    await user.type(screen.getByLabelText("Робоча електронна пошта"), "admin@example.com");
+    await user.type(screen.getByLabelText("Пароль"), "correct horse battery staple");
+    await user.click(screen.getByRole("button", { name: "Увійти" }));
+
+    expect(await screen.findByText("Налаштування MFA")).toBeInTheDocument();
+  });
 });

@@ -8,8 +8,12 @@ import { AdminResultDetailPage } from "../admin/AdminResultDetailPage";
 import { AdminResultsPage } from "../admin/AdminResultsPage";
 import { AdminTrainingPage } from "../admin/AdminTrainingPage";
 import { AdminAttentionPage } from "../admin/AdminAttentionPage";
+import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
 import { LoginPage } from "../auth/LoginPage";
+import { MfaEnrollmentPage } from "../auth/MfaEnrollmentPage";
 import { MfaPage } from "../auth/MfaPage";
+import { MfaRecoveryPage } from "../auth/MfaRecoveryPage";
+import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { PendingPage } from "../employee/PendingPage";
 import { ActiveHomePage } from "../employee/ActiveHomePage";
 import { EmployeeMenuPage } from "../employee/EmployeeMenuPage";
@@ -40,7 +44,11 @@ export function App() {
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/mfa" element={<MfaPage />} />
+          <Route path="/mfa/enroll" element={<MfaEnrollmentPage />} />
+          <Route path="/mfa/recovery" element={<MfaRecoveryPage />} />
           <Route path="/invite" element={<InvitationAcceptPage />} />
           <Route
             path="/admin/employees"

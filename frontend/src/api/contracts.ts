@@ -39,6 +39,26 @@ export interface MfaRequiredResponse {
   expires_at: string;
 }
 
+export interface MfaEnrollmentRequiredResponse {
+  status: "mfa_enrollment_required";
+  expires_at: string;
+}
+
+export interface PasswordForgotResponse {
+  status: "accepted";
+}
+
+export interface MfaEnrollmentStartResponse {
+  secret: string;
+  otpauth_uri: string;
+  expires_at: string;
+}
+
+export interface MfaEnrollmentConfirmResponse {
+  session: SessionResponse;
+  recovery_codes: string[];
+}
+
 export interface InvitationValidationResponse {
   status: "valid";
   organization_id: string;
