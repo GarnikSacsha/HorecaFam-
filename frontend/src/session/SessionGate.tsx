@@ -3,10 +3,11 @@ import { Navigate } from "react-router-dom";
 import { ErrorState, LoadingState } from "../ui/States";
 import { useSession } from "./SessionContext";
 
-type Audience = "admin" | "pending-employee" | "active-employee";
+type Audience = "admin" | "operator" | "pending-employee" | "active-employee";
 type ActiveSession = NonNullable<ReturnType<typeof useSession>["session"]>;
 
 function sessionDestination(session: ActiveSession): string {
+  if (session.platform_operator && session.session.mfa_verified) return "/operator/jobs";
   const adminAccess = session.organization_access.find((access) => access.is_organization_admin);
   if (adminAccess && session.session.mfa_verified) return "/admin/employees";
   const employeeAccess = session.organization_access.find((access) => access.is_employee);
@@ -50,6 +51,13 @@ export function ProtectedRoute({
   return (
     <SessionBoundary>
       {(session) => {
+        if (audience === "operator") {
+          return session.platform_operator && session.session.mfa_verified ? (
+            children
+          ) : (
+            <Navigate to={sessionDestination(session)} replace />
+          );
+        }
         const allowed = session.organization_access.some((access) => {
           if (audience === "admin")
             return access.is_organization_admin && session.session.mfa_verified;

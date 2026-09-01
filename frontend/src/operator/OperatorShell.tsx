@@ -1,19 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 
+import { LogoutButton } from "../auth/LogoutButton";
+
 const links = [
-  { to: "/admin/employees", label: "Працівники" },
-  { to: "/admin/menu", label: "Меню" },
-  { to: "/admin/content", label: "Навчальні матеріали" },
-  { to: "/admin/questions", label: "Банк питань" },
-  { to: "/admin/results", label: "Результати" },
-  { to: "/admin/attention", label: "Attention" },
-  { to: "/admin/audit", label: "Аудит" },
+  { to: "/operator/jobs", label: "Jobs" },
+  { to: "/operator/audit", label: "Системний аудит" },
 ];
 
-function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
+function OperatorNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav aria-label="Навігація адміністратора" className="admin-nav">
+    <nav aria-label="Навігація Platform Operator" className="admin-nav">
       {links.map((link) => (
         <NavLink
           key={link.to}
@@ -28,10 +25,11 @@ function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function OperatorShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+
   const closeDrawer = () => {
     setDrawerOpen(false);
     triggerRef.current?.focus();
@@ -65,11 +63,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [drawerOpen]);
 
   return (
-    <div className="admin-layout">
-      <aside className="admin-sidebar">
+    <div className="admin-layout operator-layout">
+      <aside className="admin-sidebar operator-sidebar">
         <p className="brand-mark">Bacara Academy</p>
-        <p className="workspace-label">Адміністрування</p>
-        <AdminNavigation />
+        <p className="workspace-label">Platform Operations</p>
+        <OperatorNavigation />
+        <LogoutButton />
       </aside>
       <div className="admin-workspace">
         <header className="admin-mobile-header">
@@ -84,7 +83,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             Відкрити навігацію
           </button>
         </header>
-        <main aria-label="Робоча область адміністратора" className="admin-content">
+        <main aria-label="Робоча область Platform Operator" className="admin-content">
           {children}
         </main>
       </div>
@@ -101,7 +100,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             className="drawer-panel"
             role="dialog"
             aria-modal="true"
-            aria-label="Навігація адміністратора"
+            aria-label="Навігація Platform Operator"
             ref={dialogRef}
           >
             <div className="drawer-heading">
@@ -110,7 +109,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 Закрити
               </button>
             </div>
-            <AdminNavigation onNavigate={closeDrawer} />
+            <OperatorNavigation onNavigate={closeDrawer} />
+            <LogoutButton />
           </div>
         </div>
       ) : null}

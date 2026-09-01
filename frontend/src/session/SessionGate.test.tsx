@@ -25,6 +25,12 @@ const adminSession: SessionResponse = {
   csrf_token: "csrf-safe",
 };
 
+const operatorSession: SessionResponse = {
+  ...adminSession,
+  organization_access: [],
+  platform_operator: true,
+};
+
 function clientWithSession(session: SessionResponse | null): ApiClient {
   return {
     request: vi.fn(),
@@ -70,5 +76,20 @@ describe("session routing", () => {
     );
 
     await waitFor(() => expect(screen.getByText("Вхід")).toBeInTheDocument());
+  });
+
+  it("routes an MFA-verified Platform Operator to Jobs", async () => {
+    render(
+      <SessionProvider client={clientWithSession(operatorSession)}>
+        <MemoryRouter initialEntries={["/"]}>
+          <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/operator/jobs" element={<p>Operator Jobs</p>} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(await screen.findByText("Operator Jobs")).toBeInTheDocument();
   });
 });

@@ -4,6 +4,11 @@ import { MemoryRouter } from "react-router-dom";
 
 import { AdminShell } from "./AdminShell";
 import { EmployeeShell } from "./EmployeeShell";
+import { OperatorShell } from "../operator/OperatorShell";
+
+vi.mock("../auth/LogoutButton", () => ({
+  LogoutButton: () => <button type="button">Вийти</button>,
+}));
 
 describe("application shells", () => {
   it("opens and closes the accessible Admin navigation drawer", async () => {
@@ -24,6 +29,7 @@ describe("application shells", () => {
       "href",
       "/admin/results",
     );
+    expect(screen.getByRole("link", { name: "Аудит" })).toHaveAttribute("href", "/admin/audit");
 
     const trigger = screen.getByRole("button", { name: "Відкрити навігацію" });
     await user.click(trigger);
@@ -32,6 +38,25 @@ describe("application shells", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it("exposes only the approved read-only Operator destinations", () => {
+    render(
+      <MemoryRouter>
+        <OperatorShell>
+          <p>Operations</p>
+        </OperatorShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Jobs" })).toHaveAttribute("href", "/operator/jobs");
+    expect(screen.getByRole("link", { name: "Системний аудит" })).toHaveAttribute(
+      "href",
+      "/operator/audit",
+    );
+    expect(
+      screen.queryByRole("link", { name: /налаштування|користувачі/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the approved four Employee destinations with Learning and Practice enabled", () => {

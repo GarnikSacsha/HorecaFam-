@@ -3224,3 +3224,178 @@ h1 {
     min-height: 44px;
   }
 }
+
+/* Slice 9 operations surfaces keep dense diagnostics readable without exposing hidden payloads. */
+.operations-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.operator-sidebar {
+  background: color-mix(in srgb, var(--surface-raised) 92%, var(--accent));
+}
+
+.operations-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 16rem)) auto;
+  align-items: end;
+  gap: 0.85rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--border-subtle);
+}
+
+.operations-filters .field-group {
+  min-width: 0;
+}
+
+.operations-filters input,
+.operations-filters select,
+.operations-retry-form textarea {
+  width: 100%;
+  min-height: 44px;
+}
+
+.operations-table-wrap td {
+  vertical-align: top;
+}
+
+.operations-id {
+  display: block;
+  max-width: 24rem;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.operations-mobile-list {
+  display: none;
+  gap: 0.75rem;
+}
+
+.operations-card,
+.operations-error-detail,
+.operations-success,
+.operations-retry-form,
+.operations-section {
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 1rem;
+  background: var(--surface-raised);
+}
+
+.operations-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.operations-card p,
+.operations-error-detail p,
+.operations-success p,
+.operations-retry-form p,
+.operations-section p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.operations-card-heading,
+.operations-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.operations-load-more {
+  justify-self: start;
+}
+
+.operations-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.operations-facts > div {
+  display: grid;
+  gap: 0.35rem;
+  border-top: 2px solid var(--border-subtle);
+  padding-top: 0.65rem;
+}
+
+.operations-facts dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.operations-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.operations-error-detail {
+  border-left: 4px solid var(--danger);
+}
+
+.operations-success {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-left: 4px solid var(--success);
+}
+
+.operations-retry-form {
+  display: grid;
+  gap: 1rem;
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border-subtle));
+}
+
+.operations-retry-form h2,
+.operations-section h2 {
+  margin: 0;
+}
+
+.operations-retry-form textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.operations-attempts {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.operations-attempts li {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 46rem) {
+  .operations-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-filters .button,
+  .operations-actions .button,
+  .operations-load-more {
+    width: 100%;
+  }
+
+  .operations-mobile-list {
+    display: grid;
+  }
+
+  .operations-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

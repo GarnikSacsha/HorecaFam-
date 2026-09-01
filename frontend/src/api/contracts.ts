@@ -34,6 +34,98 @@ export interface SessionResponse {
   csrf_token: string;
 }
 
+export type BackgroundJobType =
+  | "invitation_email"
+  | "training_assignment_notification"
+  | "training_rollout_notification"
+  | "password_reset_email"
+  | "attempt_expiry"
+  | "retake_deadline_projection"
+  | "security_record_cleanup"
+  | "audit_retention";
+
+export type BackgroundJobStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface AuditEventResponse {
+  id: string;
+  organization_id: string | null;
+  actor_user_id: string | null;
+  actor_type: "user" | "system" | "worker" | "cron";
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  request_id: string | null;
+  outcome: "success" | "failed";
+  error_code: string | null;
+  created_at: string;
+}
+
+export interface AuditEventListResponse {
+  items: AuditEventResponse[];
+  next_cursor: string | null;
+}
+
+export interface OperatorJobSummary {
+  id: string;
+  organization_id: string | null;
+  job_type: BackgroundJobType;
+  status: BackgroundJobStatus;
+  priority: number;
+  attempt_count: number;
+  max_attempts: number;
+  next_run_at: string;
+  last_error_code: string | null;
+  last_error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  failed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OperatorJobListResponse {
+  items: OperatorJobSummary[];
+  next_cursor: string | null;
+}
+
+export interface OperatorJobAttempt {
+  id: string;
+  attempt_number: number;
+  started_at: string;
+  heartbeat_last_seen_at: string | null;
+  finished_at: string | null;
+  outcome: "processing" | "completed" | "retry_scheduled" | "failed" | "interrupted";
+  error_code: string | null;
+  error_message: string | null;
+  next_retry_at: string | null;
+}
+
+export interface OperatorEmailDelivery {
+  status: "pending" | "accepted" | "delivered" | "bounced" | "failed";
+  provider: string;
+  accepted_by_provider_at: string | null;
+  delivered_at: string | null;
+  bounced_at: string | null;
+  failed_at: string | null;
+  error_code: string | null;
+}
+
+export interface OperatorJobDetail extends OperatorJobSummary {
+  request_id: string | null;
+  locked_at: string | null;
+  heartbeat_at: string | null;
+  attempts: OperatorJobAttempt[];
+  delivery: OperatorEmailDelivery | null;
+}
+
+export interface OperatorJobRetryResponse {
+  source_job_id: string;
+  job: OperatorJobSummary;
+  replayed: boolean;
+}
+
 export interface MfaRequiredResponse {
   status: "mfa_required";
   expires_at: string;

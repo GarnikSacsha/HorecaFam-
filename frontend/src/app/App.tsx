@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AdminEmployeeDetailPage } from "../admin/AdminEmployeeDetailPage";
+import { AdminAuditPage } from "../admin/AdminAuditPage";
 import { AdminEmployeesPage } from "../admin/AdminEmployeesPage";
 import { AdminMenuPage } from "../admin/AdminMenuPage";
 import { AdminQuestionBankPage } from "../admin/AdminQuestionBankPage";
@@ -23,6 +24,10 @@ import { EmployeeLearningPage } from "../employee/EmployeeLearningPage";
 import { EmployeePracticePage } from "../employee/EmployeePracticePage";
 import { EmployeeFinalExamPage } from "../employee/EmployeeFinalExamPage";
 import { InvitationAcceptPage } from "../invitations/InvitationAcceptPage";
+import { OperatorAuditPage } from "../operator/OperatorAuditPage";
+import { OperatorJobDetailPage } from "../operator/OperatorJobDetailPage";
+import { OperatorJobsPage } from "../operator/OperatorJobsPage";
+import { OperatorShell } from "../operator/OperatorShell";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
 import { HomeRedirect, ProtectedRoute } from "../session/SessionGate";
@@ -51,12 +56,52 @@ export function App() {
           <Route path="/mfa/recovery" element={<MfaRecoveryPage />} />
           <Route path="/invite" element={<InvitationAcceptPage />} />
           <Route
+            path="/admin/audit"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminAuditPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/employees"
             element={
               <ProtectedRoute audience="admin">
                 <AdminShell>
                   <AdminEmployeesPage />
                 </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operator/jobs"
+            element={
+              <ProtectedRoute audience="operator">
+                <OperatorShell>
+                  <OperatorJobsPage />
+                </OperatorShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operator/jobs/:jobId"
+            element={
+              <ProtectedRoute audience="operator">
+                <OperatorShell>
+                  <OperatorJobDetailPage />
+                </OperatorShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/operator/audit"
+            element={
+              <ProtectedRoute audience="operator">
+                <OperatorShell>
+                  <OperatorAuditPage />
+                </OperatorShell>
               </ProtectedRoute>
             }
           />
