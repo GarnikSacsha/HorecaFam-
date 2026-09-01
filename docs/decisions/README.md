@@ -24,6 +24,8 @@ implementation authority.
 
 ## Current index
 
-No standalone repository ADR exists yet. CRA-20 implementation decisions and CRA-21 baseline
-scope remain recorded in their canonical Linear issues. Add the first record only when a future
-bounded issue explicitly accepts a repository-local engineering decision.
+No standalone repository ADR exists yet. CRA-20 implementation decisions, CRA-21 baseline scope
+and CRA-77 Operations/Hardening choices remain recorded in their canonical Linear issues and
+verified code/tests. The local CRA-77 candidate did not introduce a separately accepted
+repository-local architectural decision. Add the first record only when a future bounded issue
+explicitly accepts one.

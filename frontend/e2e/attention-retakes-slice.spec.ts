@@ -331,7 +331,10 @@ test("Passed with a critical signal stays Passed through explicit Admin follow-u
   });
 
   await page.goto("/admin/attention");
-  await page.getByRole("button", { name: /^Відкрити( кейс)?$/ }).first().click();
+  await page
+    .getByRole("button", { name: /^Відкрити( кейс)?$/ })
+    .first()
+    .click();
   await page.getByRole("button", { name: "Взяти в роботу" }).click();
   await page.getByLabel("Підсумок follow-up").fill("Проведено окремий інструктаж.");
   await page.getByRole("button", { name: "Завершити після розмови" }).click();

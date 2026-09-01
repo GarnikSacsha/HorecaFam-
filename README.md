@@ -1,29 +1,12 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. Backend MVP Vertical Slice 1 through CRA-40 and
-Frontend MVP Vertical Slice 1 through CRA-43 are accepted, Done, and fast-forward published on
-`origin/main`; the CRA-43 implementation series ends at `fa30a1f`, while the accepted CRA-46
-documentation publication advances the published `origin/main` baseline to `586f8c5`. CRA-47
-planning for Menu Slice 2 is accepted and Done. The CRA-48 documentation checkpoint `3b95b3c` and
-its corrective publication record are published; CRA-48 is Done. CRA-49 Menu Source of Truth is
-accepted and fast-forward published on `origin/main` through corrective checkpoint `8028d6e`.
-CRA-53 Training Content planning and CRA-54 implementation are accepted and Done; CRA-54 is
-published through `d955f6a`, and CRA-55 advances the prior documentation baseline to `afc607a`.
-CRA-56 Slice 4 planning and CRA-57 Assignment, Completion, Progress and Rollout implementation are
-accepted and Done. The nine CRA-57 checkpoints are fast-forward published through `d4e0184`; the
-CRA-58 documentation checkpoint follows that range. CRA-60 Slice 5 planning is accepted and Done.
-CRA-61 Interactive Training is accepted and Done as the eleven-commit local range
-`93ce970..614da3d`. CRA-62 is the bounded synchronization/publication checkpoint for that accepted
-range; exact remote publication evidence is recorded in Linear. CRA-63 Practice planning and
-CRA-64 Practice are accepted and Done as the exact eight-commit range `74c5741..cc1c05a`; CRA-65
-synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67 Final Exam/
-canonical Results are accepted and Done; CRA-67 is the exact eight-checkpoint range
-`6be8f4d..703872b`. CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is
-accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at `5352f89`, the accepted
-eight-checkpoint CRA-71 range `62a80a0..054d731`, and the CRA-72 documentation checkpoint through
-`4019262`. CRA-75 publication-state documentation checkpoints follow that accepted product endpoint.
-PR, merge, deployment, providers and production configuration remain separate gates; CRA-42 is
-unrelated Backlog work.
+Repository for the HoReCa Training Platform. The published accepted baseline through CRA-74 ends
+at `4019262` and includes CRA-71 Attention and Retakes. CRA-77 Operations and Hardening is now a
+verified local thirteen-checkpoint candidate at Alembic head `0018_job_runtime`; it is not yet an
+accepted/Done or published baseline. Its exact local evidence and remaining pilot gates are in
+[`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
+Push, PR, merge, deployment, providers, production configuration and non-test bootstrap remain
+separate approval gates; CRA-42 is unrelated Backlog work.
 
 ## Start here
 
@@ -38,10 +21,10 @@ Repository documentation summarizes verified local state and routes agents to th
 
 ## Repository map
 
-- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed accepted
-  runtime through CRA-71 Attention and Retakes at head `0015_attention_retakes`.
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed runtime;
+  the CRA-77 local candidate is at head `0018_job_runtime`.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright through accepted CRA-71 Attention and Retakes.
+  Playwright, including local CRA-77 security, lifecycle, audit and operator interfaces.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -109,4 +92,9 @@ The accepted CRA-71 implementation adds Attention/Retakes administration and Emp
 follow-up behavior;
 its exact evidence is in
 [`docs/testing/attention-retakes-slice-8-acceptance.md`](docs/testing/attention-retakes-slice-8-acceptance.md).
-Providers and deployment remain outside the local boundary.
+The CRA-77 local candidate adds recovery/MFA enrollment, Employee lifecycle controls, durable
+workers and maintenance, audit/operator tooling, structured observability and dry-run-first venue
+bootstrap. Its final local gate reports 530 backend tests at 86% overall coverage, 81% aggregate
+critical-set coverage, 72 Vitest tests and 42 Playwright executions. Providers, non-test bootstrap
+apply, deployment, backup restore, staging load and real-venue UAT remain outside the verified
+local boundary.

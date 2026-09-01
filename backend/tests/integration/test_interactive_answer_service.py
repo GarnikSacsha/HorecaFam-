@@ -194,6 +194,7 @@ async def test_pause_expiry_and_device_lease_block_answers_without_mutation(
     )
     assert membership is not None
     membership.training_participation_status = "paused"
+    membership.training_paused_at = now
     context.attempt.expires_at = context.attempt.started_at + timedelta(microseconds=1)
     await db_session.flush()
     with pytest.raises(APIError) as paused:
@@ -217,6 +218,7 @@ async def test_pause_expiry_and_device_lease_block_answers_without_mutation(
     assert context.attempt.expires_at == now + timedelta(days=7)
 
     membership.training_participation_status = "active"
+    membership.training_paused_at = None
     context.attempt.expires_at = context.attempt.started_at + timedelta(microseconds=1)
     await db_session.flush()
     with pytest.raises(APIError) as expired:

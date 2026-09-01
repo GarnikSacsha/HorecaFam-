@@ -233,6 +233,7 @@ async def test_employee_completion_rejects_unassigned_foreign_paused_and_disable
     assert foreign.json()["code"] == "RESOURCE_NOT_FOUND"
 
     membership.training_participation_status = "paused"
+    membership.training_paused_at = FIXED_NOW
     await db_session.commit()
     readable = await auth_client.get(f"/api/v1/me/training/lessons/{lesson_version.lesson_id}")
     paused = await auth_client.post(
@@ -244,6 +245,7 @@ async def test_employee_completion_rejects_unassigned_foreign_paused_and_disable
     assert paused.json()["code"] == "TRAINING_COMPLETION_NOT_ALLOWED"
 
     membership.training_participation_status = "active"
+    membership.training_paused_at = None
     membership.status = "disabled"
     membership.disabled_at = FIXED_NOW
     await db_session.commit()

@@ -466,6 +466,7 @@ def test_metadata_contains_current_backend_tables() -> None:
         "employee_profiles",
         "invitation_rate_limit_buckets",
         "invitations",
+        "job_attempts",
         "locations",
         "menu_categories",
         "menu_component_version_translations",
@@ -849,9 +850,9 @@ def test_attention_retakes_backfill_is_deterministic_and_preserves_sources() -> 
 
     command.upgrade(config, "head")
     asyncio.run(_truncate_backfill_fixture_data(settings))
-    command.downgrade(config, "0014_practice_persistence")
     seeded = asyncio.run(_seed_attention_backfill_history(settings))
     source_before = asyncio.run(_source_history_snapshot(settings))
+    command.downgrade(config, "0014_practice_persistence")
 
     try:
         command.upgrade(config, "head")

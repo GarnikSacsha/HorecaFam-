@@ -22,11 +22,11 @@ Final Exam planning and CRA-67 Final Exam/canonical Results are accepted and Don
 exact eight-checkpoint range `6be8f4d..703872b`, and CRA-68 is Done and published through
 `9ef9fe1`. CRA-69 Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74
 ordinary fast-forward published CRA-70 at `5352f89`, CRA-71 at `62a80a0..054d731`, and the CRA-72
-documentation checkpoint through `4019262`. CRA-75 owns the current documentation-only publication
-state checkpoint. CRA-42 is unrelated Backlog work. Broader production
-administration,
-providers/workers, PR, merge, deployment, and production configuration require separate approval
-or later bounded issues.
+documentation checkpoint through `4019262`. CRA-75 records that published state. CRA-77 Operations
+and Hardening is now a verified local thirteen-checkpoint candidate at Alembic head
+`0018_job_runtime`; it has not been accepted as Done or published. CRA-42 is unrelated Backlog
+work. Provider execution, PR, merge, deployment, non-test bootstrap and production configuration
+require separate approval or later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -164,15 +164,25 @@ Latest/Best history, Admin readiness and responsive Employee UI. Evidence is in
 `4019262`; [CRA-75](https://linear.app/craftspacee/issue/CRA-75) owns the current repository
 documentation synchronization.
 
+[CRA-77](https://linear.app/craftspacee/issue/CRA-77) is the verified local Operations and Hardening
+candidate. Its authorized thirteen checkpoints add security recovery and MFA enrollment, Employee
+lifecycle controls, leased worker/job attempts and maintenance, tenant audit plus platform operator
+surfaces, structured redacted correlation, one-venue dry-run/idempotent bootstrap and synthetic
+end-to-end acceptance. The clean local gate is 530 backend tests at 86% overall coverage, 81%
+aggregate critical-set coverage, 72 Vitest tests and 42 Playwright executions. Exact evidence and
+unperformed external gates are recorded in
+[`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
+
 ## Repository map
 
-- [`backend/app`](backend/app): accepted runtime through CRA-71 Attention and Retakes.
-- [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
-  head `0015_attention_retakes`.
+- [`backend/app`](backend/app): published accepted runtime through CRA-71 plus the local CRA-77
+  candidate.
+- [`backend/migrations`](backend/migrations): Alembic environment and local head
+  `0018_job_runtime`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted experiences through CRA-71 Attention and Retakes, component
-  tests and Playwright evidence.
+- [`frontend`](frontend): accepted experiences through CRA-71 plus local CRA-77 security,
+  lifecycle, audit and operator interfaces with component and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

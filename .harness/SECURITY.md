@@ -54,3 +54,16 @@ matrix, abuse cases, and required tests. Do not create empty security ceremony b
 boundary is defined.
 
 Critical or high security uncertainty blocks implementation and acceptance.
+
+## CRA-77 local protected boundaries
+
+- Password-reset tokens, TOTP secrets, MFA recovery codes, cookies and raw provider errors never
+  enter audit metadata, operator responses, job payloads or structured logs.
+- Organization audit is tenant-scoped. Platform job inspection/retry requires active platform
+  access and completed MFA; retry mutations also require CSRF and idempotency.
+- Background jobs use a closed payload catalogue, leases, heartbeats, bounded backoff and
+  controlled failure codes. Sensitive actions are reconstructed only at adapter boundaries.
+- Venue bootstrap is dry-run-first, validates an active platform operator and exact pilot timezone,
+  and uses locking/stable identities for replay. No non-test apply is authorized by this document.
+- Backup retention, restore proof, provider configuration, deployment and real-venue data remain
+  unverified external gates.

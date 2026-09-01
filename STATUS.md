@@ -3,17 +3,18 @@
 **Snapshot date:** 2026-09-01
 **Published product implementation:** CRA-69 Slice 8 planning and CRA-71 Attention and Retakes are
 accepted and Done. CRA-74 fast-forward published CRA-70, CRA-71 and CRA-72 on `origin/main` through
-`4019262`.
+`4019262`. CRA-77 Operations and Hardening is a verified local thirteen-checkpoint candidate, not
+an accepted/Done or published baseline.
 The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Current boundary:** CRA-71 is published as the exact eight-checkpoint range
-`62a80a0..054d731` at Alembic head `0015_attention_retakes`. CRA-74 ordinary fast-forward published
-CRA-70 at `5352f89`, CRA-71, and the CRA-72 documentation checkpoint through
-the CRA-74 endpoint `4019262`. CRA-75 records the publication-state documentation checkpoints that
-follow it. PR, merge, deployment, provider and production actions remain separately gated.
+**Current boundary:** the published endpoint remains CRA-74 at `4019262`. The local CRA-77 candidate
+advances code and test state to Alembic head `0018_job_runtime` with recovery/MFA enrollment,
+Employee lifecycle administration, durable workers/maintenance, audit/operator tooling,
+structured observability and dry-run-first venue bootstrap. Push, PR, merge, deployment, provider,
+non-test bootstrap and production actions remain separately gated.
 
 ## Accepted implementation and planning checkpoints
 
@@ -79,6 +80,9 @@ follow it. PR, merge, deployment, provider and production actions remain separat
 - CRA-72 is Done and its post-acceptance documentation checkpoint is published at `4019262`.
 - CRA-74 is Done and records the ordinary fast-forward publication through `4019262`.
 - CRA-75 owns this publication-state documentation checkpoint.
+- CRA-77 local implementation and hardening uses the authorized thirteen-checkpoint map. The first
+  twelve local checkpoints are `974feeb..ffb92e4`; this documentation checkpoint completes the
+  candidate evidence. Denys has not yet accepted it as Done or authorized publication.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -368,18 +372,31 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - CRA-72 records the post-acceptance documentation synchronization; CRA-74 published the complete
   CRA-70/71/72 range through `4019262`.
 
+## CRA-77 local candidate evidence
+
+- Full dedicated-PostgreSQL gate: 530 passed, 0 failed, 0 skipped; 86% overall statement/branch
+  coverage and 81% aggregate coverage across the predeclared CRA-77 critical set.
+- Ruff format/check, strict mypy, Alembic upgrade/current/no-drift at `0018_job_runtime`, frontend
+  formatting/lint/types/build, 72 Vitest tests and 42 Playwright executions all passed.
+- Synthetic invitation through passing Final result and dry-run/idempotent synthetic bootstrap are
+  covered. No non-test bootstrap apply or real Bacara data mutation occurred.
+- Detailed evidence, security review, compatibility corrections and explicit release limitations
+  are in
+  [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
+
 ## Remaining to a functional and pilot-ready MVP
 
-Following accepted and published CRA-71 and CRA-72 documentation synchronization, the next bounded
-gate is:
+Following the local CRA-77 candidate, the next decision is acceptance or corrective work. Pilot
+release still requires separately authorized external evidence:
 
-1. Pilot-critical access/admin/content closure, including elevated-user
-   recovery/enrollment, Employee lifecycle administration, minimum venue setup, validated Bacara
-   content and the complete synthetic end-to-end chain.
+1. Real Bacara content validation and venue UAT.
+2. Provider configuration, backup retention plus isolated restore proof, and deploy/rollback smoke.
+3. An accepted staging load profile and performance evidence.
+4. Manual accessibility review where automation cannot prove screen-reader/contrast behavior.
 
-The published functional Slice 8 boundary is accepted and implemented. Pilot infrastructure, providers,
-observability, backup/security/performance hardening, real verified content and real-venue UAT
-remain separate future scope and external-latency risks.
+The published functional Slice 8 boundary remains accepted. CRA-77 closes the local code and
+synthetic hardening boundary, but the external gates above remain unperformed and cannot be
+reported as passing.
 
 ## Protected uncommitted material
 
@@ -396,8 +413,8 @@ remain separate future scope and external-latency risks.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- CRA-75 records the completed documentation-only publication-state synchronization. CRA-19 remains
-  a separate visual-only track.
+- CRA-77 is the active local candidate awaiting acceptance/correction. CRA-19 remains a separate
+  visual-only track.
 - CRA-71 is accepted, Done and published as `62a80a0..054d731`; CRA-72 records its exact
   nine-document synchronization, and CRA-74 records publication through `4019262`.
 - CRA-69 planning is accepted and Done; CRA-70 is published at `5352f89`.

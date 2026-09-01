@@ -21,6 +21,7 @@ If there is no explicitly active bounded issue authorizing the requested action,
 | Git baseline, commit, branch, push, or handoff | [`GIT-WORKFLOW.md`](GIT-WORKFLOW.md), [`../STATUS.md`](../STATUS.md) |
 | Architecture review | [`../docs/architecture/README.md`](../docs/architecture/README.md), current runtime path |
 | Testing or acceptance evidence | [`TESTING.md`](TESTING.md), [`../docs/testing/README.md`](../docs/testing/README.md) |
+| Operations, worker, audit, bootstrap, pilot hardening | [`SECURITY.md`](SECURITY.md), [`../docs/testing/operations-hardening-slice-9-acceptance.md`](../docs/testing/operations-hardening-slice-9-acceptance.md), active Linear issue |
 | Consequential engineering decision | [`../docs/decisions/README.md`](../docs/decisions/README.md) |
 
 Agents launched from the repository root must explicitly read `backend/AGENTS.md` before backend

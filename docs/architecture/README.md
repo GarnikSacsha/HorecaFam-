@@ -6,7 +6,9 @@ Exam and Results at `703872b`, published with CRA-68 synchronization through `9e
 Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74 ordinary
 fast-forward published CRA-70 at `5352f89`, CRA-71 as `62a80a0..054d731`, and the CRA-72
 documentation checkpoint through `4019262`; CRA-75 owns the publication-state documentation
-checkpoint. Canonical product behavior and contracts remain in Linear.
+checkpoint. CRA-77 Operations and Hardening is a verified local candidate, not yet accepted/Done
+or published, at Alembic head `0018_job_runtime`. Canonical product behavior and contracts remain
+in Linear.
 
 ## Stage 0 runtime path
 
@@ -58,7 +60,9 @@ required environment configuration
   component, allergen and description rules; `0014_practice_persistence` adds the accepted
   Practice/eligibility persistence closure. Accepted CRA-71 migration `0015_attention_retakes` adds
   Attention/Retake persistence and deterministic historical backfill; CRA-74 published it through
-  `4019262`.
+  `4019262`. Local CRA-77 revisions `0016_security_recovery`, `0017_employee_lifecycle`, and
+  `0018_job_runtime` add bounded recovery persistence, Employee lifecycle state, leased jobs and
+  immutable attempts.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -305,6 +309,31 @@ correctness. The responsive frontend adds Admin Attention/Retakes operations, Re
 and calm Employee scheduled, approaching, overdue, frozen and critical states. Providers, deployed
 workers and production configuration are not added.
 
+## CRA-77 local Operations and Hardening architecture
+
+The local candidate extends the existing boundaries rather than adding a parallel stack:
+
+```text
+recovery/MFA + Employee lifecycle
+в†’ transactional audit/outbox/session revocation
+в†’ closed typed background jobs + leased immutable attempts
+в†’ redacted request/job/attempt correlation
+в†’ tenant audit and platform-operator inspection/retry
+```
+
+The API remains deny-by-default: Organization audit is tenant-scoped, operator routes require
+active platform access and completed MFA, and retry mutations require CSRF plus idempotency. The
+worker claims durable jobs with leases, heartbeats and bounded backoff; handlers reconstruct
+sensitive actions only at adapter boundaries and never persist raw provider exceptions. Scheduled
+maintenance reuses the same job catalogue.
+
+`app.operations.bootstrap_venue` is a local administrative command boundary. It validates an active
+platform operator and the exact `Europe/Kyiv` pilot timezone, supports mutation-free dry-run, and
+uses advisory locking plus stable identities for one-venue replay. No non-test apply has been run.
+
+The frontend adds responsive security recovery/enrollment, Employee lifecycle, Organization audit
+and platform operator job pages under existing session/RBAC route guards.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -313,9 +342,9 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
-reference CRUD, Employee disable/reactivate lifecycle administration, provider integration, or
-deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/) and includes
-accepted CRA-67 Final Exam/Admin Results plus the accepted CRA-71 Attention/Retakes boundary.
-Adding any absent capability requires a bounded Linear issue and approval. CRA-19 remains
-a separate visual-only track.
+There is still no provider-backed email execution, Sentry/Railway resource, deployed worker,
+production bootstrap, backup/restore proof, staging load acceptance or real-venue UAT. Organization
+and reference CRUD beyond the bounded bootstrap remains outside the local candidate. The frontend
+lives in [`../../frontend/`](../../frontend/) and includes accepted CRA-67/CRA-71 flows plus local
+CRA-77 operations interfaces. Adding or executing any absent capability requires a bounded Linear
+issue and approval. CRA-19 remains a separate visual-only track.

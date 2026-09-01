@@ -234,6 +234,7 @@ async def test_paused_employee_can_read_history_but_cannot_start_and_foreign_les
     )
     assert membership is not None
     membership.training_participation_status = "paused"
+    membership.training_paused_at = datetime.now(UTC)
     await db_session.flush()
 
     summary = await get_lesson_interactive_training_summary(
