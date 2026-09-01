@@ -15,7 +15,10 @@ Accepted CRA-64 adds Admin whole-menu Practice readiness and the responsive Empl
 flow with feedback-free answer saving, explicit finish, final review, durable qualification and
 Latest/Best history. CRA-65 is Done and published through `4164b9c`. Accepted CRA-67 adds Admin
 Final Exam readiness/canonical Results and the responsive Employee 20-question Final Exam flow;
-CRA-68 is Done and published through `9ef9fe1`. CRA-70 is the active documentation-only checkpoint.
+CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is accepted and Done;
+CRA-70 is the prior unpushed local documentation checkpoint `5352f89`. CRA-71 is the active
+bounded implementation issue, with a fully verified unstaged, uncommitted and unaccepted local
+candidate.
 
 The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
@@ -79,9 +82,10 @@ responsive presentation, and the frontend-to-contract request boundary.
   certification/review/history and immediate failed-attempt retake.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
-Attention/Retakes administration, provider delivery, password reset, deployment, and production
-environment configuration remain outside the accepted CRA-67 boundary. CRA-69 Slice 8 planning is
-Backlog and draft v1 remains unaccepted.
+The CRA-71 local candidate adds responsive Admin Attention/Retakes queues and detail actions,
+Results follow-up links, and calm Employee scheduled/approaching/overdue/frozen and critical
+follow-up states. Provider delivery, password reset, deployment and production environment
+configuration remain outside the local boundary.
 CRA-57 notification behavior is limited to safe transactional local jobs; it does not call an
 external provider.
 
@@ -100,3 +104,7 @@ desktop, compact and mobile projects; exact evidence is in
 [`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
 The accepted CRA-67 gate reports 57 Vitest tests and 21 Playwright executions; exact evidence is in
 [`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).
+
+The CRA-71 local candidate gate reports 58 Vitest tests and 27 Playwright executions across the
+approved desktop, compact and mobile projects. Exact evidence and remaining approval gates are in
+[`../docs/testing/attention-retakes-slice-8-acceptance.md`](../docs/testing/attention-retakes-slice-8-acceptance.md).

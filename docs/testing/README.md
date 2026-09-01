@@ -15,8 +15,10 @@ through `d4e0184`, followed by CRA-58. CRA-60 planning and CRA-61 Interactive Tr
 and Done; CRA-62 governs their repository synchronization and publication evidence. CRA-63
 planning and CRA-64 Practice are accepted and Done; CRA-65 synchronization is published through
 `4164b9c`. CRA-66 Final Exam planning and CRA-67 implementation are accepted and Done. CRA-68 is
-Done and published through `9ef9fe1`. CRA-70 is the active documentation-only checkpoint; CRA-69
-Slice 8 planning is Backlog and draft v1 remains unaccepted.
+Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is accepted and Done. CRA-70 is the
+prior unpushed local documentation checkpoint `5352f89`. CRA-71 is the active bounded
+implementation issue; its fully verified local candidate remains unstaged, uncommitted, unaccepted
+and unpublished.
 
 ## Current test layout
 
@@ -250,5 +252,14 @@ focused PostgreSQL concurrency proof, browser matrix, limitations and checkpoint
 [`final-exam-slice-7-acceptance.md`](final-exam-slice-7-acceptance.md).
 
 CRA-67 and CRA-68 are Done, and the accepted repository baseline is published through `9ef9fe1`.
-CRA-70 changes documentation only; these results remain historical accepted evidence and were not
-rerun for that checkpoint. No PR, merge, migration, provider or deployment is implied.
+These results remain historical accepted evidence. No PR, merge, provider or deployment is implied.
+
+## CRA-71 Attention and Retakes local candidate evidence
+
+The local candidate reports 463 backend tests passed at 86% statement/branch coverage; Ruff, strict
+mypy and Alembic upgrade/current/no-drift passed at `0015_attention_retakes`. Prettier, ESLint,
+TypeScript and production build passed; full Vitest reports 58 passed and full Playwright reports
+27 passed across desktop, compact and mobile. The scenario-to-test map, focused evidence and known
+approval gates are recorded in
+[`attention-retakes-slice-8-acceptance.md`](attention-retakes-slice-8-acceptance.md). This evidence
+does not imply acceptance, staging, commit, Linear publication, push, PR, merge or deployment.

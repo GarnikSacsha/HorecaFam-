@@ -2,8 +2,11 @@
 
 This document describes the verified accepted implementation through CRA-64 Practice at
 `cc1c05a`, published with CRA-65 synchronization through `4164b9c`, plus accepted CRA-67 Final
-Exam and Results at `703872b`, published with CRA-68 synchronization through `9ef9fe1`. CRA-70 is
-the active documentation-only checkpoint. Canonical product behavior and contracts remain in Linear.
+Exam and Results at `703872b`, published with CRA-68 synchronization through `9ef9fe1`. CRA-69
+Slice 8 planning is accepted and Done; CRA-70 is the prior unpushed local documentation checkpoint
+`5352f89`. CRA-71 is the active bounded implementation issue with a fully verified, unstaged,
+uncommitted and unaccepted local candidate. Canonical product behavior and contracts remain in
+Linear.
 
 ## Stage 0 runtime path
 
@@ -53,7 +56,9 @@ required environment configuration
   `0011_candidate_provenance`, and `0012_question_rules` add assessment execution, Candidate-owned
   provenance and the active deterministic category rule. Migration `0013_question_templates` adds
   component, allergen and description rules; `0014_practice_persistence` adds the accepted
-  Practice/eligibility persistence closure.
+  Practice/eligibility persistence closure. The CRA-71 local candidate
+  `0015_attention_retakes` adds Attention/Retake persistence and deterministic historical backfill;
+  it is not yet an accepted or published baseline.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -284,11 +289,21 @@ completed Assignment + durable Practice eligibility + balanced source-safe 20-qu
 → Employee result/review + Organization-scoped canonical Admin Results
 ```
 
-The accepted implementation reuses the assessment persistence graph and `0014_practice_persistence`
-head. It adds no certification table: certification is derived and exposed from the canonical
-Final Exam result boundary. Passed certification does not expose a retake action; failed attempts
-can start an immediate retake in Slice 7. No leaderboard, Attention/Retakes administration,
-provider runtime or deployment is added.
+The accepted CRA-67 implementation reuses the assessment persistence graph and
+`0014_practice_persistence` head. It adds no certification table: certification is derived and
+exposed from the canonical Final Exam result boundary. Passed certification does not expose a
+retake action; failed attempts can start an immediate retake in Slice 7.
+
+## CRA-71 Attention and Retakes local candidate
+
+The local candidate extends the assessment graph at `0015_attention_retakes`: immutable Critical
+Error projection creates stable Attention cases; failed Final results create one current seven-day
+Retake obligation whose deadline does not extend on repeated failure; explicit acknowledge, resolve,
+propose, edit, confirm, cancel and completion transitions preserve source evidence. Protected Admin
+queues/details and Employee own-only follow-up surfaces expose the workflow without leaking answer
+correctness. The responsive frontend adds Admin Attention/Retakes operations, Results follow-up links
+and calm Employee scheduled, approaching, overdue, frozen and critical states. Providers, deployed
+workers and production configuration are not added.
 
 ## Test boundary
 
@@ -299,9 +314,8 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 ## Explicitly absent
 
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
-reference CRUD, Employee disable/reactivate lifecycle administration, Attention/Retakes
-administration, provider integration, or deployed worker/resource. The frontend lives in
-[`../../frontend/`](../../frontend/) and includes accepted CRA-67 Final Exam/Admin Results. Adding
-any absent capability requires a bounded Linear issue and approval. CRA-70 changes documentation
-only; CRA-69 Slice 8 planning is Backlog and draft v1 remains unaccepted. CRA-19 remains a separate
-visual-only track.
+reference CRUD, Employee disable/reactivate lifecycle administration, provider integration, or
+deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/) and includes
+accepted CRA-67 Final Exam/Admin Results plus the unaccepted CRA-71 Attention/Retakes local
+candidate. Adding any absent capability requires a bounded Linear issue and approval. CRA-19 remains
+a separate visual-only track.

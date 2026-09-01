@@ -18,10 +18,12 @@ range; exact remote publication evidence is recorded in Linear. CRA-63 Practice 
 CRA-64 Practice are accepted and Done as the exact eight-commit range `74c5741..cc1c05a`; CRA-65
 synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67 Final Exam/
 canonical Results are accepted and Done; CRA-67 is the exact eight-checkpoint range
-`6be8f4d..703872b`. CRA-68 is Done and published through `9ef9fe1`. CRA-70 is the active bounded
-documentation-only checkpoint with one authorized local commit and no push. CRA-69 Slice 8
-planning is Backlog and draft v1 remains unaccepted. PR, merge, deployment, providers, and
-production configuration remain separate gates. CRA-42 is unrelated Backlog work.
+`6be8f4d..703872b`. CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is
+accepted and Done. CRA-70 is the prior local documentation checkpoint `5352f89`, one commit ahead
+of the published baseline and not pushed. CRA-71 is the active bounded implementation issue; its
+fully verified local candidate remains unstaged, uncommitted and unaccepted. PR, merge, deployment,
+providers, production configuration, Linear publication and local commits remain separate gates.
+CRA-42 is unrelated Backlog work.
 
 ## Start here
 
@@ -103,4 +105,7 @@ The accepted range ends at `cc1c05a`, and CRA-65 publishes its synchronization c
 exact 70% passing, certification, failed-attempt immediate retake, and canonical Admin Results.
 Its evidence is in
 [`docs/testing/final-exam-slice-7-acceptance.md`](docs/testing/final-exam-slice-7-acceptance.md).
-Attention/Retakes administration, providers and deployment remain outside the local boundary.
+The CRA-71 local candidate adds Attention/Retakes administration and Employee follow-up behavior;
+its exact evidence is in
+[`docs/testing/attention-retakes-slice-8-acceptance.md`](docs/testing/attention-retakes-slice-8-acceptance.md).
+Providers and deployment remain outside the local boundary.
