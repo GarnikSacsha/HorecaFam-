@@ -20,6 +20,13 @@ import { StatusPill } from "../ui/States";
 
 type BusyAction = "load" | "start" | "answer" | "takeover" | "finish" | null;
 
+const timingCopy = {
+  scheduled: ["Перескладання доступне", "До дедлайну більше 48 годин."],
+  approaching: ["Дедлайн наближається", "До дедлайну залишилося не більше 48 годин."],
+  overdue: ["Дедлайн минув", "Перескладання все ще доступне. Доступ не вимикається автоматично."],
+  frozen: ["Час призупинено", "Поки навчання призупинено, відлік дедлайну не триває."],
+} as const;
+
 function payloadText(payload: Record<string, unknown>, ...keys: string[]): string | null {
   for (const key of keys) {
     const value = payload[key];
@@ -280,9 +287,12 @@ export function EmployeeFinalExamPage() {
       setFinish(response);
       setConfirming(false);
       setAttempt((current) => (current ? { ...current, status: "completed" } : current));
-      setHistory(
-        await client.request<FinalExamHistoryResponse>("/me/training/final-exam/attempts"),
-      );
+      const [nextHistory, nextSummary] = await Promise.all([
+        client.request<FinalExamHistoryResponse>("/me/training/final-exam/attempts"),
+        client.request<FinalExamSummaryResponse>("/me/training/final-exam"),
+      ]);
+      setHistory(nextHistory);
+      setSummary(nextSummary);
     } catch (caught) {
       if (caught instanceof ApiError && caught.code === "ATTEMPT_DEVICE_CONFLICT") {
         setAttempt((current) => (current ? { ...current, writable: false } : current));
@@ -343,6 +353,36 @@ export function EmployeeFinalExamPage() {
       {summary?.certification ? (
         <p className="practice-qualified-note" role="status">
           Сертифікацію отримано. Результат та незмінна історія спроб залишаються доступними.
+        </p>
+      ) : null}
+      {summary?.current_retake_requirement ? (
+        <section className="retake-status-card" aria-labelledby="retake-status-title">
+          <div>
+            <p className="eyebrow">Поточне перескладання</p>
+            <h2 id="retake-status-title">
+              {timingCopy[summary.current_retake_requirement.timing_state ?? "scheduled"][0]}
+            </h2>
+            <p>{timingCopy[summary.current_retake_requirement.timing_state ?? "scheduled"][1]}</p>
+            <p className="quiet-note">
+              Дедлайн:{" "}
+              {new Intl.DateTimeFormat("uk-UA", { dateStyle: "long", timeStyle: "short" }).format(
+                new Date(summary.current_retake_requirement.due_at),
+              )}
+            </p>
+          </div>
+          <StatusPill
+            tone={
+              summary.current_retake_requirement.timing_state === "overdue" ? "warning" : "neutral"
+            }
+          >
+            {summary.current_retake_requirement.timing_state ?? "scheduled"}
+          </StatusPill>
+        </section>
+      ) : null}
+      {summary?.attention_summary?.has_critical_follow_up ? (
+        <p className="follow-up-note" role="status">
+          Результат і сертифікація не змінені. Адміністратор окремо перевірить питання безпеки щодо
+          алергенів.
         </p>
       ) : null}
       {availability ? (

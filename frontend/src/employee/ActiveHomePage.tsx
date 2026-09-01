@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import type {
   EmployeeTrainingHomeResponse,
+  FinalExamSummaryResponse,
   OwnEmployeeProfile,
   OwnEmployeeProfilesResponse,
 } from "../api/contracts";
@@ -55,6 +56,7 @@ export function ActiveHomePage() {
   const { client, session, status } = useSession();
   const [profile, setProfile] = useState<OwnEmployeeProfile | null>(null);
   const [training, setTraining] = useState<EmployeeTrainingHomeResponse | null>(null);
+  const [finalExam, setFinalExam] = useState<FinalExamSummaryResponse | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,8 +71,9 @@ export function ActiveHomePage() {
     Promise.all([
       client.request<OwnEmployeeProfilesResponse>("/me/profile"),
       client.request<EmployeeTrainingHomeResponse>(`/me/training?locale=${locale}`),
+      client.request<FinalExamSummaryResponse>("/me/training/final-exam").catch(() => null),
     ])
-      .then(([profileResponse, trainingResponse]) => {
+      .then(([profileResponse, trainingResponse, finalExamResponse]) => {
         if (!active) return;
         const current =
           profileResponse.profiles.find(
@@ -79,6 +82,7 @@ export function ActiveHomePage() {
           ) ?? null;
         setProfile(current);
         setTraining(trainingResponse);
+        setFinalExam(finalExamResponse);
         if (!current) setError("Активний профіль працівника не знайдено.");
       })
       .catch(() => {
@@ -125,6 +129,34 @@ export function ActiveHomePage() {
         <span>{profile.operational_role?.name_uk ?? "Роль не вказана"}</span>
         <span>{profile.location?.name ?? "Локація не вказана"}</span>
       </div>
+
+      {finalExam?.current_retake_requirement ? (
+        <section
+          className="retake-status-card home-retake-card"
+          aria-labelledby="home-retake-title"
+        >
+          <div>
+            <p className="eyebrow">Наступний крок</p>
+            <h2 id="home-retake-title">
+              {finalExam.current_retake_requirement.timing_state === "overdue"
+                ? "Перескладання доступне після дедлайну"
+                : finalExam.current_retake_requirement.timing_state === "frozen"
+                  ? "Відлік перескладання призупинено"
+                  : "Перескладання доступне зараз"}
+            </h2>
+            <p>Дедлайн не змінює ваш попередній результат і не вимикає доступ автоматично.</p>
+          </div>
+          {finalExam.current_retake_requirement.permitted_action !== "wait" ? (
+            <Link className="button button-primary" to="/employee/final-exam">
+              {finalExam.current_retake_requirement.permitted_action === "resume_retake"
+                ? "Продовжити перескладання"
+                : "Почати перескладання"}
+            </Link>
+          ) : (
+            <StatusPill tone="neutral">Час призупинено</StatusPill>
+          )}
+        </section>
+      ) : null}
 
       {assignedTraining ? (
         <section className="next-action-panel" aria-labelledby="assignment-title">
