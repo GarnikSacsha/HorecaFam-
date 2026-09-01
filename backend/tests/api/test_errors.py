@@ -106,11 +106,18 @@ async def test_internal_exception_is_safe_and_correlated(
         raise RuntimeError(secret_text)
 
     caplog.set_level(logging.ERROR)
-    async with AsyncClient(
-        transport=ASGITransport(app=app, raise_app_exceptions=False),
-        base_url="http://test",
-    ) as client:
-        response = await client.get("/api/v1/_fault-probe", headers={"X-Request-ID": request_id})
+    app_logger = logging.getLogger("app")
+    app_logger.addHandler(caplog.handler)
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://test",
+        ) as client:
+            response = await client.get(
+                "/api/v1/_fault-probe", headers={"X-Request-ID": request_id}
+            )
+    finally:
+        app_logger.removeHandler(caplog.handler)
 
     assert response.status_code == 500
     assert response.headers["X-Request-ID"] == request_id

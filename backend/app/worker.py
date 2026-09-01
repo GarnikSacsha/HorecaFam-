@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.config import get_settings
+from app.core.observability import configure_observability
 from app.models.enums import BackgroundJobType
 from app.services.background_jobs import (
     ClaimedJob,
@@ -14,6 +17,17 @@ from app.services.background_jobs import (
 )
 
 JobHandler = Callable[[ClaimedJob], Awaitable[None]]
+logger = logging.getLogger("app.worker")
+
+
+def _job_log_context(claimed: ClaimedJob) -> dict[str, object]:
+    return {
+        "request_id": claimed.request_id,
+        "job_id": claimed.job_id,
+        "attempt_id": claimed.attempt_id,
+        "job_type": claimed.job_type,
+        "attempt_number": claimed.attempt_number,
+    }
 
 
 def _finalization_time(claim_time: datetime) -> datetime:
@@ -65,6 +79,9 @@ async def run_worker_once(
     if claimed is None:
         return False
 
+    log_context = _job_log_context(claimed)
+    logger.info("job.claimed", extra=log_context)
+
     handler = handlers.get(BackgroundJobType(claimed.job_type))
     if handler is None:
         async with session_factory() as session, session.begin():
@@ -77,6 +94,10 @@ async def run_worker_once(
                 error_code="JOB_HANDLER_UNAVAILABLE",
                 error_message="No approved handler is registered for this Job type.",
             )
+        logger.error(
+            "job.failed",
+            extra={**log_context, "error_code": "JOB_HANDLER_UNAVAILABLE"},
+        )
         return True
 
     stop_heartbeat = asyncio.Event()
@@ -94,18 +115,23 @@ async def run_worker_once(
     handler_failed = False
     try:
         await handler(claimed)
-    except Exception:
+    except Exception as exc:
         handler_failed = True
+        logger.warning(
+            "job.handler_failed",
+            extra={**log_context, "exception_type": type(exc).__name__},
+        )
     finally:
         stop_heartbeat.set()
         await heartbeat_task
 
     if lease_lost.is_set():
+        logger.warning("job.lease_lost", extra=log_context)
         return True
     if handler_failed:
         # Виняток обробника не записується дослівно, щоб не перенести секрети до Job history.
         async with session_factory() as session, session.begin():
-            await fail_job(
+            failure = await fail_job(
                 session,
                 job_id=claimed.job_id,
                 attempt_id=claimed.attempt_id,
@@ -114,6 +140,14 @@ async def run_worker_once(
                 error_code="JOB_HANDLER_ERROR",
                 error_message="Approved Job handler failed.",
             )
+        logger.error(
+            "job.failed" if failure.status == "failed" else "job.retry_scheduled",
+            extra={
+                **log_context,
+                "error_code": "JOB_HANDLER_ERROR",
+                "next_run_at": failure.next_run_at,
+            },
+        )
     else:
         async with session_factory() as session, session.begin():
             await complete_job(
@@ -123,6 +157,7 @@ async def run_worker_once(
                 worker_id=worker_id,
                 now=_finalization_time(claim_time),
             )
+        logger.info("job.completed", extra=log_context)
     return True
 
 
@@ -133,6 +168,8 @@ async def run_worker(
     handlers: Mapping[BackgroundJobType, JobHandler],
     idle_seconds: float = 1.0,
 ) -> None:
+    configure_observability(get_settings())
+    logger.info("worker.started")
     while True:
         claimed = await run_worker_once(
             session_factory,

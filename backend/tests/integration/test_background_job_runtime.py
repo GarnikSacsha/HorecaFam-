@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -8,6 +9,7 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.observability import configure_observability
 from app.db.session import create_engine, create_session_factory
 from app.models import BackgroundJob, BackgroundJobType, JobAttempt
 from app.services.background_jobs import (
@@ -266,6 +268,7 @@ async def test_completed_attempt_is_immutable(
 async def test_worker_runtime_completes_an_approved_handler(
     db_session: AsyncSession,
     migrated_test_database: Settings,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     now = datetime.now(UTC)
     job = make_maintenance_job(now=now, idempotency_key="expiry:worker-success")
@@ -278,6 +281,10 @@ async def test_worker_runtime_completes_an_approved_handler(
 
     engine = create_engine(migrated_test_database)
     session_factory = create_session_factory(engine)
+    configure_observability(migrated_test_database)
+    app_logger = logging.getLogger("app")
+    caplog.set_level(logging.INFO)
+    app_logger.addHandler(caplog.handler)
     try:
         assert await run_worker_once(
             session_factory,
@@ -286,11 +293,19 @@ async def test_worker_runtime_completes_an_approved_handler(
             now=now,
         )
     finally:
+        app_logger.removeHandler(caplog.handler)
         await engine.dispose()
 
     await db_session.refresh(job)
     assert [claim.job_id for claim in handled] == [job.id]
     assert job.status == "completed"
+    lifecycle_records = [
+        record for record in caplog.records if record.msg in {"job.claimed", "job.completed"}
+    ]
+    assert [record.msg for record in lifecycle_records] == ["job.claimed", "job.completed"]
+    assert all(record.__dict__["job_id"] == job.id for record in lifecycle_records)
+    assert all(record.__dict__["request_id"] == job.request_id for record in lifecycle_records)
+    assert all("payload" not in record.__dict__ for record in lifecycle_records)
 
 
 @pytest.mark.integration

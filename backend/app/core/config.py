@@ -5,6 +5,7 @@ from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AppEnvironment = Literal["development", "test", "staging", "production"]
+LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class Settings(BaseSettings):
@@ -16,6 +17,7 @@ class Settings(BaseSettings):
 
     app_env: AppEnvironment
     database_url: str
+    log_level: LogLevel = "INFO"
     mfa_encryption_keys: list[SecretStr] = []
     auth_throttle_hmac_key: SecretStr | None = None
     invitation_token_hmac_keys: list[SecretStr] = []

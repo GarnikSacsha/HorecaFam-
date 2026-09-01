@@ -21,6 +21,15 @@ def test_database_url_must_use_async_postgresql() -> None:
         Settings(app_env="test", database_url="sqlite+aiosqlite:///horeca_test.db")
 
 
+def test_log_level_rejects_unknown_values() -> None:
+    with pytest.raises(ValidationError, match="log_level"):
+        Settings(
+            app_env="test",
+            database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+            log_level="TRACE",
+        )
+
+
 def test_auth_security_settings_fail_closed_without_keys() -> None:
     settings = Settings(
         app_env="test",

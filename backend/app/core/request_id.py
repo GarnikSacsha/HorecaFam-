@@ -1,14 +1,17 @@
 import logging
 from contextvars import ContextVar, Token
+from time import perf_counter
 from uuid import UUID, uuid4
 
 from fastapi.responses import JSONResponse
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.observability import bind_observability_context
+
 REQUEST_ID_HEADER = "X-Request-ID"
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
-logger = logging.getLogger("app.errors")
+logger = logging.getLogger("app.http")
 
 
 def get_request_id() -> str:
@@ -38,19 +41,26 @@ class RequestIDMiddleware:
 
         request_id = _resolve_request_id(scope)
         token: Token[str | None] = _request_id.set(request_id)
+        started_at = perf_counter()
         response_started = False
+        response_status = 500
 
         async def send_with_request_id(message: Message) -> None:
-            nonlocal response_started
+            nonlocal response_started, response_status
             if message["type"] == "http.response.start":
                 response_started = True
+                response_status = message["status"]
                 MutableHeaders(scope=message)[REQUEST_ID_HEADER] = request_id
             await send(message)
 
         try:
-            await self.app(scope, receive, send_with_request_id)
-        except Exception:
-            logger.error("Unhandled application exception", extra={"request_id": request_id})
+            with bind_observability_context(request_id=request_id):
+                await self.app(scope, receive, send_with_request_id)
+        except Exception as exc:
+            logger.error(
+                "http.request.unhandled",
+                extra={"request_id": request_id, "exception_type": type(exc).__name__},
+            )
             if response_started:
                 raise
             response = JSONResponse(
@@ -64,4 +74,14 @@ class RequestIDMiddleware:
             )
             await response(scope, receive, send_with_request_id)
         finally:
+            logger.info(
+                "http.request.completed",
+                extra={
+                    "request_id": request_id,
+                    "http_method": scope.get("method", ""),
+                    "http_path": scope.get("path", ""),
+                    "http_status": response_status,
+                    "duration_ms": round((perf_counter() - started_at) * 1000, 3),
+                },
+            )
             _request_id.reset(token)
