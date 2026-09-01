@@ -8,12 +8,11 @@ The canonical routing entry is the Linear
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Current local boundary:** CRA-69 Slice 8 planning is accepted and Done. CRA-71 is the active
-bounded implementation issue; Denys authorized implementation start on 2026-09-01, but no local
-commit, staging, push, PR, merge, deployment, provider or production action is authorized. The
-working tree contains a fully verified, unstaged local acceptance candidate at Alembic head
-`0015_attention_retakes`. CRA-70 remains the prior local documentation-only checkpoint
-`5352f89`, one commit ahead of the published baseline and not pushed.
+**Current local boundary:** CRA-69 planning and CRA-71 Slice 8 implementation are accepted and Done.
+CRA-71 is committed locally as the exact eight-checkpoint range `62a80a0..054d731` at Alembic head
+`0015_attention_retakes`. CRA-70 remains the prior local documentation checkpoint `5352f89`; CRA-72
+owns this post-acceptance documentation-only synchronization. The published baseline remains
+`origin/main@9ef9fe1`; push, PR, merge, deployment, provider and production actions are not authorized.
 
 ## Accepted implementation and planning checkpoints
 
@@ -75,8 +74,9 @@ working tree contains a fully verified, unstaged local acceptance candidate at A
 - CRA-68 is accepted, Done and fast-forward published through `9ef9fe1`.
 - CRA-69 Slice 8 planning and its 65-scenario/eight-checkpoint map are accepted and Done.
 - CRA-70 is complete locally as documentation checkpoint `5352f89`; no push was authorized.
-- CRA-71 Slice 8 implementation is In Progress with implementation start authorized. The local
-  candidate is fully verified but remains unstaged, uncommitted and unaccepted.
+- CRA-71 Slice 8 implementation is accepted and Done locally as `62a80a0..054d731`.
+- CRA-72 owns the separately authorized post-acceptance documentation checkpoint; no push is
+  authorized.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -327,8 +327,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Exact forty-scenario evidence and limitations:
   [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
 - Final Exam execution/certification and canonical management Results are accepted in CRA-67.
-  Attention/Retakes are present only in the unaccepted CRA-71 local candidate described below;
-  providers, deployment and real Bacara ingestion remain absent.
+  Attention/Retakes are accepted locally in CRA-71 as described below; providers, deployment and
+  real Bacara ingestion remain absent.
 
 ## Accepted CRA-67 Final Exam checkpoint
 
@@ -350,7 +350,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Exact evidence and limitations:
   [`docs/testing/final-exam-slice-7-acceptance.md`](docs/testing/final-exam-slice-7-acceptance.md).
 
-## CRA-71 Attention and Retakes local candidate
+## Accepted local CRA-71 Attention and Retakes checkpoint
 
 - Scope: six-table persistence/backfill, immutable Critical Error projection, seven-day Retake
   lifecycle/timing, explicit Attention workflow, protected Admin/Employee APIs, authorized
@@ -359,22 +359,21 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   Alembic upgrade/current/no-drift is green at `0015_attention_retakes`.
 - Frontend: Prettier, TypeScript, ESLint and production build passed; Vitest reports 58 passed
   across 19 files; Playwright reports 27 passed across the three approved viewport projects.
-- Exact candidate evidence and remaining approval gates:
+- Exact accepted evidence and remaining remote gates:
   [`docs/testing/attention-retakes-slice-8-acceptance.md`](docs/testing/attention-retakes-slice-8-acceptance.md).
-- No checkpoint is staged or committed. Linear evidence publication remains separately gated.
+- Exact local range: `62a80a0..054d731`; all eight checkpoints are committed and CRA-71 is Done.
+- CRA-72 owns this post-acceptance documentation synchronization. No push was performed.
 
 ## Remaining to a functional and pilot-ready MVP
 
-Following the verified CRA-71 local candidate, the next bounded gates are:
+Following accepted local CRA-71 and CRA-72 documentation synchronization, the next bounded gates are:
 
-1. Denys review and explicit acceptance or correction of the CRA-71 candidate.
-2. Separate authorization for the agreed selective local checkpoint commits.
-3. Separate Linear evidence publication and, later, push/publication authorization.
-4. Pilot-critical access/admin/content closure, including elevated-user
+1. Separate authorization for any push/publication of the local CRA-70/71/72 checkpoints.
+2. Pilot-critical access/admin/content closure, including elevated-user
    recovery/enrollment, Employee lifecycle administration, minimum venue setup, validated Bacara
    content and the complete synthetic end-to-end chain.
 
-The local functional Slice 8 candidate is implemented. Pilot infrastructure, providers,
+The local functional Slice 8 boundary is accepted and implemented. Pilot infrastructure, providers,
 observability, backup/security/performance hardening, real verified content and real-venue UAT
 remain separate future scope and external-latency risks.
 
@@ -393,10 +392,12 @@ remain separate future scope and external-latency risks.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- The active bounded repository issue is CRA-71. CRA-19 remains a separate visual-only track.
-- CRA-71 authorizes the accepted Slice 8 implementation map only; local commits, Linear
-  publication, push, PR, merge, provider and deployment actions remain separately gated.
+- CRA-72 is the active bounded documentation-only repository issue. CRA-19 remains a separate
+  visual-only track.
+- CRA-71 is accepted and Done locally as `62a80a0..054d731`; CRA-72 authorizes only its exact
+  nine-document synchronization and one selective local commit.
 - CRA-69 planning is accepted and Done; CRA-70 is the prior unpushed local documentation commit.
+- Push, PR, merge, provider and deployment actions remain separately gated.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization
   are recorded in CRA-26. Further staging or commits require a new bounded map and explicit

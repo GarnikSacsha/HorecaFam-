@@ -1,15 +1,16 @@
-# MVP Vertical Slice 8 — Attention and Retakes local acceptance candidate
+# MVP Vertical Slice 8 — Attention and Retakes accepted local evidence
 
 ## Status
 
-This document records the verified local CRA-71 implementation candidate on 2026-09-01.
-Implementation start was authorized by Denys, but local commits, acceptance, publication, push,
-PR, merge, provider activity and deployment remain unauthorized. The accepted remote baseline is
-still **origin/main@9ef9fe1**; local **main@5352f89** is the prior CRA-70 documentation checkpoint.
+This document records the accepted local CRA-71 implementation on 2026-09-01. Denys accepted the
+evidence and authorized the exact eight-checkpoint range **62a80a0..054d731**, its local commits and
+Linear evidence publication. The published remote baseline remains **origin/main@9ef9fe1**; CRA-70
+at **5352f89** and CRA-71 remain local. Push, PR, merge, provider activity and deployment remain
+unauthorized.
 
 ## Implemented boundary
 
-The candidate implements:
+The accepted local implementation provides:
 
 - Alembic head **0015_attention_retakes** with six tenant-owned Attention/Retake tables,
   constraints, indexes, deterministic historical backfill and reversible migration;
@@ -64,11 +65,11 @@ Organization/Employee/source/Assignment boundary; the focused PostgreSQL test th
 - Focused Slice 8 Playwright: 6 passed across 1440×1000, 768×1024 and 375×812.
 - Full Playwright regression: 27 passed, 0 failed, 0 skipped.
 
-## Remaining gates
+## Local checkpoint range and remaining gates
 
-- Denys has not yet accepted this candidate or authorized any local commit.
-- The agreed eight checkpoint boundaries remain unstaged and uncommitted.
-- Linear checkpoint/final evidence publication requires a separate explicit external-write
-  authorization.
+- Exact committed range: **62a80a0..054d731**, eight selective CRA-71 checkpoints.
+- CRA-71 is Done and its exact SHA/test evidence is published in Linear.
+- CRA-72 owns the post-acceptance repository documentation synchronization.
+- Remote Git publication remains separately gated; no push, PR or merge was performed.
 - Railway cron/worker scheduling, provider delivery, staging, production and pilot hardening are
   outside CRA-71.
