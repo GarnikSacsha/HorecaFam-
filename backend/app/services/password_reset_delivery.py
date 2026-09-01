@@ -157,3 +157,58 @@ async def deliver_password_reset_email(
     job.status = "completed"
     job.completed_at = now
     return True
+
+
+async def deliver_claimed_password_reset_email(
+    db: AsyncSession,
+    *,
+    job_id: UUID,
+    token_manager: PasswordResetTokenManager,
+    adapter: PasswordResetEmailAdapter,
+    now: datetime,
+) -> bool:
+    job = await db.scalar(select(BackgroundJob).where(BackgroundJob.id == job_id))
+    if job is None or job.job_type != "password_reset_email" or job.status != "processing":
+        raise RuntimeError("Claimed Password Reset email Job is unavailable")
+    delivery = await db.scalar(
+        select(EmailDelivery).where(EmailDelivery.job_id == job.id).with_for_update()
+    )
+    if delivery is None or delivery.message_type != "password_reset_email":
+        raise RuntimeError("Password Reset email delivery is unavailable")
+    token_id = UUID(str(job.payload.get("password_reset_token_id")))
+    token = await db.scalar(
+        select(PasswordResetToken)
+        .where(PasswordResetToken.id == token_id)
+        .options(selectinload(PasswordResetToken.user))
+        .with_for_update()
+    )
+    if (
+        token is None
+        or token.used_at is not None
+        or token.revoked_at is not None
+        or token.expires_at <= now
+    ):
+        delivery.status = "failed"
+        delivery.error_code = "PASSWORD_RESET_SUPERSEDED"
+        delivery.failed_at = now
+        return False
+    raw_token = token_manager.derive_matching(token)
+    if raw_token is None:
+        delivery.status = "failed"
+        delivery.error_code = "PASSWORD_RESET_SUPERSEDED"
+        delivery.failed_at = now
+        return False
+    result = await adapter.send_password_reset(
+        PasswordResetEmailMessage(
+            email=token.user.email_normalized,
+            token=raw_token,
+            expires_at=token.expires_at,
+        )
+    )
+    delivery.provider = result.provider
+    delivery.provider_message_id = result.provider_message_id
+    delivery.status = "accepted"
+    delivery.accepted_by_provider_at = now
+    delivery.error_code = None
+    delivery.failed_at = None
+    return True

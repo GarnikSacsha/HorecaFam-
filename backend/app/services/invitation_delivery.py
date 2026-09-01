@@ -145,3 +145,67 @@ async def deliver_invitation_email(
     job.status = "completed"
     job.completed_at = now
     return True
+
+
+async def deliver_claimed_invitation_email(
+    db: AsyncSession,
+    *,
+    job_id: UUID,
+    token_manager: InvitationTokenManager,
+    adapter: InvitationEmailAdapter,
+    now: datetime,
+) -> bool:
+    job = await db.scalar(select(BackgroundJob).where(BackgroundJob.id == job_id))
+    if job is None or job.job_type != "invitation_email" or job.status != "processing":
+        raise RuntimeError("Claimed Invitation email Job is unavailable")
+    delivery = await db.scalar(
+        select(EmailDelivery).where(EmailDelivery.job_id == job.id).with_for_update()
+    )
+    if delivery is None or delivery.message_type != "invitation_email":
+        raise RuntimeError("Invitation email delivery is unavailable")
+    invitation_id = UUID(str(job.payload.get("invitation_id")))
+    token_version = int(job.payload.get("token_version", 0))
+    invitation = await db.scalar(
+        select(Invitation)
+        .where(
+            Invitation.id == invitation_id,
+            Invitation.organization_id == job.organization_id,
+        )
+        .with_for_update()
+    )
+    if (
+        invitation is None
+        or invitation.status != "pending"
+        or invitation.expires_at <= now
+        or invitation.token_version != token_version
+    ):
+        delivery.status = "failed"
+        delivery.error_code = "INVITATION_SUPERSEDED"
+        delivery.failed_at = now
+        return False
+    raw_token = token_manager.derive(
+        invitation.id,
+        token_version=invitation.token_version,
+        key_index=invitation.token_key_index,
+    )
+    if not hmac.compare_digest(hash_secret(raw_token), invitation.token_hash):
+        delivery.status = "failed"
+        delivery.error_code = "INVITATION_SUPERSEDED"
+        delivery.failed_at = now
+        return False
+    result = await adapter.send_invitation(
+        InvitationEmailMessage(
+            organization_id=invitation.organization_id,
+            invitation_id=invitation.id,
+            email=invitation.email_normalized,
+            token=raw_token,
+            expires_at=invitation.expires_at,
+        )
+    )
+    delivery.provider = result.provider
+    delivery.provider_message_id = result.provider_message_id
+    delivery.status = "accepted"
+    delivery.accepted_by_provider_at = now
+    delivery.error_code = None
+    delivery.failed_at = None
+    return True

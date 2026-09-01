@@ -16,6 +16,12 @@ from app.services.background_jobs import (
 JobHandler = Callable[[ClaimedJob], Awaitable[None]]
 
 
+def _finalization_time(claim_time: datetime) -> datetime:
+    # Тестовий або відновлений clock може випереджати системний,
+    # але Job не може завершитися до claim.
+    return max(datetime.now(UTC), claim_time)
+
+
 async def _maintain_heartbeat(
     session_factory: async_sessionmaker[AsyncSession],
     *,
@@ -67,7 +73,7 @@ async def run_worker_once(
                 job_id=claimed.job_id,
                 attempt_id=claimed.attempt_id,
                 worker_id=worker_id,
-                now=datetime.now(UTC),
+                now=_finalization_time(claim_time),
                 error_code="JOB_HANDLER_UNAVAILABLE",
                 error_message="No approved handler is registered for this Job type.",
             )
@@ -104,7 +110,7 @@ async def run_worker_once(
                 job_id=claimed.job_id,
                 attempt_id=claimed.attempt_id,
                 worker_id=worker_id,
-                now=datetime.now(UTC),
+                now=_finalization_time(claim_time),
                 error_code="JOB_HANDLER_ERROR",
                 error_message="Approved Job handler failed.",
             )
@@ -115,7 +121,7 @@ async def run_worker_once(
                 job_id=claimed.job_id,
                 attempt_id=claimed.attempt_id,
                 worker_id=worker_id,
-                now=datetime.now(UTC),
+                now=_finalization_time(claim_time),
             )
     return True
 
