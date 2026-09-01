@@ -24,10 +24,11 @@ readiness, immutable ten-Question Attempts, feedback-free Answers, explicit atom
 Knowledge, critical-allergen evidence, durable Final Exam eligibility and Latest/Best history.
 CRA-65 is Done and published through `4164b9c`. CRA-67 Final Exam and canonical Results are
 accepted and Done as `6be8f4d..703872b`; CRA-68 is Done and published through `9ef9fe1`. Final Exam
-reuses the `0014_practice_persistence` assessment graph. CRA-69 Slice 8 planning is accepted and
-Done; CRA-70 is the prior unpushed local documentation checkpoint `5352f89`. CRA-71 is accepted
-and Done locally as `62a80a0..054d731` at Alembic head `0015_attention_retakes`; CRA-72 owns this
-post-acceptance documentation-only synchronization. No push or remote publication is authorized.
+reuses the `0014_practice_persistence` assessment graph. CRA-69 Slice 8 planning and CRA-71
+Attention and Retakes are accepted and Done at Alembic head `0015_attention_retakes`. CRA-74
+ordinary fast-forward published CRA-70 at `5352f89`, CRA-71 as `62a80a0..054d731`, and the CRA-72
+documentation checkpoint through `4019262`; CRA-75 owns the publication-state documentation
+checkpoint.
 
 Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
@@ -132,7 +133,7 @@ The accepted CRA-67 gate reports 445 backend tests with its focused real-Postgre
 reported separately, 57 Vitest tests and 21 Playwright executions. Exact evidence and limitations
 are in [`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).
 
-The accepted CRA-71 local gate reports 463 backend tests at 86% statement/branch coverage, Ruff,
+The accepted CRA-71 gate reports 463 backend tests at 86% statement/branch coverage, Ruff,
 strict mypy and Alembic upgrade/current/no-drift green at `0015_attention_retakes`. Exact evidence
-and remaining remote gates are in
+and remaining external gates are in
 [`../docs/testing/attention-retakes-slice-8-acceptance.md`](../docs/testing/attention-retakes-slice-8-acceptance.md).

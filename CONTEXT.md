@@ -20,9 +20,10 @@ publication. CRA-63 planning and CRA-64 Practice are accepted and Done; the exac
 range is `74c5741..cc1c05a`, and CRA-65 synchronization is published through `4164b9c`. CRA-66
 Final Exam planning and CRA-67 Final Exam/canonical Results are accepted and Done; CRA-67 is the
 exact eight-checkpoint range `6be8f4d..703872b`, and CRA-68 is Done and published through
-`9ef9fe1`. CRA-70 is the active bounded documentation-only checkpoint with one authorized local
-commit and no push. CRA-69 Slice 8 planning is Backlog and draft v1 remains unaccepted. CRA-42 is
-unrelated Backlog work. Broader production
+`9ef9fe1`. CRA-69 Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74
+ordinary fast-forward published CRA-70 at `5352f89`, CRA-71 at `62a80a0..054d731`, and the CRA-72
+documentation checkpoint through `4019262`. CRA-75 owns the current documentation-only publication
+state checkpoint. CRA-42 is unrelated Backlog work. Broader production
 administration,
 providers/workers, PR, merge, deployment, and production configuration require separate approval
 or later bounded issues.
@@ -157,19 +158,21 @@ Latest/Best history, Admin readiness and responsive Employee UI. Evidence is in
 [CRA-67](https://linear.app/craftspacee/issue/CRA-67) is accepted and Done as
 `6be8f4d..703872b`; it adds Final Exam, certification and canonical Results.
 [CRA-68](https://linear.app/craftspacee/issue/CRA-68) is accepted, Done and published through
-`9ef9fe1`. [CRA-70](https://linear.app/craftspacee/issue/CRA-70) is the active bounded
-documentation-only synchronization checkpoint. [CRA-69](https://linear.app/craftspacee/issue/CRA-69)
-is Backlog; its Slice 8 planning draft v1 remains unaccepted and separate from implementation.
+`9ef9fe1`. [CRA-69](https://linear.app/craftspacee/issue/CRA-69) planning and
+[CRA-71](https://linear.app/craftspacee/issue/CRA-71) implementation are accepted and Done.
+[CRA-74](https://linear.app/craftspacee/issue/CRA-74) published the exact CRA-70/71/72 range through
+`4019262`; [CRA-75](https://linear.app/craftspacee/issue/CRA-75) owns the current repository
+documentation synchronization.
 
 ## Repository map
 
-- [`backend/app`](backend/app): accepted runtime through CRA-67 Final Exam and Results.
+- [`backend/app`](backend/app): accepted runtime through CRA-71 Attention and Retakes.
 - [`backend/migrations`](backend/migrations): Alembic environment and accepted revisions through
-  head `0014_practice_persistence`.
+  head `0015_attention_retakes`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted experiences through CRA-67 Admin Results and Employee Final
-  Exam, component tests and Playwright evidence.
+- [`frontend`](frontend): accepted experiences through CRA-71 Attention and Retakes, component
+  tests and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

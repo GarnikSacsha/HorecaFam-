@@ -1,16 +1,15 @@
-# MVP Vertical Slice 8 — Attention and Retakes accepted local evidence
+# MVP Vertical Slice 8 — Attention and Retakes accepted evidence
 
 ## Status
 
-This document records the accepted local CRA-71 implementation on 2026-09-01. Denys accepted the
-evidence and authorized the exact eight-checkpoint range **62a80a0..054d731**, its local commits and
-Linear evidence publication. The published remote baseline remains **origin/main@9ef9fe1**; CRA-70
-at **5352f89** and CRA-71 remain local. Push, PR, merge, provider activity and deployment remain
-unauthorized.
+This document records the accepted CRA-71 implementation on 2026-09-01. Denys accepted the evidence
+and exact eight-checkpoint range **62a80a0..054d731**. CRA-74 ordinary fast-forward published CRA-70
+at **5352f89**, CRA-71, and the CRA-72 documentation checkpoint through
+**origin/main@4019262**. PR, merge, provider activity and deployment remain separately gated.
 
 ## Implemented boundary
 
-The accepted local implementation provides:
+The accepted implementation provides:
 
 - Alembic head **0015_attention_retakes** with six tenant-owned Attention/Retake tables,
   constraints, indexes, deterministic historical backfill and reversible migration;
@@ -65,11 +64,12 @@ Organization/Employee/source/Assignment boundary; the focused PostgreSQL test th
 - Focused Slice 8 Playwright: 6 passed across 1440×1000, 768×1024 and 375×812.
 - Full Playwright regression: 27 passed, 0 failed, 0 skipped.
 
-## Local checkpoint range and remaining gates
+## Checkpoint range and remaining gates
 
 - Exact committed range: **62a80a0..054d731**, eight selective CRA-71 checkpoints.
 - CRA-71 is Done and its exact SHA/test evidence is published in Linear.
-- CRA-72 owns the post-acceptance repository documentation synchronization.
-- Remote Git publication remains separately gated; no push, PR or merge was performed.
+- CRA-72 records the post-acceptance repository documentation synchronization.
+- CRA-74 ordinary fast-forward published the accepted range through `4019262`; no PR or merge was
+  performed.
 - Railway cron/worker scheduling, provider delivery, staging, production and pilot hardening are
   outside CRA-71.

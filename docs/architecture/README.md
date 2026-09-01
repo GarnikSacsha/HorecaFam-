@@ -3,10 +3,10 @@
 This document describes the verified accepted implementation through CRA-64 Practice at
 `cc1c05a`, published with CRA-65 synchronization through `4164b9c`, plus accepted CRA-67 Final
 Exam and Results at `703872b`, published with CRA-68 synchronization through `9ef9fe1`. CRA-69
-Slice 8 planning is accepted and Done; CRA-70 is the prior unpushed local documentation checkpoint
-`5352f89`. CRA-71 is accepted and Done locally as `62a80a0..054d731`; CRA-72 owns this
-post-acceptance documentation-only synchronization. Canonical product behavior and contracts remain
-in Linear, and remote publication remains separately gated.
+Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74 ordinary
+fast-forward published CRA-70 at `5352f89`, CRA-71 as `62a80a0..054d731`, and the CRA-72
+documentation checkpoint through `4019262`; CRA-75 owns the publication-state documentation
+checkpoint. Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -56,9 +56,9 @@ required environment configuration
   `0011_candidate_provenance`, and `0012_question_rules` add assessment execution, Candidate-owned
   provenance and the active deterministic category rule. Migration `0013_question_templates` adds
   component, allergen and description rules; `0014_practice_persistence` adds the accepted
-  Practice/eligibility persistence closure. Accepted local CRA-71 migration
-  `0015_attention_retakes` adds Attention/Retake persistence and deterministic historical backfill;
-  it is not yet a published remote baseline.
+  Practice/eligibility persistence closure. Accepted CRA-71 migration `0015_attention_retakes` adds
+  Attention/Retake persistence and deterministic historical backfill; CRA-74 published it through
+  `4019262`.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -294,9 +294,9 @@ The accepted CRA-67 implementation reuses the assessment persistence graph and
 exposed from the canonical Final Exam result boundary. Passed certification does not expose a
 retake action; failed attempts can start an immediate retake in Slice 7.
 
-## Accepted local CRA-71 Attention and Retakes architecture
+## Accepted CRA-71 Attention and Retakes architecture
 
-The accepted local implementation extends the assessment graph at `0015_attention_retakes`:
+The accepted implementation extends the assessment graph at `0015_attention_retakes`:
 immutable Critical Error projection creates stable Attention cases; failed Final results create one current seven-day
 Retake obligation whose deadline does not extend on repeated failure; explicit acknowledge, resolve,
 propose, edit, confirm, cancel and completion transitions preserve source evidence. Protected Admin
@@ -316,6 +316,6 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 There is no invitation list/detail workflow, password recovery, MFA enrollment, Organization or
 reference CRUD, Employee disable/reactivate lifecycle administration, provider integration, or
 deployed worker/resource. The frontend lives in [`../../frontend/`](../../frontend/) and includes
-accepted CRA-67 Final Exam/Admin Results plus the accepted local CRA-71 Attention/Retakes boundary.
+accepted CRA-67 Final Exam/Admin Results plus the accepted CRA-71 Attention/Retakes boundary.
 Adding any absent capability requires a bounded Linear issue and approval. CRA-19 remains
 a separate visual-only track.

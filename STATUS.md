@@ -1,18 +1,19 @@
 # HoReCa Repository Status
 
 **Snapshot date:** 2026-09-01
-**Published product implementation:** CRA-67 Final Exam/canonical Results and CRA-68 repository
-synchronization are accepted, Done and fast-forward published on `origin/main` through `9ef9fe1`.
+**Published product implementation:** CRA-69 Slice 8 planning and CRA-71 Attention and Retakes are
+accepted and Done. CRA-74 fast-forward published CRA-70, CRA-71 and CRA-72 on `origin/main` through
+`4019262`.
 The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Current local boundary:** CRA-69 planning and CRA-71 Slice 8 implementation are accepted and Done.
-CRA-71 is committed locally as the exact eight-checkpoint range `62a80a0..054d731` at Alembic head
-`0015_attention_retakes`. CRA-70 remains the prior local documentation checkpoint `5352f89`; CRA-72
-owns this post-acceptance documentation-only synchronization. The published baseline remains
-`origin/main@9ef9fe1`; push, PR, merge, deployment, provider and production actions are not authorized.
+**Current boundary:** CRA-71 is published as the exact eight-checkpoint range
+`62a80a0..054d731` at Alembic head `0015_attention_retakes`. CRA-74 ordinary fast-forward published
+CRA-70 at `5352f89`, CRA-71, and the CRA-72 documentation checkpoint through
+`origin/main@4019262`. CRA-75 owns this publication-state documentation checkpoint. PR, merge,
+deployment, provider and production actions remain separately gated.
 
 ## Accepted implementation and planning checkpoints
 
@@ -73,10 +74,11 @@ owns this post-acceptance documentation-only synchronization. The published base
   `6be8f4d..703872b`; CRA-68 records its documentation synchronization and ordinary publication.
 - CRA-68 is accepted, Done and fast-forward published through `9ef9fe1`.
 - CRA-69 Slice 8 planning and its 65-scenario/eight-checkpoint map are accepted and Done.
-- CRA-70 is complete locally as documentation checkpoint `5352f89`; no push was authorized.
-- CRA-71 Slice 8 implementation is accepted and Done locally as `62a80a0..054d731`.
-- CRA-72 owns the separately authorized post-acceptance documentation checkpoint; no push is
-  authorized.
+- CRA-70 is Done and published as documentation checkpoint `5352f89`.
+- CRA-71 Slice 8 implementation is accepted, Done and published as `62a80a0..054d731`.
+- CRA-72 is Done and its post-acceptance documentation checkpoint is published at `4019262`.
+- CRA-74 is Done and records the ordinary fast-forward publication through `4019262`.
+- CRA-75 owns this publication-state documentation checkpoint.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -213,21 +215,23 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; the accepted remote product/documentation baseline is `origin/main@9ef9fe1`.
-  CRA-70 owns one authorized local documentation checkpoint on top of that baseline; no push is
-  authorized by CRA-70.
+- Branch: `main`; the accepted remote product/documentation baseline is `origin/main@4019262`.
+  CRA-74 records the ordinary fast-forward publication, and CRA-75 owns this documentation-only
+  follow-up checkpoint.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
   checkpoints, CRA-49 through `8028d6e`, CRA-54 through `d955f6a`, CRA-55 through `afc607a`, and
-  CRA-57 through `d4e0184`.
+  CRA-57 through `d4e0184`; later accepted publication checkpoints are CRA-62 at `c79db9d`, CRA-65
+  at `4164b9c`, CRA-68 at `9ef9fe1`, and CRA-74 through `4019262`.
 - Git remote: `origin` points to the approved `GarnikSacsha/HorecaFam-` repository.
 - Published branch: CRA-49 and its corrective acceptance tail end at `8028d6e`; CRA-54's
   `8e15bd2..d955f6a`, CRA-55's `afc607a`, and CRA-57's `5823a0e..d4e0184` follow without force-push
-  or history rewriting.
+  or history rewriting. CRA-61/62, CRA-64/65, CRA-67/68 and the CRA-70/71/72 range published by
+  CRA-74 follow through `4019262` with the same fast-forward-only invariant.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
 - Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
-- `frontend/`: accepted CRA-67 Admin Results/readiness and Employee Final Exam implementation.
+- `frontend/`: accepted CRA-71 Admin Attention/Retakes and Employee follow-up implementation.
 
 ## Accepted and published CRA-57 checkpoint
 
@@ -327,7 +331,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Exact forty-scenario evidence and limitations:
   [`docs/testing/practice-slice-6-acceptance.md`](docs/testing/practice-slice-6-acceptance.md).
 - Final Exam execution/certification and canonical management Results are accepted in CRA-67.
-  Attention/Retakes are accepted locally in CRA-71 as described below; providers, deployment and
+  Attention/Retakes are accepted and published in CRA-71 as described below; providers, deployment and
   real Bacara ingestion remain absent.
 
 ## Accepted CRA-67 Final Exam checkpoint
@@ -350,7 +354,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 - Exact evidence and limitations:
   [`docs/testing/final-exam-slice-7-acceptance.md`](docs/testing/final-exam-slice-7-acceptance.md).
 
-## Accepted local CRA-71 Attention and Retakes checkpoint
+## Accepted CRA-71 Attention and Retakes checkpoint
 
 - Scope: six-table persistence/backfill, immutable Critical Error projection, seven-day Retake
   lifecycle/timing, explicit Attention workflow, protected Admin/Employee APIs, authorized
@@ -359,21 +363,22 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   Alembic upgrade/current/no-drift is green at `0015_attention_retakes`.
 - Frontend: Prettier, TypeScript, ESLint and production build passed; Vitest reports 58 passed
   across 19 files; Playwright reports 27 passed across the three approved viewport projects.
-- Exact accepted evidence and remaining remote gates:
+- Exact accepted evidence and remaining external gates:
   [`docs/testing/attention-retakes-slice-8-acceptance.md`](docs/testing/attention-retakes-slice-8-acceptance.md).
-- Exact local range: `62a80a0..054d731`; all eight checkpoints are committed and CRA-71 is Done.
-- CRA-72 owns this post-acceptance documentation synchronization. No push was performed.
+- Exact range: `62a80a0..054d731`; all eight checkpoints are committed, published and CRA-71 is Done.
+- CRA-72 records the post-acceptance documentation synchronization; CRA-74 published the complete
+  CRA-70/71/72 range through `4019262`.
 
 ## Remaining to a functional and pilot-ready MVP
 
-Following accepted local CRA-71 and CRA-72 documentation synchronization, the next bounded gates are:
+Following accepted and published CRA-71 and CRA-72 documentation synchronization, the next bounded
+gate is:
 
-1. Separate authorization for any push/publication of the local CRA-70/71/72 checkpoints.
-2. Pilot-critical access/admin/content closure, including elevated-user
+1. Pilot-critical access/admin/content closure, including elevated-user
    recovery/enrollment, Employee lifecycle administration, minimum venue setup, validated Bacara
    content and the complete synthetic end-to-end chain.
 
-The local functional Slice 8 boundary is accepted and implemented. Pilot infrastructure, providers,
+The published functional Slice 8 boundary is accepted and implemented. Pilot infrastructure, providers,
 observability, backup/security/performance hardening, real verified content and real-venue UAT
 remain separate future scope and external-latency risks.
 
@@ -392,11 +397,11 @@ remain separate future scope and external-latency risks.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- CRA-72 is the active bounded documentation-only repository issue. CRA-19 remains a separate
+- CRA-75 is the active bounded documentation-only repository issue. CRA-19 remains a separate
   visual-only track.
-- CRA-71 is accepted and Done locally as `62a80a0..054d731`; CRA-72 authorizes only its exact
-  nine-document synchronization and one selective local commit.
-- CRA-69 planning is accepted and Done; CRA-70 is the prior unpushed local documentation commit.
+- CRA-71 is accepted, Done and published as `62a80a0..054d731`; CRA-72 records its exact
+  nine-document synchronization, and CRA-74 records publication through `4019262`.
+- CRA-69 planning is accepted and Done; CRA-70 is published at `5352f89`.
 - Push, PR, merge, provider and deployment actions remain separately gated.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization

@@ -19,11 +19,11 @@ CRA-64 Practice are accepted and Done as the exact eight-commit range `74c5741..
 synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67 Final Exam/
 canonical Results are accepted and Done; CRA-67 is the exact eight-checkpoint range
 `6be8f4d..703872b`. CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is
-accepted and Done. CRA-70 is the prior local documentation checkpoint `5352f89`. CRA-71 is
-accepted and Done locally as the exact eight-checkpoint range `62a80a0..054d731`; CRA-72 owns this
-post-acceptance documentation-only synchronization. The published baseline remains `9ef9fe1`; push,
-PR, merge, deployment, providers and production configuration remain separate gates. CRA-42 is
-unrelated Backlog work.
+accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at `5352f89`, the accepted
+eight-checkpoint CRA-71 range `62a80a0..054d731`, and the CRA-72 documentation checkpoint through
+`4019262`. Local `main` and `origin/main` match at `4019262`. PR, merge, deployment, providers and
+production configuration remain separate gates. CRA-75 owns this publication-state documentation
+checkpoint; CRA-42 is unrelated Backlog work.
 
 ## Start here
 
@@ -39,9 +39,9 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, Alembic-managed accepted
-  runtime through accepted CRA-67 Final Exam and Results.
+  runtime through CRA-71 Attention and Retakes at head `0015_attention_retakes`.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
-  Playwright through accepted CRA-67 Final Exam and Results.
+  Playwright through accepted CRA-71 Attention and Retakes.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
 - [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing/`](docs/testing): test structure and accepted evidence.
@@ -105,7 +105,7 @@ The accepted range ends at `cc1c05a`, and CRA-65 publishes its synchronization c
 exact 70% passing, certification, failed-attempt immediate retake, and canonical Admin Results.
 Its evidence is in
 [`docs/testing/final-exam-slice-7-acceptance.md`](docs/testing/final-exam-slice-7-acceptance.md).
-The accepted CRA-71 local implementation adds Attention/Retakes administration and Employee
+The accepted CRA-71 implementation adds Attention/Retakes administration and Employee
 follow-up behavior;
 its exact evidence is in
 [`docs/testing/attention-retakes-slice-8-acceptance.md`](docs/testing/attention-retakes-slice-8-acceptance.md).

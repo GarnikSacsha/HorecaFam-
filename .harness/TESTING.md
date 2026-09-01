@@ -28,10 +28,10 @@ is recorded in
 CRA-65 synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67
 implementation are accepted and Done; exact CRA-67 evidence is recorded in
 [`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).
-CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is accepted and Done.
-CRA-70 is the prior unpushed local documentation checkpoint `5352f89`. CRA-71 is accepted and Done
-locally as `62a80a0..054d731`; CRA-72 owns this post-acceptance documentation-only synchronization.
-Exact accepted evidence is recorded in
+CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning and CRA-71 Attention and
+Retakes are accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at `5352f89`, CRA-71
+as `62a80a0..054d731`, and the CRA-72 documentation checkpoint through `4019262`. CRA-75 owns the
+publication-state documentation checkpoint. Exact accepted evidence is recorded in
 [`../docs/testing/attention-retakes-slice-8-acceptance.md`](../docs/testing/attention-retakes-slice-8-acceptance.md).
 
 ## Environment setup
@@ -280,9 +280,9 @@ tests and 3 browser executions passed. Alembic remains at `0014_practice_persist
 upgrade/current-head/no-drift checks green. CRA-67 and CRA-68 are Done, and the accepted repository
 baseline is published through `9ef9fe1`. These results remain historical accepted evidence.
 
-The accepted CRA-71 local implementation reports 463 backend tests passed at 86%
+The accepted CRA-71 implementation reports 463 backend tests passed at 86%
 statement/branch coverage; Ruff,
 strict mypy, Alembic upgrade/current/no-drift at `0015_attention_retakes`, Prettier, ESLint,
 TypeScript and production build passed. Full Vitest reports 58 passed and full Playwright reports 27
-passed across desktop, compact and mobile. Denys accepted this evidence and authorized the exact
-eight-checkpoint local range; remote publication remains separately gated.
+passed across desktop, compact and mobile. Denys accepted this evidence and the exact
+eight-checkpoint range; CRA-74 ordinary fast-forward published it through `4019262`.
