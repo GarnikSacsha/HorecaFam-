@@ -17,6 +17,7 @@ from app.security.tokens import generate_opaque_token, hash_secret
 SESSION_INACTIVITY = timedelta(days=14)
 EMPLOYEE_SESSION_LIFETIME = timedelta(days=90)
 ELEVATED_SESSION_LIFETIME = timedelta(days=30)
+RECENT_MFA_WINDOW = timedelta(minutes=15)
 
 
 @dataclass(frozen=True)

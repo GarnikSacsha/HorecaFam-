@@ -39,3 +39,13 @@ def set_mfa_challenge_cookie(
         httponly=True,
         samesite=settings.session_cookie_samesite,
     )
+
+
+def clear_mfa_challenge_cookie(response: Response, settings: Settings) -> None:
+    response.delete_cookie(
+        key=settings.mfa_challenge_cookie_name,
+        path="/api/v1",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite=settings.session_cookie_samesite,
+    )

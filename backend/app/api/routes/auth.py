@@ -11,11 +11,22 @@ from app.api.dependencies.session import (
 )
 from app.core.clock import Clock
 from app.core.config import Settings
-from app.core.cookies import set_mfa_challenge_cookie, set_session_cookie
+from app.core.cookies import (
+    clear_mfa_challenge_cookie,
+    set_mfa_challenge_cookie,
+    set_session_cookie,
+)
 from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.schemas.auth import (
     LoginRequest,
+    MfaEnrollmentConfirmRequest,
+    MfaEnrollmentConfirmResponse,
+    MfaEnrollmentRequiredResponse,
+    MfaEnrollmentStartResponse,
+    MfaRecoveryCodesRegenerateRequest,
+    MfaRecoveryCodesResponse,
+    MfaRecoveryVerifyRequest,
     MfaRequiredResponse,
     MfaVerifyRequest,
     PasswordChangeRequest,
@@ -26,6 +37,12 @@ from app.schemas.auth import (
 )
 from app.security.passwords import PasswordManager
 from app.services.auth import login, verify_mfa
+from app.services.mfa_enrollment import (
+    confirm_mfa_enrollment,
+    regenerate_mfa_recovery_codes,
+    start_mfa_enrollment,
+    verify_mfa_recovery_code,
+)
 from app.services.password_recovery import (
     change_password,
     request_password_reset,
@@ -34,6 +51,133 @@ from app.services.password_recovery import (
 from app.services.sessions import build_session_response, revoke_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/mfa/enrollment/start", response_model=MfaEnrollmentStartResponse)
+async def mfa_enrollment_start_route(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MfaEnrollmentStartResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    outcome = await start_mfa_enrollment(
+        db,
+        raw_challenge=request.cookies.get(settings.mfa_challenge_cookie_name),
+        settings=settings,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+    return MfaEnrollmentStartResponse(
+        secret=outcome.secret,
+        otpauth_uri=outcome.otpauth_uri,
+        expires_at=outcome.expires_at,
+    )
+
+
+@router.post("/mfa/enrollment/confirm", response_model=MfaEnrollmentConfirmResponse)
+async def mfa_enrollment_confirm_route(
+    payload: MfaEnrollmentConfirmRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MfaEnrollmentConfirmResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    now = clock()
+    outcome = await confirm_mfa_enrollment(
+        db,
+        raw_challenge=request.cookies.get(settings.mfa_challenge_cookie_name),
+        code=payload.code,
+        settings=settings,
+        now=now,
+        request_id=UUID(get_request_id()),
+        user_agent=request.headers.get("user-agent"),
+    )
+    set_session_cookie(
+        response,
+        settings,
+        outcome.session.raw_token,
+        outcome.session.record.absolute_expires_at,
+        now,
+    )
+    clear_mfa_challenge_cookie(response, settings)
+    hmac_key = settings.auth_throttle_hmac_key
+    if hmac_key is None:
+        raise RuntimeError("Auth security settings were not validated")
+    session = await build_session_response(
+        db,
+        issued_session=outcome.session.record,
+        user=outcome.user,
+        raw_token=outcome.session.raw_token,
+        hmac_key=hmac_key,
+    )
+    return MfaEnrollmentConfirmResponse(
+        session=session,
+        recovery_codes=outcome.recovery_codes,
+    )
+
+
+@router.post("/mfa/recovery/verify", response_model=SessionResponse)
+async def mfa_recovery_verify_route(
+    payload: MfaRecoveryVerifyRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> SessionResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    now = clock()
+    outcome = await verify_mfa_recovery_code(
+        db,
+        raw_challenge=request.cookies.get(settings.mfa_challenge_cookie_name),
+        code=payload.code,
+        settings=settings,
+        now=now,
+        request_id=UUID(get_request_id()),
+        user_agent=request.headers.get("user-agent"),
+    )
+    set_session_cookie(
+        response,
+        settings,
+        outcome.session.raw_token,
+        outcome.session.record.absolute_expires_at,
+        now,
+    )
+    clear_mfa_challenge_cookie(response, settings)
+    hmac_key = settings.auth_throttle_hmac_key
+    if hmac_key is None:
+        raise RuntimeError("Auth security settings were not validated")
+    return await build_session_response(
+        db,
+        issued_session=outcome.session.record,
+        user=outcome.user,
+        raw_token=outcome.session.raw_token,
+        hmac_key=hmac_key,
+    )
+
+
+@router.post("/mfa/recovery-codes/regenerate", response_model=MfaRecoveryCodesResponse)
+async def mfa_recovery_codes_regenerate_route(
+    payload: MfaRecoveryCodesRegenerateRequest,
+    request: Request,
+    current: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MfaRecoveryCodesResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    passwords = cast(PasswordManager, request.app.state.password_manager)
+    recovery_codes = await regenerate_mfa_recovery_codes(
+        db,
+        current_session=current.record,
+        user=current.user,
+        current_password=payload.current_password.get_secret_value(),
+        totp_code=payload.totp_code,
+        settings=settings,
+        passwords=passwords,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+    return MfaRecoveryCodesResponse(recovery_codes=recovery_codes)
 
 
 @router.post(
@@ -107,13 +251,16 @@ async def password_change_route(
     )
 
 
-@router.post("/login", response_model=SessionResponse | MfaRequiredResponse)
+@router.post(
+    "/login",
+    response_model=SessionResponse | MfaRequiredResponse | MfaEnrollmentRequiredResponse,
+)
 async def login_route(
     payload: LoginRequest,
     request: Request,
     response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> SessionResponse | MfaRequiredResponse:
+) -> SessionResponse | MfaRequiredResponse | MfaEnrollmentRequiredResponse:
     settings = cast(Settings, request.app.state.settings)
     clock = cast(Clock, request.app.state.clock)
     passwords = cast(PasswordManager, request.app.state.password_manager)
@@ -128,7 +275,7 @@ async def login_route(
         request_id=UUID(get_request_id()),
         user_agent=request.headers.get("user-agent"),
     )
-    if outcome.kind == "mfa_required":
+    if outcome.kind in {"mfa_required", "mfa_enrollment_required"}:
         if outcome.challenge_token is None or outcome.challenge_expires_at is None:
             raise RuntimeError("MFA challenge outcome is incomplete")
         response.status_code = 202
@@ -139,6 +286,8 @@ async def login_route(
             outcome.challenge_expires_at,
             now,
         )
+        if outcome.kind == "mfa_enrollment_required":
+            return MfaEnrollmentRequiredResponse(expires_at=outcome.challenge_expires_at)
         return MfaRequiredResponse(expires_at=outcome.challenge_expires_at)
 
     if outcome.session is None:
@@ -212,13 +361,7 @@ async def verify_mfa_route(
         outcome.session.record.absolute_expires_at,
         now,
     )
-    response.delete_cookie(
-        key=settings.mfa_challenge_cookie_name,
-        path="/api/v1",
-        secure=settings.session_cookie_secure,
-        httponly=True,
-        samesite=settings.session_cookie_samesite,
-    )
+    clear_mfa_challenge_cookie(response, settings)
     hmac_key = settings.auth_throttle_hmac_key
     if hmac_key is None:
         raise RuntimeError("Auth security settings were not validated")

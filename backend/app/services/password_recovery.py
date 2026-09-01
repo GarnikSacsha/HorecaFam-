@@ -24,12 +24,12 @@ from app.services.password_reset_delivery import (
     PasswordResetTokenManager,
     enqueue_password_reset_email,
 )
+from app.services.sessions import RECENT_MFA_WINDOW
 
 PASSWORD_RESET_LIFETIME = timedelta(minutes=30)
 PASSWORD_RATE_WINDOW = timedelta(minutes=15)
 PASSWORD_RATE_BLOCK = timedelta(minutes=15)
 PASSWORD_RATE_LIMIT = 5
-RECENT_MFA_WINDOW = timedelta(minutes=15)
 
 
 def _rate_subject(value: str, settings: Settings) -> str:

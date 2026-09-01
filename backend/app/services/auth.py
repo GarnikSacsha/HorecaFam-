@@ -34,7 +34,7 @@ MFA_CHALLENGE_LIFETIME = timedelta(minutes=5)
 
 @dataclass(frozen=True)
 class LoginOutcome:
-    kind: Literal["session", "mfa_required"]
+    kind: Literal["session", "mfa_required", "mfa_enrollment_required"]
     user: User
     session: IssuedSession | None = None
     challenge_token: str | None = None
@@ -195,13 +195,6 @@ async def login(
                 MfaCredential.disabled_at.is_(None),
             )
         )
-        if credential is None:
-            await db.commit()
-            raise APIError(
-                status_code=403,
-                code="MFA_NOT_CONFIGURED",
-                message="Для цього доступу потрібне налаштоване MFA.",
-            )
         await db.execute(
             update(MfaChallenge)
             .where(MfaChallenge.user_id == user.id, MfaChallenge.used_at.is_(None))
@@ -213,6 +206,7 @@ async def login(
             user_id=user.id,
             token_hash=hash_secret(raw_challenge),
             expires_at=expires_at,
+            created_at=now,
         )
         db.add(challenge)
         await db.flush()
@@ -220,7 +214,11 @@ async def login(
             AuditEvent(
                 actor_user_id=user.id,
                 actor_type="user",
-                action="mfa_challenge_created",
+                action=(
+                    "mfa_enrollment_challenge_created"
+                    if credential is None
+                    else "mfa_challenge_created"
+                ),
                 target_type="mfa_challenge",
                 target_id=challenge.id,
                 request_id=request_id,
@@ -229,7 +227,7 @@ async def login(
         )
         await db.commit()
         return LoginOutcome(
-            kind="mfa_required",
+            kind="mfa_enrollment_required" if credential is None else "mfa_required",
             user=user,
             challenge_token=raw_challenge,
             challenge_expires_at=expires_at,

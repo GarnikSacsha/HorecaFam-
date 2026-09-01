@@ -247,7 +247,7 @@ async def test_challenge_without_usable_credential_is_rejected(
     assert response.json()["code"] == "MFA_CHALLENGE_INVALID"
 
 
-async def test_elevated_login_without_confirmed_mfa_fails_closed(
+async def test_elevated_login_without_confirmed_mfa_is_limited_to_enrollment(
     auth_client: AsyncClient,
     db_session: AsyncSession,
 ) -> None:
@@ -265,8 +265,9 @@ async def test_elevated_login_without_confirmed_mfa_fails_closed(
         json={"email": user.email_normalized, "password": "correct-password"},
     )
 
-    assert response.status_code == 403
-    assert response.json()["code"] == "MFA_NOT_CONFIGURED"
+    assert response.status_code == 202
+    assert response.json()["status"] == "mfa_enrollment_required"
+    assert "horeca_mfa_challenge" in auth_client.cookies
     assert "horeca_session" not in auth_client.cookies
 
 

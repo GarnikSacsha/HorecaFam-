@@ -1,5 +1,8 @@
+import base64
+import secrets
 from collections.abc import Sequence
 from datetime import datetime
+from urllib.parse import quote
 
 from cryptography.fernet import Fernet, MultiFernet
 from cryptography.hazmat.primitives.hashes import SHA1
@@ -7,6 +10,7 @@ from cryptography.hazmat.primitives.twofactor import InvalidToken
 from cryptography.hazmat.primitives.twofactor.totp import TOTP
 
 TOTP_STEP_SECONDS = 30
+RECOVERY_CODE_COUNT = 10
 
 
 class MfaSecretCipher:
@@ -50,3 +54,37 @@ class TotpVerifier:
                 continue
             return counter
         return None
+
+
+def generate_totp_secret() -> bytes:
+    return secrets.token_bytes(20)
+
+
+def encode_totp_secret(secret: bytes) -> str:
+    return base64.b32encode(secret).decode("ascii").rstrip("=")
+
+
+def build_totp_uri(
+    secret: bytes,
+    *,
+    account_name: str,
+    issuer: str = "HoReCa Training",
+) -> str:
+    label = quote(f"{issuer}:{account_name}", safe="")
+    encoded_issuer = quote(issuer, safe="")
+    return (
+        f"otpauth://totp/{label}?secret={encode_totp_secret(secret)}"
+        f"&issuer={encoded_issuer}&algorithm=SHA1&digits=6&period={TOTP_STEP_SECONDS}"
+    )
+
+
+def normalize_recovery_code(code: str) -> str:
+    return "".join(character for character in code.upper() if character.isalnum())
+
+
+def generate_recovery_codes(*, count: int = RECOVERY_CODE_COUNT) -> list[str]:
+    codes: list[str] = []
+    for _ in range(count):
+        compact = base64.b32encode(secrets.token_bytes(10)).decode("ascii").rstrip("=")
+        codes.append("-".join(compact[index : index + 4] for index in range(0, 16, 4)))
+    return codes
