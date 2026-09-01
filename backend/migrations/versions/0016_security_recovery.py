@@ -57,6 +57,16 @@ PREVIOUS_JOB_PAYLOAD = CURRENT_JOB_PAYLOAD.replace(
 
 
 def upgrade() -> None:
+    op.drop_constraint(
+        op.f("ck_auth_rate_limit_buckets_action_allowed"),
+        "auth_rate_limit_buckets",
+        type_="check",
+    )
+    op.create_check_constraint(
+        op.f("ck_auth_rate_limit_buckets_action_allowed"),
+        "auth_rate_limit_buckets",
+        "action IN ('login', 'password_forgot', 'password_reset')",
+    )
     op.create_table(
         "password_reset_tokens",
         sa.Column("user_id", sa.Uuid(), nullable=False),
@@ -234,3 +244,19 @@ def downgrade() -> None:
     op.drop_table("mfa_recovery_codes")
     op.drop_index("ix_password_reset_tokens_user_active", table_name="password_reset_tokens")
     op.drop_table("password_reset_tokens")
+    op.execute(
+        sa.text(
+            "DELETE FROM auth_rate_limit_buckets "
+            "WHERE action IN ('password_forgot', 'password_reset')"
+        )
+    )
+    op.drop_constraint(
+        op.f("ck_auth_rate_limit_buckets_action_allowed"),
+        "auth_rate_limit_buckets",
+        type_="check",
+    )
+    op.create_check_constraint(
+        op.f("ck_auth_rate_limit_buckets_action_allowed"),
+        "auth_rate_limit_buckets",
+        "action = 'login'",
+    )

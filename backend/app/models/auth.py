@@ -290,7 +290,10 @@ class AuthRateLimitBucket(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "auth_rate_limit_buckets"
     __table_args__ = (
         UniqueConstraint("action", "subject_hash", name="uq_auth_rate_limit_action_subject"),
-        CheckConstraint("action = 'login'", name="action_allowed"),
+        CheckConstraint(
+            "action IN ('login', 'password_forgot', 'password_reset')",
+            name="action_allowed",
+        ),
         CheckConstraint("length(subject_hash) = 64", name="subject_hash_length"),
         CheckConstraint("failure_count >= 0", name="failure_count_nonnegative"),
         Index("ix_auth_rate_limit_blocked_until", "blocked_until"),

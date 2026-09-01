@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     mfa_encryption_keys: list[SecretStr] = []
     auth_throttle_hmac_key: SecretStr | None = None
     invitation_token_hmac_keys: list[SecretStr] = []
+    password_reset_token_hmac_keys: list[SecretStr] = []
     storage_bucket: str | None = None
     storage_endpoint_url: str | None = None
     storage_region: str = "auto"
@@ -54,6 +55,14 @@ class Settings(BaseSettings):
             raise ValueError("INVITATION_TOKEN_HMAC_KEYS must contain at least one key")
         if any(len(key.get_secret_value()) < 32 for key in self.invitation_token_hmac_keys):
             raise ValueError("Every INVITATION_TOKEN_HMAC_KEYS entry must contain 32 characters")
+
+    def validate_password_reset_security(self) -> None:
+        if not self.password_reset_token_hmac_keys:
+            raise ValueError("PASSWORD_RESET_TOKEN_HMAC_KEYS must contain at least one key")
+        if any(len(key.get_secret_value()) < 32 for key in self.password_reset_token_hmac_keys):
+            raise ValueError(
+                "Every PASSWORD_RESET_TOKEN_HMAC_KEYS entry must contain 32 characters"
+            )
 
     def validate_private_storage(self) -> None:
         required = (

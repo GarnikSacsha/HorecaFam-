@@ -18,13 +18,93 @@ from app.schemas.auth import (
     LoginRequest,
     MfaRequiredResponse,
     MfaVerifyRequest,
+    PasswordChangeRequest,
+    PasswordForgotRequest,
+    PasswordForgotResponse,
+    PasswordResetRequest,
     SessionResponse,
 )
 from app.security.passwords import PasswordManager
 from app.services.auth import login, verify_mfa
+from app.services.password_recovery import (
+    change_password,
+    request_password_reset,
+    reset_password,
+)
 from app.services.sessions import build_session_response, revoke_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post(
+    "/password/forgot",
+    response_model=PasswordForgotResponse,
+    status_code=202,
+)
+async def password_forgot_route(
+    payload: PasswordForgotRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PasswordForgotResponse:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    await request_password_reset(
+        db,
+        email=str(payload.email),
+        settings=settings,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+    return PasswordForgotResponse()
+
+
+@router.post("/password/reset", status_code=204)
+async def password_reset_route(
+    payload: PasswordResetRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    settings = cast(Settings, request.app.state.settings)
+    clock = cast(Clock, request.app.state.clock)
+    passwords = cast(PasswordManager, request.app.state.password_manager)
+    await reset_password(
+        db,
+        raw_token=payload.token.get_secret_value(),
+        new_password=payload.new_password.get_secret_value(),
+        settings=settings,
+        passwords=passwords,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+    response.delete_cookie(
+        key=settings.session_cookie_name,
+        path="/api/v1",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite=settings.session_cookie_samesite,
+    )
+
+
+@router.post("/password/change", status_code=204)
+async def password_change_route(
+    payload: PasswordChangeRequest,
+    request: Request,
+    current: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    clock = cast(Clock, request.app.state.clock)
+    passwords = cast(PasswordManager, request.app.state.password_manager)
+    await change_password(
+        db,
+        current_session=current.record,
+        user=current.user,
+        current_password=payload.current_password.get_secret_value(),
+        new_password=payload.new_password.get_secret_value(),
+        passwords=passwords,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
 
 
 @router.post("/login", response_model=SessionResponse | MfaRequiredResponse)

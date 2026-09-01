@@ -50,6 +50,8 @@ class MfaCredentialType(StrEnum):
 
 class AuthRateLimitAction(StrEnum):
     LOGIN = "login"
+    PASSWORD_FORGOT = "password_forgot"
+    PASSWORD_RESET = "password_reset"
 
 
 class BackgroundJobType(StrEnum):

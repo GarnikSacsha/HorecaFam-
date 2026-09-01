@@ -12,6 +12,32 @@ class LoginRequest(BaseModel):
     password: SecretStr
 
 
+class PasswordForgotRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+
+
+class PasswordForgotResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["accepted"] = "accepted"
+
+
+class PasswordResetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: SecretStr = Field(min_length=32, max_length=256)
+    new_password: SecretStr = Field(min_length=8, max_length=128)
+
+
+class PasswordChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: SecretStr = Field(min_length=1, max_length=128)
+    new_password: SecretStr = Field(min_length=8, max_length=128)
+
+
 class SessionUser(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
