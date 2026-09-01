@@ -84,6 +84,7 @@ IDENTITY_TABLES = (
     "menu_sections",
     "menus",
     "email_deliveries",
+    "job_attempts",
     "background_jobs",
     "invitation_rate_limit_buckets",
     "api_idempotency_records",

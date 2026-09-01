@@ -44,7 +44,12 @@ from tests.factories.training import (
 
 EXPECTED_ENUM_VALUES = {
     "BackgroundJobType": {
+        "attempt_expiry",
+        "audit_retention",
         "invitation_email",
+        "password_reset_email",
+        "retake_deadline_projection",
+        "security_record_cleanup",
         "training_assignment_notification",
         "training_rollout_notification",
     },

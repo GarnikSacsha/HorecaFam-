@@ -58,6 +58,7 @@ from app.models.enums import (
     EmailDeliveryStatus,
     FactDataStatus,
     GenerationRuleStatus,
+    JobAttemptOutcome,
     LessonCompletionSource,
     LifecycleStatus,
     Locale,
@@ -99,7 +100,7 @@ from app.models.identity import (
     User,
 )
 from app.models.invitations import ApiIdempotencyRecord, Invitation, InvitationRateLimitBucket
-from app.models.jobs import BackgroundJob, EmailDelivery
+from app.models.jobs import BackgroundJob, EmailDelivery, JobAttempt
 from app.models.menu import (
     Allergen,
     Menu,
@@ -184,6 +185,8 @@ __all__ = [
     "BackgroundJob",
     "BackgroundJobStatus",
     "BackgroundJobType",
+    "JobAttempt",
+    "JobAttemptOutcome",
     "ContentBlockType",
     "CriticalError",
     "EmailDelivery",

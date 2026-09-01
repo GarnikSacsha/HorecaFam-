@@ -653,6 +653,30 @@ def test_employee_lifecycle_migration_downgrades_and_upgrades() -> None:
 
 @pytest.mark.integration
 @pytest.mark.migration
+def test_job_runtime_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        current_tables = asyncio.run(database_table_names(settings))
+        current_job_columns = asyncio.run(database_column_names(settings, "background_jobs"))
+        assert "job_attempts" in current_tables
+        assert "request_id" in current_job_columns
+
+        command.downgrade(config, "0017_employee_lifecycle")
+        downgraded_tables = asyncio.run(database_table_names(settings))
+        downgraded_job_columns = asyncio.run(database_column_names(settings, "background_jobs"))
+        assert "job_attempts" not in downgraded_tables
+        assert "request_id" not in downgraded_job_columns
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
 def test_interactive_training_migration_downgrades_and_upgrades() -> None:
     settings = database_settings()
     config = Config(str(BACKEND_ROOT / "alembic.ini"))

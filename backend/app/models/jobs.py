@@ -19,7 +19,12 @@ from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.enums import BackgroundJobStatus, BackgroundJobType, EmailDeliveryStatus
+from app.models.enums import (
+    BackgroundJobStatus,
+    BackgroundJobType,
+    EmailDeliveryStatus,
+    JobAttemptOutcome,
+)
 
 
 class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -29,7 +34,8 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UniqueConstraint("job_type", "idempotency_key", name="uq_background_jobs_type_key"),
         CheckConstraint(
             "job_type IN ('invitation_email', 'training_assignment_notification', "
-            "'training_rollout_notification', 'password_reset_email')",
+            "'training_rollout_notification', 'password_reset_email', 'attempt_expiry', "
+            "'retake_deadline_projection', 'security_record_cleanup', 'audit_retention')",
             name="job_type_allowed",
         ),
         CheckConstraint(
@@ -58,7 +64,20 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "= '{}'::jsonb) OR "
             "(job_type = 'password_reset_email' "
             "AND jsonb_typeof(payload->'password_reset_token_id') = 'string' "
-            "AND payload - ARRAY['password_reset_token_id'] = '{}'::jsonb))",
+            "AND payload - ARRAY['password_reset_token_id'] = '{}'::jsonb) OR "
+            "(job_type = 'attempt_expiry' "
+            "AND jsonb_typeof(payload->'cutoff_at') = 'string' "
+            "AND payload - ARRAY['cutoff_at'] = '{}'::jsonb) OR "
+            "(job_type = 'retake_deadline_projection' "
+            "AND jsonb_typeof(payload->'projected_at') = 'string' "
+            "AND payload - ARRAY['projected_at'] = '{}'::jsonb) OR "
+            "(job_type = 'security_record_cleanup' "
+            "AND jsonb_typeof(payload->'cutoff_at') = 'string' "
+            "AND payload - ARRAY['cutoff_at'] = '{}'::jsonb) OR "
+            "(job_type = 'audit_retention' "
+            "AND jsonb_typeof(payload->'cutoff_at') = 'string' "
+            "AND jsonb_typeof(payload->'dry_run') = 'boolean' "
+            "AND payload - ARRAY['cutoff_at', 'dry_run'] = '{}'::jsonb))",
             name="payload_matches_job_type",
         ),
         CheckConstraint("priority >= 0", name="priority_nonnegative"),
@@ -78,6 +97,11 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "NOT (completed_at IS NOT NULL AND failed_at IS NOT NULL)",
             name="terminal_timestamp_exclusive",
+        ),
+        CheckConstraint(
+            "request_id IS NULL OR request_id ~ "
+            "'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'",
+            name="request_id_uuid",
         ),
         Index(
             "ix_background_jobs_claim",
@@ -106,6 +130,7 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default=text("'pending'"),
     )
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(36))
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     attempt_count: Mapped[int] = mapped_column(
@@ -125,6 +150,78 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class JobAttempt(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "job_attempts"
+    __table_args__ = (
+        UniqueConstraint("job_id", "attempt_number", name="uq_job_attempts_job_number"),
+        CheckConstraint(
+            "attempt_number BETWEEN 1 AND 5",
+            name="attempt_number_allowed",
+        ),
+        CheckConstraint(
+            "outcome IN ('processing', 'completed', 'retry_scheduled', 'failed', 'interrupted')",
+            name="outcome_allowed",
+        ),
+        CheckConstraint(
+            "(outcome = 'processing' AND finished_at IS NULL "
+            "AND error_code IS NULL AND error_message IS NULL AND next_retry_at IS NULL) OR "
+            "(outcome = 'completed' AND finished_at IS NOT NULL "
+            "AND error_code IS NULL AND error_message IS NULL AND next_retry_at IS NULL) OR "
+            "(outcome = 'retry_scheduled' AND finished_at IS NOT NULL "
+            "AND error_code IS NOT NULL AND next_retry_at IS NOT NULL) OR "
+            "(outcome = 'failed' AND finished_at IS NOT NULL "
+            "AND error_code IS NOT NULL AND next_retry_at IS NULL) OR "
+            "(outcome = 'interrupted' AND finished_at IS NOT NULL "
+            "AND error_code IS NOT NULL AND next_retry_at IS NOT NULL)",
+            name="outcome_state",
+        ),
+        CheckConstraint(
+            "error_code IS NULL OR error_code ~ '^[A-Z][A-Z0-9_]{0,63}$'",
+            name="error_code_format",
+        ),
+        CheckConstraint(
+            "error_message IS NULL OR (error_message = btrim(error_message) "
+            "AND length(error_message) BETWEEN 1 AND 500)",
+            name="error_message_bounded",
+        ),
+        CheckConstraint(
+            "heartbeat_last_seen_at IS NULL OR heartbeat_last_seen_at >= started_at",
+            name="heartbeat_after_start",
+        ),
+        CheckConstraint(
+            "finished_at IS NULL OR finished_at >= started_at",
+            name="finished_after_start",
+        ),
+        CheckConstraint(
+            "next_retry_at IS NULL OR (finished_at IS NOT NULL AND next_retry_at >= finished_at)",
+            name="retry_after_finish",
+        ),
+        Index("ix_job_attempts_job_started", "job_id", "started_at"),
+    )
+
+    job_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("background_jobs.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    heartbeat_last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    outcome: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default=JobAttemptOutcome.PROCESSING.value,
+        server_default=text("'processing'"),
+    )
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    error_message: Mapped[str | None] = mapped_column(String(500))
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class EmailDelivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):

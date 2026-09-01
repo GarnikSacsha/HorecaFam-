@@ -59,6 +59,10 @@ class BackgroundJobType(StrEnum):
     PASSWORD_RESET_EMAIL = "password_reset_email"
     TRAINING_ASSIGNMENT_NOTIFICATION = "training_assignment_notification"
     TRAINING_ROLLOUT_NOTIFICATION = "training_rollout_notification"
+    ATTEMPT_EXPIRY = "attempt_expiry"
+    RETAKE_DEADLINE_PROJECTION = "retake_deadline_projection"
+    SECURITY_RECORD_CLEANUP = "security_record_cleanup"
+    AUDIT_RETENTION = "audit_retention"
 
 
 class BackgroundJobStatus(StrEnum):
@@ -66,6 +70,14 @@ class BackgroundJobStatus(StrEnum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class JobAttemptOutcome(StrEnum):
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    RETRY_SCHEDULED = "retry_scheduled"
+    FAILED = "failed"
+    INTERRUPTED = "interrupted"
 
 
 class EmailDeliveryStatus(StrEnum):
