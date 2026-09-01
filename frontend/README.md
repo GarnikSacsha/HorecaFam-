@@ -13,7 +13,9 @@ Accepted CRA-61 adds the Admin Question Bank/readiness experience and Employee I
 Training flow. CRA-62 governs repository synchronization and publication evidence.
 Accepted CRA-64 adds Admin whole-menu Practice readiness and the responsive Employee Practice
 flow with feedback-free answer saving, explicit finish, final review, durable qualification and
-Latest/Best history. CRA-65 governs repository synchronization and ordinary publication.
+Latest/Best history. CRA-65 is Done and published through `4164b9c`. Accepted CRA-67 adds Admin
+Final Exam readiness/canonical Results and the responsive Employee 20-question Final Exam flow;
+CRA-68 is Done and published through `9ef9fe1`. CRA-70 is the active documentation-only checkpoint.
 
 The application uses React 19, TypeScript 6,
 Vite 8, Tailwind CSS 4, Vitest, Testing Library, and Playwright. The UI is Ukrainian-first,
@@ -72,10 +74,14 @@ responsive presentation, and the frontend-to-contract request boundary.
   Reject, atomic batch approval and per-Lesson readiness.
 - Completion-gated Employee Interactive Training with five server-confirmed Questions, immediate
   feedback, retry-safe answer saving, resume, device takeover, Result and Latest/Best history.
+- Organization-scoped Admin Final Exam readiness and canonical Results overview/detail.
+- Employee Final Exam readiness, resume/start, 20 feedback-free Answers, explicit finish,
+  certification/review/history and immediate failed-attempt retake.
 - Loading, empty, error, disabled, and forbidden route states used by this slice.
 
-Final Exam, team Results/analytics, Attention/Retakes, provider delivery, password reset,
-deployment, and production environment configuration remain outside the accepted CRA-64 boundary.
+Attention/Retakes administration, provider delivery, password reset, deployment, and production
+environment configuration remain outside the accepted CRA-67 boundary. CRA-69 Slice 8 planning is
+Backlog and draft v1 remains unaccepted.
 CRA-57 notification behavior is limited to safe transactional local jobs; it does not call an
 external provider.
 
@@ -92,3 +98,5 @@ its remaining source-bound limitations are in
 The accepted CRA-64 gate reports 53 Vitest tests and 18 Playwright executions across the approved
 desktop, compact and mobile projects; exact evidence is in
 [`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
+The accepted CRA-67 gate reports 57 Vitest tests and 21 Playwright executions; exact evidence is in
+[`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).

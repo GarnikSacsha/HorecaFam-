@@ -6,7 +6,7 @@
 
 **Evidence date:** 2026-08-31
 
-**Status:** accepted by Denys; CRA-68 publication checkpoint in progress
+**Status:** accepted by Denys; CRA-68 synchronization is Done and published through `9ef9fe1`
 
 This record describes only evidence that actually ran for the authorized CRA-67 checkpoint map.
 The canonical product, API, data, RBAC and acceptance contracts remain in Linear.
@@ -98,5 +98,6 @@ The canonical product, API, data, RBAC and acceptance contracts remain in Linear
 7. `3038810` — Employee Final Exam experience.
 8. `703872b` — acceptance matrix, browser journey and regression closure.
 
-Denys accepted CRA-67 and its exact evidence is recorded in Linear. CRA-68 exclusively governs the
-authorized ordinary push. PR, merge, provider and deployment remain separate gates.
+Denys accepted CRA-67 and its exact evidence is recorded in Linear. CRA-68 is Done; the accepted
+range and documentation checkpoint are published through `9ef9fe1`. PR, merge, provider and
+deployment remain separate gates.

@@ -19,8 +19,10 @@ the eleven-commit local range `93ce970..614da3d`; CRA-62 governs repository sync
 publication. CRA-63 planning and CRA-64 Practice are accepted and Done; the exact eight-commit
 range is `74c5741..cc1c05a`, and CRA-65 synchronization is published through `4164b9c`. CRA-66
 Final Exam planning and CRA-67 Final Exam/canonical Results are accepted and Done; CRA-67 is the
-exact eight-checkpoint range `6be8f4d..703872b`. CRA-68 is the active bounded documentation and
-ordinary-publication checkpoint. CRA-42 is unrelated Backlog work. Broader production
+exact eight-checkpoint range `6be8f4d..703872b`, and CRA-68 is Done and published through
+`9ef9fe1`. CRA-70 is the active bounded documentation-only checkpoint with one authorized local
+commit and no push. CRA-69 Slice 8 planning is Backlog and draft v1 remains unaccepted. CRA-42 is
+unrelated Backlog work. Broader production
 administration,
 providers/workers, PR, merge, deployment, and production configuration require separate approval
 or later bounded issues.
@@ -154,8 +156,10 @@ Latest/Best history, Admin readiness and responsive Employee UI. Evidence is in
 [CRA-66](https://linear.app/craftspacee/issue/CRA-66) Final Exam planning is accepted and Done.
 [CRA-67](https://linear.app/craftspacee/issue/CRA-67) is accepted and Done as
 `6be8f4d..703872b`; it adds Final Exam, certification and canonical Results.
-[CRA-68](https://linear.app/craftspacee/issue/CRA-68) is the active bounded acceptance
-synchronization and ordinary-publication checkpoint. Slice 8 planning remains separate.
+[CRA-68](https://linear.app/craftspacee/issue/CRA-68) is accepted, Done and published through
+`9ef9fe1`. [CRA-70](https://linear.app/craftspacee/issue/CRA-70) is the active bounded
+documentation-only synchronization checkpoint. [CRA-69](https://linear.app/craftspacee/issue/CRA-69)
+is Backlog; its Slice 8 planning draft v1 remains unaccepted and separate from implementation.
 
 ## Repository map
 

@@ -22,8 +22,11 @@ CRA-64 Practice is accepted and Done as `74c5741..cc1c05a`. It extends generic a
 persistence through Alembic head `0014_practice_persistence`, adds source-safe whole-menu Practice
 readiness, immutable ten-Question Attempts, feedback-free Answers, explicit atomic finish,
 Knowledge, critical-allergen evidence, durable Final Exam eligibility and Latest/Best history.
-CRA-65 governs repository synchronization and ordinary publication. Final Exam execution,
-certification Results and Attention/Retakes remain outside this boundary.
+CRA-65 is Done and published through `4164b9c`. CRA-67 Final Exam and canonical Results are
+accepted and Done as `6be8f4d..703872b`; CRA-68 is Done and published through `9ef9fe1`. Final Exam
+reuses the `0014_practice_persistence` assessment graph and adds no migration. Attention/Retakes
+remain outside the implemented boundary. CRA-70 is the active documentation-only checkpoint;
+CRA-69 Slice 8 planning is Backlog and draft v1 remains unaccepted.
 
 Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
@@ -69,6 +72,8 @@ rollout rules, completion provenance, and transactional notification jobs. Alemb
 schema-management path; runtime and tests must not call `create_all`. Accepted CRA-61 adds Question
 Candidate/Bank, assessment configuration/readiness, Attempt/Answer/device lease and Result history
 tables plus active versioned category, component, allergen and description generation rules.
+Accepted CRA-67 adds Final Exam readiness, immutable 20-question Attempts, feedback-free Answers,
+atomic Results/certification and Organization-scoped Admin Results without another schema object.
 
 ## Quality and test commands
 
@@ -117,3 +122,11 @@ aggregate coverage across the predeclared five critical Slice 5 services, Alembi
 `0013_question_templates`, and no metadata drift. Exact scenario mapping, frontend evidence and
 remaining accepted source-bound limitations are in
 [`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).
+
+The accepted CRA-64 gate reports 436 backend tests, 88% overall coverage, 53 Vitest tests and 18
+Playwright executions at Alembic head `0014_practice_persistence`. Exact evidence is in
+[`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
+
+The accepted CRA-67 gate reports 445 backend tests with its focused real-PostgreSQL evidence
+reported separately, 57 Vitest tests and 21 Playwright executions. Exact evidence and limitations
+are in [`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).

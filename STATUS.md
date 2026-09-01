@@ -1,17 +1,17 @@
 # HoReCa Repository Status
 
 **Snapshot date:** 2026-08-31
-**Published product implementation:** CRA-64 Practice and its repository synchronization are
-accepted, Done and fast-forward published on `origin/main` through `4164b9c`. The canonical routing
-entry is the Linear
+**Published product implementation:** CRA-67 Final Exam/canonical Results and CRA-68 repository
+synchronization are accepted, Done and fast-forward published on `origin/main` through `9ef9fe1`.
+The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Current local boundary:** CRA-66 planning and CRA-67 Final Exam/canonical Results are accepted and
-Done. CRA-67 is the exact eight-checkpoint range `6be8f4d..703872b`. CRA-68 is In Progress and owns
-this selective documentation checkpoint plus the authorized ordinary non-force push. PR, merge,
-deployment, provider calls and production actions remain separate gates.
+**Current local boundary:** CRA-70 is the active bounded documentation-only synchronization issue.
+It owns this exact 11-file map and one authorized selective local commit; no push is authorized.
+CRA-69 Slice 8 planning is Backlog, and its draft v1 remains unaccepted and is not implementation
+authority. PR, merge, deployment, provider calls and production actions remain separate gates.
 
 ## Accepted implementation and planning checkpoints
 
@@ -69,7 +69,10 @@ deployment, provider calls and production actions remain separate gates.
 - CRA-66 Slice 7 Final Exam planning and its eight-checkpoint implementation map are accepted and
   Done.
 - CRA-67 Slice 7 Final Exam and canonical Results is accepted and Done as
-  `6be8f4d..703872b`; CRA-68 owns documentation synchronization and ordinary publication.
+  `6be8f4d..703872b`; CRA-68 records its documentation synchronization and ordinary publication.
+- CRA-68 is accepted, Done and fast-forward published through `9ef9fe1`.
+- CRA-69 Slice 8 planning is Backlog; planning draft v1 is not accepted.
+- CRA-70 is the active bounded documentation-only synchronization checkpoint.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -206,9 +209,9 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; `origin/main` is the accepted CRA-65 published baseline `4164b9c`. Local `main`
-  contains the accepted eight CRA-67 checkpoints plus this documentation checkpoint once committed;
-  CRA-68 owns the authorized ordinary publication.
+- Branch: `main`; the accepted remote product/documentation baseline is `origin/main@9ef9fe1`.
+  CRA-70 owns one authorized local documentation checkpoint on top of that baseline; no push is
+  authorized by CRA-70.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
   checkpoints, CRA-49 through `8028d6e`, CRA-54 through `d955f6a`, CRA-55 through `afc607a`, and
@@ -344,21 +347,21 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Remaining to a functional and pilot-ready MVP
 
-Following CRA-67 acceptance, the functional product core still needs:
+Following CRA-67/68 acceptance and publication, the next bounded work is:
 
-1. CRA-68 repository synchronization/publication, currently In Progress and not another product
+1. CRA-70 repository documentation synchronization, currently In Progress and not a product
    implementation slice.
-2. Slice 8 Attention and Retakes: about 4–6 focused days.
-3. Pilot-critical access/admin/content closure: about 5–9 focused days, including elevated-user
+2. Explicit acceptance or correction of the CRA-69 Slice 8 planning draft.
+3. Slice 8 implementation only after a separately accepted implementation issue and commit map.
+4. Pilot-critical access/admin/content closure, including elevated-user
    recovery/enrollment, Employee lifecycle administration, minimum venue setup, validated Bacara
    content and the complete synthetic end-to-end chain.
 
-That leaves approximately 9–15 focused engineering days, or roughly 2–4 calendar weeks at the
-current approval/checkpoint rhythm, to a local functional MVP after CRA-67 acceptance. Pilot
-infrastructure, provider,
-observability, backup/security/performance hardening and real-venue UAT add roughly 10–20 focused
-days plus external latency. The credible pilot-ready window is therefore still about 5–9 calendar
-weeks from CRA-67 acceptance; real verified content and external approvals are the largest risks.
+No refreshed implementation schedule is accepted until CRA-69 planning is accepted. Its current
+unaccepted draft estimates 13–22 focused engineering days from an accepted Slice 8 plan to a local
+functional MVP, plus 10–20 focused days and external latency for pilot infrastructure, providers,
+observability, backup/security/performance hardening and real-venue UAT. Real verified content and
+external approvals remain the largest risks.
 
 ## Protected uncommitted material
 
@@ -375,9 +378,10 @@ weeks from CRA-67 acceptance; real verified content and external approvals are t
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- The active bounded repository issue is CRA-68. CRA-19 remains a separate visual-only track.
-- CRA-68 authorizes only acceptance documentation synchronization, one selective local checkpoint,
-  one ordinary non-force push and remote SHA verification. Slice 8 planning remains a later gate.
+- The active bounded repository issue is CRA-70. CRA-19 remains a separate visual-only track.
+- CRA-70 authorizes only its exact 11-file documentation map and one selective local commit. It
+  authorizes no push or product/API/data/RBAC/test-contract change.
+- CRA-69 Slice 8 planning is Backlog while CRA-70 runs; draft v1 remains unaccepted.
 - The accepted five-commit CRA-23 map was executed locally under the explicit CRA-25
   authorization and accepted by Denys. Its initial publication and repository-state synchronization
   are recorded in CRA-26. Further staging or commits require a new bounded map and explicit

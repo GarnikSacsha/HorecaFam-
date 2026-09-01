@@ -18,9 +18,10 @@ range; exact remote publication evidence is recorded in Linear. CRA-63 Practice 
 CRA-64 Practice are accepted and Done as the exact eight-commit range `74c5741..cc1c05a`; CRA-65
 synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67 Final Exam/
 canonical Results are accepted and Done; CRA-67 is the exact eight-checkpoint range
-`6be8f4d..703872b`. CRA-68 is the active synchronization/publication checkpoint. Push beyond that
-authorization, PR, merge, deployment, providers, and production configuration remain separate
-gates. CRA-42 is unrelated Backlog work.
+`6be8f4d..703872b`. CRA-68 is Done and published through `9ef9fe1`. CRA-70 is the active bounded
+documentation-only checkpoint with one authorized local commit and no push. CRA-69 Slice 8
+planning is Backlog and draft v1 remains unaccepted. PR, merge, deployment, providers, and
+production configuration remain separate gates. CRA-42 is unrelated Backlog work.
 
 ## Start here
 

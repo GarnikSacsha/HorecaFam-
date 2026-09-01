@@ -2,7 +2,7 @@
 
 Canonical test strategy, stage acceptance criteria, and Definition of Done remain in
 [CRA-13](https://linear.app/craftspacee/issue/CRA-13/define-backend-test-strategy-and-vertical-slice-acceptance-criteria)
-and the active bounded implementation issue. Exact local commands and environment safeguards are
+and the active bounded issue. Exact local commands and environment safeguards are
 maintained in [`../../.harness/TESTING.md`](../../.harness/TESTING.md).
 
 The published repository includes the accepted CRA-48 corrective record after `3b95b3c`. CRA-43
@@ -14,8 +14,9 @@ baseline to `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is fast-f
 through `d4e0184`, followed by CRA-58. CRA-60 planning and CRA-61 Interactive Training are accepted
 and Done; CRA-62 governs their repository synchronization and publication evidence. CRA-63
 planning and CRA-64 Practice are accepted and Done; CRA-65 synchronization is published through
-`4164b9c`. CRA-66 Final Exam planning and CRA-67 implementation are accepted and Done. CRA-68
-governs acceptance synchronization and ordinary publication.
+`4164b9c`. CRA-66 Final Exam planning and CRA-67 implementation are accepted and Done. CRA-68 is
+Done and published through `9ef9fe1`. CRA-70 is the active documentation-only checkpoint; CRA-69
+Slice 8 planning is Backlog and draft v1 remains unaccepted.
 
 ## Current test layout
 
@@ -248,5 +249,6 @@ history, responsive Employee execution and canonical Admin Results. The executed
 focused PostgreSQL concurrency proof, browser matrix, limitations and checkpoint boundary are in
 [`final-exam-slice-7-acceptance.md`](final-exam-slice-7-acceptance.md).
 
-CRA-67 is Done; CRA-68 governs its documentation synchronization and authorized ordinary push. No
-PR, merge, migration, provider or deployment is implied by this checkpoint.
+CRA-67 and CRA-68 are Done, and the accepted repository baseline is published through `9ef9fe1`.
+CRA-70 changes documentation only; these results remain historical accepted evidence and were not
+rerun for that checkpoint. No PR, merge, migration, provider or deployment is implied.

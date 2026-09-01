@@ -28,7 +28,9 @@ is recorded in
 CRA-65 synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67
 implementation are accepted and Done; exact CRA-67 evidence is recorded in
 [`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).
-CRA-68 governs acceptance synchronization and the authorized ordinary publication.
+CRA-68 is Done and published through `9ef9fe1`. CRA-70 is the active documentation-only
+synchronization checkpoint; it does not authorize a test rerun or product change. CRA-69 Slice 8
+planning is Backlog and draft v1 remains unaccepted.
 
 ## Environment setup
 
@@ -273,4 +275,6 @@ at 85% overall coverage; the new focused real-database acceptance test separatel
 passed. Ruff, strict mypy, Prettier, ESLint, TypeScript and production build pass. Full Vitest
 reports 57 passed and full Playwright reports 21 passed; final focused reruns report 2 component
 tests and 3 browser executions passed. Alembic remains at `0014_practice_persistence`, with
-upgrade/current-head/no-drift checks green. CRA-67 is Done; CRA-68 governs publication evidence.
+upgrade/current-head/no-drift checks green. CRA-67 and CRA-68 are Done, and the accepted repository
+baseline is published through `9ef9fe1`. CRA-70 changes documentation only; these results remain
+historical accepted evidence and were not rerun for that checkpoint.

@@ -2,8 +2,8 @@
 
 This document describes the verified accepted implementation through CRA-64 Practice at
 `cc1c05a`, published with CRA-65 synchronization through `4164b9c`, plus accepted CRA-67 Final
-Exam and Results at `703872b`. CRA-68 governs publication. Canonical product behavior and contracts
-remain in Linear.
+Exam and Results at `703872b`, published with CRA-68 synchronization through `9ef9fe1`. CRA-70 is
+the active documentation-only checkpoint. Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -302,5 +302,6 @@ There is no invitation list/detail workflow, password recovery, MFA enrollment, 
 reference CRUD, Employee disable/reactivate lifecycle administration, Attention/Retakes
 administration, provider integration, or deployed worker/resource. The frontend lives in
 [`../../frontend/`](../../frontend/) and includes accepted CRA-67 Final Exam/Admin Results. Adding
-any absent capability requires a bounded Linear issue and approval. CRA-68 is active; CRA-19
-remains a separate visual-only track.
+any absent capability requires a bounded Linear issue and approval. CRA-70 changes documentation
+only; CRA-69 Slice 8 planning is Backlog and draft v1 remains unaccepted. CRA-19 remains a separate
+visual-only track.

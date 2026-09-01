@@ -124,6 +124,8 @@ CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is publi
 published through `d4e0184`, followed by the CRA-58 documentation checkpoint. CRA-60 and CRA-61
 are accepted and Done; CRA-62 published the accepted CRA-61 range through documentation endpoint
 `c79db9d`. CRA-63 planning and CRA-64 Practice are accepted and Done; the exact local range is
-`74c5741..cc1c05a`. CRA-65 is the active bounded documentation synchronization/publication issue
-with one authorized selective documentation commit and one authorized ordinary non-force push.
-Every later product or remote action remains separately gated.
+`74c5741..cc1c05a`; CRA-65 is Done and published through `4164b9c`. CRA-66/67 are accepted and
+Done, and CRA-68 is Done and published through `9ef9fe1`. CRA-70 is the active bounded
+documentation-only issue with one authorized selective local commit and no push. CRA-69 Slice 8
+planning is Backlog and draft v1 remains unaccepted. Every later product or remote action remains
+separately gated.
