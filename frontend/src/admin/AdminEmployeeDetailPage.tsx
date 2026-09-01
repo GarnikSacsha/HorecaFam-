@@ -5,6 +5,7 @@ import { createIdempotencyKey } from "../api/client";
 import type {
   EmployeeDetail,
   EmployeeLifecycleActionResponse,
+  EmployeeLifecycleStateResponse,
   FieldError,
   LocationSummary,
   OperationalRoleSummary,
@@ -16,6 +17,42 @@ import { ErrorSummary } from "../ui/ErrorSummary";
 import { StatusPill } from "../ui/States";
 import { fieldError, formErrors } from "../ui/formErrors";
 import { AdminEmployeeTrainingPanel } from "./AdminEmployeeTrainingPanel";
+
+type LifecycleAction = "disable" | "reactivate" | "pause" | "resume";
+
+const lifecycleCopy: Record<
+  LifecycleAction,
+  { title: string; description: string; confirmLabel: string; success: string }
+> = {
+  disable: {
+    title: "Вимкнути доступ працівника?",
+    description:
+      "Активні сесії буде відкликано, а навчання і повторні спроби заморожено. Історія працівника збережеться.",
+    confirmLabel: "Підтвердити вимкнення",
+    success: "Доступ працівника вимкнено",
+  },
+  reactivate: {
+    title: "Відновити доступ працівника?",
+    description:
+      "Сервер повторно перевірить профіль, роль і локацію. Нова сесія автоматично не створюється.",
+    confirmLabel: "Підтвердити відновлення",
+    success: "Доступ працівника відновлено",
+  },
+  pause: {
+    title: "Призупинити навчання?",
+    description:
+      "Поточне навчання та строки повторних спроб буде заморожено до окремого відновлення.",
+    confirmLabel: "Підтвердити паузу",
+    success: "Навчання працівника призупинено",
+  },
+  resume: {
+    title: "Відновити навчання?",
+    description:
+      "Сервер відновить навчання і зсуне строки повторних спроб на точну тривалість паузи.",
+    confirmLabel: "Підтвердити відновлення",
+    success: "Навчання працівника відновлено",
+  },
+};
 
 export function AdminEmployeeDetailPage() {
   const { employeeId = "" } = useParams();
@@ -36,6 +73,11 @@ export function AdminEmployeeDetailPage() {
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [lifecycleAction, setLifecycleAction] = useState<LifecycleAction | null>(null);
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const [reasonCode, setReasonCode] = useState("");
+  const [lifecycleNote, setLifecycleNote] = useState("");
+  const [plannedResumeAt, setPlannedResumeAt] = useState("");
 
   useEffect(() => {
     if (status !== "authenticated" || !organizationId || !employeeId) return;
@@ -129,6 +171,64 @@ export function AdminEmployeeDetailPage() {
     }
   };
 
+  const executeLifecycleAction = async () => {
+    if (!organizationId || !employeeId || !session || !lifecycleAction) return;
+    const action = lifecycleAction;
+    const includesReason = action === "disable" || action === "pause";
+    const body = includesReason
+      ? {
+          reason_code: reasonCode || null,
+          note: lifecycleNote.trim() || null,
+          ...(action === "pause"
+            ? {
+                planned_resume_at: plannedResumeAt ? new Date(plannedResumeAt).toISOString() : null,
+              }
+            : {}),
+        }
+      : undefined;
+    setErrors([]);
+    setMessage(null);
+    setLifecycleBusy(true);
+    try {
+      const result = await client.request<EmployeeLifecycleStateResponse>(
+        `/organizations/${organizationId}/employees/${employeeId}/${action}`,
+        {
+          method: "POST",
+          body,
+          csrfToken: session.csrf_token,
+          idempotencyKey: createIdempotencyKey(),
+        },
+      );
+      setEmployee((current) =>
+        current
+          ? {
+              ...current,
+              membership_status: result.membership_status,
+              training_participation_status: result.training_participation_status,
+              activated_at: result.activated_at,
+              disabled_at: result.disabled_at,
+              training_paused_at: result.training_paused_at,
+              training_pause_reason_code: result.training_pause_reason_code,
+              training_pause_note: result.training_pause_note,
+              planned_resume_at: result.planned_resume_at,
+              disabled_reason_code: result.disabled_reason_code,
+              disabled_note: result.disabled_note,
+            }
+          : current,
+      );
+      setMessage(lifecycleCopy[action].success);
+      setReasonCode("");
+      setLifecycleNote("");
+      setPlannedResumeAt("");
+      setLifecycleAction(null);
+    } catch (error) {
+      setErrors(formErrors(error, "lifecycle"));
+      setLifecycleAction(null);
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
   if (loading) return <p aria-live="polite">Завантажуємо профіль…</p>;
   if (!employee)
     return (
@@ -140,6 +240,8 @@ export function AdminEmployeeDetailPage() {
       </div>
     );
   const pending = employee.membership_status === "pending";
+  const disabled = employee.membership_status === "disabled";
+  const paused = employee.training_participation_status === "paused";
   return (
     <section className="admin-page employee-detail-page" aria-labelledby="employee-title">
       <Link className="back-link" to="/admin/employees">
@@ -154,8 +256,8 @@ export function AdminEmployeeDetailPage() {
           <p className="page-description">{employee.email}</p>
         </div>
         <div className="heading-actions">
-          <StatusPill tone={pending ? "warning" : "success"}>
-            {pending ? "Очікує" : "Активний"}
+          <StatusPill tone={pending ? "warning" : disabled ? "danger" : "success"}>
+            {pending ? "Очікує" : disabled ? "Доступ вимкнено" : "Активний"}
           </StatusPill>
           <LogoutButton />
         </div>
@@ -247,12 +349,129 @@ export function AdminEmployeeDetailPage() {
               ) : null}
             </div>
           </div>
+        ) : disabled ? (
+          <p className="action-note">Профіль і вся історія збережені, але доступ вимкнено.</p>
         ) : (
           <p className="success-message">
             Профіль активний. Історія активації зберігається на сервері.
           </p>
         )}
       </form>
+      <section className="lifecycle-panel" aria-labelledby="employee-lifecycle-title">
+        <div className="lifecycle-heading">
+          <div>
+            <p className="eyebrow">Керування станом</p>
+            <h2 id="employee-lifecycle-title">Доступ і навчання</h2>
+          </div>
+          <StatusPill tone={paused ? "warning" : "success"}>
+            {paused ? "Навчання призупинено" : "Навчання активне"}
+          </StatusPill>
+        </div>
+
+        {paused ? (
+          <dl className="lifecycle-facts">
+            <div>
+              <dt>Причина паузи</dt>
+              <dd>{employee.training_pause_reason_code ?? "Не вказано"}</dd>
+            </div>
+            <div>
+              <dt>Примітка</dt>
+              <dd>{employee.training_pause_note ?? "Не вказано"}</dd>
+            </div>
+            <div>
+              <dt>Заплановане відновлення</dt>
+              <dd>
+                {employee.planned_resume_at
+                  ? new Date(employee.planned_resume_at).toLocaleString("uk-UA")
+                  : "Не заплановано"}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+
+        {disabled ? (
+          <dl className="lifecycle-facts">
+            <div>
+              <dt>Причина вимкнення</dt>
+              <dd>{employee.disabled_reason_code ?? "Не вказано"}</dd>
+            </div>
+            <div>
+              <dt>Примітка</dt>
+              <dd>{employee.disabled_note ?? "Не вказано"}</dd>
+            </div>
+          </dl>
+        ) : null}
+
+        {!disabled ? (
+          <div className="lifecycle-fields">
+            <div className="field-group">
+              <label htmlFor="lifecycle-reason">Причина</label>
+              <select
+                id="lifecycle-reason"
+                value={reasonCode}
+                onChange={(event) => setReasonCode(event.target.value)}
+              >
+                <option value="">Не вказувати</option>
+                <option value="scheduled_leave">Запланована відсутність</option>
+                <option value="leave">Тимчасова відсутність</option>
+                <option value="access_review">Перевірка доступу</option>
+                <option value="other">Інша</option>
+              </select>
+            </div>
+            <div className="field-group lifecycle-note-field">
+              <label htmlFor="lifecycle-note">Примітка</label>
+              <textarea
+                id="lifecycle-note"
+                value={lifecycleNote}
+                onChange={(event) => setLifecycleNote(event.target.value)}
+                maxLength={500}
+              />
+            </div>
+            {!paused && !pending ? (
+              <div className="field-group">
+                <label htmlFor="planned-resume-at">Заплановане відновлення</label>
+                <input
+                  id="planned-resume-at"
+                  type="datetime-local"
+                  value={plannedResumeAt}
+                  onChange={(event) => setPlannedResumeAt(event.target.value)}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="lifecycle-actions">
+          {disabled ? (
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={() => setLifecycleAction("reactivate")}
+            >
+              Відновити доступ
+            </button>
+          ) : (
+            <>
+              {!pending ? (
+                <button
+                  className="button button-quiet"
+                  type="button"
+                  onClick={() => setLifecycleAction(paused ? "resume" : "pause")}
+                >
+                  {paused ? "Відновити навчання" : "Призупинити навчання"}
+                </button>
+              ) : null}
+              <button
+                className="button button-danger"
+                type="button"
+                onClick={() => setLifecycleAction("disable")}
+              >
+                Вимкнути доступ
+              </button>
+            </>
+          )}
+        </div>
+      </section>
       {!pending && session && organizationId ? (
         <AdminEmployeeTrainingPanel
           client={client}
@@ -269,6 +488,19 @@ export function AdminEmployeeDetailPage() {
         busy={activating}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => void activate()}
+      />
+      <ConfirmDialog
+        open={lifecycleAction !== null}
+        title={lifecycleAction ? lifecycleCopy[lifecycleAction].title : "Підтвердити дію?"}
+        description={
+          lifecycleAction
+            ? lifecycleCopy[lifecycleAction].description
+            : "Підтвердіть зміну стану працівника."
+        }
+        confirmLabel={lifecycleAction ? lifecycleCopy[lifecycleAction].confirmLabel : "Підтвердити"}
+        busy={lifecycleBusy}
+        onCancel={() => setLifecycleAction(null)}
+        onConfirm={() => void executeLifecycleAction()}
       />
     </section>
   );

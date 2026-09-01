@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
+import { ApiError } from "../api/client";
 import type { ApiClient, RequestOptions } from "../api/client";
 import type {
   AdminResultsOverviewResponse,
@@ -45,6 +46,13 @@ const pendingEmployee: EmployeeDetail = {
   membership_created_at: "2026-08-27T00:00:00Z",
   activated_at: null,
   disabled_at: null,
+  training_participation_status: "active",
+  training_paused_at: null,
+  training_pause_reason_code: null,
+  training_pause_note: null,
+  planned_resume_at: null,
+  disabled_reason_code: null,
+  disabled_note: null,
 };
 
 function adminClient(
@@ -364,5 +372,125 @@ describe("Admin Employee flow", () => {
       expect(mutation.options?.csrfToken).toBe("csrf-safe");
       expect(typeof mutation.options?.idempotencyKey).toBe("string");
     }
+  });
+
+  it("pauses an active employee only after explicit confirmation", async () => {
+    const activeEmployee: EmployeeDetail = {
+      ...pendingEmployee,
+      first_name: "Анна",
+      last_name: "Коваль",
+      membership_status: "active",
+      profile_complete: true,
+      activated_at: "2031-01-01T10:00:00Z",
+    };
+    const mutations: Array<{ path: string; options?: RequestOptions }> = [];
+    const client = adminClient(<T,>(path: string, options?: RequestOptions) => {
+      if (path.endsWith("/locations") || path.endsWith("/operational-roles")) {
+        return Promise.resolve([] as T);
+      }
+      if (path.endsWith("/training-assignments")) {
+        return Promise.resolve({ current: null, history: [], progress: null } as T);
+      }
+      if (path.endsWith("/pause")) {
+        mutations.push({ path, options });
+        return Promise.resolve({
+          employee_id: activeEmployee.id,
+          organization_id: activeEmployee.organization_id,
+          membership_status: "active",
+          training_participation_status: "paused",
+          activated_at: activeEmployee.activated_at,
+          disabled_at: null,
+          training_paused_at: "2031-02-01T10:00:00Z",
+          training_pause_reason_code: "scheduled_leave",
+          training_pause_note: "Погоджена відсутність",
+          planned_resume_at: "2031-02-03T08:30:00Z",
+          disabled_reason_code: null,
+          disabled_note: null,
+        } as T);
+      }
+      return Promise.resolve(activeEmployee as T);
+    });
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter initialEntries={["/admin/employees/employee-1"]}>
+          <Routes>
+            <Route path="/admin/employees/:employeeId" element={<AdminEmployeeDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    await user.selectOptions(await screen.findByLabelText("Причина"), "scheduled_leave");
+    await user.type(screen.getByLabelText("Примітка"), "Погоджена відсутність");
+    await user.type(screen.getByLabelText("Заплановане відновлення"), "2031-02-03T10:30");
+    const pauseButton = screen.getByRole("button", { name: "Призупинити навчання" });
+    await user.click(pauseButton);
+
+    expect(mutations).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: "Підтвердити паузу" }));
+
+    expect(await screen.findByText("Навчання працівника призупинено")).toBeInTheDocument();
+    expect(screen.getAllByText("Навчання призупинено").length).toBeGreaterThan(0);
+    expect(screen.getByText("Погоджена відсутність")).toBeInTheDocument();
+    expect(mutations).toHaveLength(1);
+    expect(mutations[0]?.path).toBe("/organizations/organization-1/employees/employee-1/pause");
+    expect(mutations[0]?.options?.method).toBe("POST");
+    expect(mutations[0]?.options?.csrfToken).toBe("csrf-safe");
+    expect(typeof mutations[0]?.options?.idempotencyKey).toBe("string");
+    expect(mutations[0]?.options?.body).toEqual({
+      reason_code: "scheduled_leave",
+      note: "Погоджена відсутність",
+      planned_resume_at: new Date("2031-02-03T10:30").toISOString(),
+    });
+  });
+
+  it("keeps the visible lifecycle state when the server rejects a stale transition", async () => {
+    const activeEmployee: EmployeeDetail = {
+      ...pendingEmployee,
+      membership_status: "active",
+      profile_complete: true,
+      activated_at: "2031-01-01T10:00:00Z",
+    };
+    const client = adminClient(<T,>(path: string) => {
+      if (path.endsWith("/locations") || path.endsWith("/operational-roles")) {
+        return Promise.resolve([] as T);
+      }
+      if (path.endsWith("/training-assignments")) {
+        return Promise.resolve({ current: null, history: [], progress: null } as T);
+      }
+      if (path.endsWith("/pause")) {
+        return Promise.reject(
+          new ApiError(409, {
+            code: "EMPLOYEE_LIFECYCLE_CONFLICT",
+            message: "Стан працівника вже змінився. Оновіть сторінку.",
+            field_errors: [],
+            request_id: "request-1",
+          }),
+        );
+      }
+      return Promise.resolve(activeEmployee as T);
+    });
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter initialEntries={["/admin/employees/employee-1"]}>
+          <Routes>
+            <Route path="/admin/employees/:employeeId" element={<AdminEmployeeDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Призупинити навчання" }));
+    await user.click(screen.getByRole("button", { name: "Підтвердити паузу" }));
+
+    expect(
+      await screen.findByText("Стан працівника вже змінився. Оновіть сторінку."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Призупинити навчання" })).toBeInTheDocument();
+    expect(screen.queryByText("Навчання працівника призупинено")).not.toBeInTheDocument();
   });
 });

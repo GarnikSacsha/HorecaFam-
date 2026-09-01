@@ -932,6 +932,57 @@ h1 {
   font-size: 0.82rem;
 }
 
+.lifecycle-panel {
+  display: grid;
+  gap: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: var(--surface-raised);
+}
+
+.lifecycle-heading,
+.lifecycle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lifecycle-heading h2 {
+  margin: 0;
+}
+
+.lifecycle-fields,
+.lifecycle-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.lifecycle-note-field {
+  grid-column: span 2;
+}
+
+.lifecycle-facts {
+  margin: 0;
+}
+
+.lifecycle-facts div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.lifecycle-facts dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.lifecycle-facts dd {
+  margin: 0;
+}
+
 .dialog-layer {
   position: fixed;
   z-index: 80;
@@ -1042,8 +1093,14 @@ h1 {
   }
 
   .field-grid,
+  .lifecycle-fields,
+  .lifecycle-facts,
   .separate-actions {
     grid-template-columns: 1fr;
+  }
+
+  .lifecycle-note-field {
+    grid-column: span 1;
   }
 
   .menu-toolbar,

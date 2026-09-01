@@ -122,6 +122,13 @@ export interface EmployeeDetail extends EmployeeSummary {
   membership_created_at: string;
   activated_at: string | null;
   disabled_at: string | null;
+  training_participation_status: "active" | "paused";
+  training_paused_at: string | null;
+  training_pause_reason_code: string | null;
+  training_pause_note: string | null;
+  planned_resume_at: string | null;
+  disabled_reason_code: string | null;
+  disabled_note: string | null;
 }
 
 export interface EmployeeListResponse {
@@ -135,6 +142,21 @@ export interface EmployeeLifecycleActionResponse {
   membership_status: "active";
   training_participation_status: "active";
   activated_at: string;
+}
+
+export interface EmployeeLifecycleStateResponse {
+  employee_id: string;
+  organization_id: string;
+  membership_status: MembershipStatus;
+  training_participation_status: "active" | "paused";
+  activated_at: string | null;
+  disabled_at: string | null;
+  training_paused_at: string | null;
+  training_pause_reason_code: string | null;
+  training_pause_note: string | null;
+  planned_resume_at: string | null;
+  disabled_reason_code: string | null;
+  disabled_note: string | null;
 }
 
 export interface OwnEmployeeProfile {
