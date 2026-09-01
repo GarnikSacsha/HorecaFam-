@@ -27,6 +27,7 @@ from app.schemas.assessment import (
     FinalExamResultSummaryResponse,
     FinalExamSavedAnswerResponse,
 )
+from app.services.attention import project_critical_errors_for_attempt
 from app.services.final_exam_attempts import (
     _certification,
     _owned_final_exam_attempt,
@@ -37,6 +38,10 @@ from app.services.idempotency import (
     reserve_idempotency,
 )
 from app.services.interactive_answers import _membership_state, knowledge_level
+from app.services.retakes import (
+    project_final_exam_follow_up,
+    project_managed_requirement_completion,
+)
 
 HISTORY_LIMIT = 50
 
@@ -371,6 +376,9 @@ async def _finish_final_exam_attempt(
     attempt.last_activity_at = now
     lease.last_seen_at = now
     await db.flush()
+    await project_critical_errors_for_attempt(db, attempt=attempt)
+    await project_final_exam_follow_up(db, attempt=attempt, result=result)
+    await project_managed_requirement_completion(db, attempt=attempt, result=result)
     newly_certified = pass_status == "passed" and not already_certified
     await reserve_idempotency(
         db,

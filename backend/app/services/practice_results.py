@@ -27,6 +27,7 @@ from app.schemas.assessment import (
     PracticeResultSummaryResponse,
     PracticeSavedAnswerResponse,
 )
+from app.services.attention import project_critical_errors_for_attempt
 from app.services.idempotency import (
     find_idempotency_replay,
     request_fingerprint,
@@ -34,6 +35,7 @@ from app.services.idempotency import (
 )
 from app.services.interactive_answers import _membership_state, knowledge_level
 from app.services.practice_attempts import _owned_practice_attempt
+from app.services.retakes import project_managed_requirement_completion
 
 HISTORY_LIMIT = 20
 
@@ -359,6 +361,8 @@ async def _finish_practice_attempt(
     attempt.last_activity_at = now
     lease.last_seen_at = now
     await db.flush()
+    await project_critical_errors_for_attempt(db, attempt=attempt)
+    await project_managed_requirement_completion(db, attempt=attempt, result=result)
 
     target_assessment = await db.scalar(
         select(Assessment).where(
