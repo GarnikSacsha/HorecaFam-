@@ -170,6 +170,7 @@ def _employee_scope(authorization: AuthorizationContext) -> tuple[UUID, UUID, UU
 
 @router.get("/me/training/final-exam", response_model=FinalExamSummaryResponse)
 async def get_final_exam_summary_route(
+    request: Request,
     authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> FinalExamSummaryResponse:
@@ -180,6 +181,7 @@ async def get_final_exam_summary_route(
         location_id=location_id,
         employee_profile_id=employee_profile_id,
         session_id=authorization.session.id,
+        now=cast(Clock, request.app.state.clock)(),
     )
 
 

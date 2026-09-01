@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal, cast
 from uuid import UUID
 
@@ -17,9 +17,12 @@ from app.models import (
     AttemptOption,
     AttemptQuestion,
     AttemptResult,
+    AttentionCaseSource,
     AuditEvent,
+    CriticalError,
     EmployeeProfile,
     MenuItemVersion,
+    MenuItemVersionAllergen,
     OrganizationMembership,
     QuestionCandidate,
     QuestionGenerationRule,
@@ -37,6 +40,11 @@ from app.schemas.assessment import (
     FinalExamCertificationResponse,
     FinalExamSavedAnswerResponse,
     FinalExamSummaryResponse,
+)
+from app.services.employee_follow_up import (
+    current_employee_requirement,
+    employee_attention_summary,
+    employee_requirement_response,
 )
 from app.services.final_exam_readiness import (
     FinalExamPoolCandidate,
@@ -270,7 +278,9 @@ async def get_final_exam_summary(
     location_id: UUID,
     employee_profile_id: UUID,
     session_id: UUID,
+    now: datetime | None = None,
 ) -> FinalExamSummaryResponse:
+    effective_now = now or datetime.now(UTC)
     participation = await db.scalar(
         select(OrganizationMembership.training_participation_status)
         .join(EmployeeProfile, EmployeeProfile.membership_id == OrganizationMembership.id)
@@ -295,6 +305,11 @@ async def get_final_exam_summary(
             readiness_status=None,
             active_attempt=None,
             certification=None,
+            attention_summary=await employee_attention_summary(
+                db,
+                organization_id=organization_id,
+                employee_profile_id=employee_profile_id,
+            ),
         )
     ready = await _ready_version(db, assignment)
     certification = await _certification(
@@ -319,15 +334,30 @@ async def get_final_exam_summary(
         if ready is not None
         else None
     )
-    if certification is not None:
-        availability = "certified"
-        reasons = ["FINAL_EXAM_ALREADY_PASSED"]
-    elif active_attempt is not None:
+    current_requirement = await current_employee_requirement(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        training_id=assignment.training_id,
+        target_assessment_id=ready[0].id if ready is not None else None,
+    )
+    if active_attempt is not None:
         availability = "in_progress"
         reasons = []
     elif participation == "paused":
         availability = "paused"
         reasons = ["TRAINING_PAUSED"]
+    elif certification is not None and current_requirement is not None:
+        if ready is None or ready[2].status not in {"ready", "warning"}:
+            availability = "preparing"
+            reasons = ["RETAKE_TARGET_UNAVAILABLE"]
+        else:
+            availability = "eligible"
+            reasons = ["AUTHORIZED_RETAKE"]
+    elif certification is not None:
+        availability = "certified"
+        reasons = ["FINAL_EXAM_ALREADY_PASSED"]
     elif assignment.status != "completed":
         availability = "training_incomplete"
         reasons = ["TRAINING_INCOMPLETE"]
@@ -384,7 +414,23 @@ async def get_final_exam_summary(
         readiness_status=readiness_status,
         active_attempt=active_attempt,
         certification=certification,
-        retake_available=certification is None and latest_pass_status == "failed",
+        retake_available=current_requirement is not None
+        or (certification is None and latest_pass_status == "failed"),
+        current_retake_requirement=(
+            await employee_requirement_response(
+                db,
+                current_requirement,
+                now=effective_now,
+            )
+            if current_requirement is not None
+            else None
+        ),
+        attention_summary=await employee_attention_summary(
+            db,
+            organization_id=organization_id,
+            employee_profile_id=employee_profile_id,
+            training_id=assignment.training_id,
+        ),
     )
 
 
@@ -441,26 +487,39 @@ async def start_or_resume_final_exam_attempt(
         raise _not_found()
     if assignment.status != "completed":
         raise _error(409, "TRAINING_INCOMPLETE", "Спочатку завершіть навчання.")
-    if (
-        await _certification(
-            db, employee_profile_id=employee_profile_id, training_id=assignment.training_id
-        )
-        is not None
-    ):
-        raise _error(409, "FINAL_EXAM_ALREADY_PASSED", "Фінальний іспит уже складено.")
     ready = await _ready_version(db, assignment)
     if ready is None or ready[2].status not in {"ready", "warning"}:
         raise _error(409, "ASSESSMENT_NOT_READY", "Фінальний іспит ще готується.")
-    eligibility = await db.scalar(
-        select(AssessmentEligibility).where(
-            AssessmentEligibility.employee_profile_id == employee_profile_id,
-            AssessmentEligibility.assignment_id == assignment.id,
-            AssessmentEligibility.target_assessment_id == ready[0].id,
-            AssessmentEligibility.status == "earned",
-        )
+    certification = await _certification(
+        db,
+        employee_profile_id=employee_profile_id,
+        training_id=assignment.training_id,
     )
-    if eligibility is None:
-        raise _error(409, "PRACTICE_ELIGIBILITY_REQUIRED", "Спочатку пройдіть Practice.")
+    authorized_requirement = await current_employee_requirement(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        training_id=assignment.training_id,
+        target_assessment_id=ready[0].id,
+    )
+    if certification is not None and authorized_requirement is None:
+        raise _error(
+            409,
+            "FINAL_EXAM_ALREADY_PASSED",
+            "Фінальний іспит уже складено; нову спробу має дозволити активна вимога.",
+        )
+    if certification is None:
+        eligibility = await db.scalar(
+            select(AssessmentEligibility).where(
+                AssessmentEligibility.employee_profile_id == employee_profile_id,
+                AssessmentEligibility.assignment_id == assignment.id,
+                AssessmentEligibility.target_assessment_id == ready[0].id,
+                AssessmentEligibility.status == "earned",
+            )
+        )
+        if eligibility is None:
+            raise _error(409, "PRACTICE_ELIGIBILITY_REQUIRED", "Спочатку пройдіть Practice.")
     version = ready[1]
     attempt = await db.scalar(
         select(AssessmentAttempt).where(
@@ -535,6 +594,77 @@ async def start_or_resume_final_exam_attempt(
                 assessment_version_id=version.id,
             ),
         )
+        if authorized_requirement is not None and authorized_requirement.reason == "critical_error":
+            source_identity = (
+                await db.execute(
+                    select(CriticalError.menu_item_id, CriticalError.allergen_id)
+                    .join(
+                        AttentionCaseSource,
+                        AttentionCaseSource.critical_error_id == CriticalError.id,
+                    )
+                    .where(
+                        AttentionCaseSource.attention_case_id
+                        == authorized_requirement.source_attention_case_id
+                    )
+                    .order_by(CriticalError.occurred_at.desc(), CriticalError.id.desc())
+                    .limit(1)
+                )
+            ).one_or_none()
+            if source_identity is None:
+                raise _error(
+                    409,
+                    "RETAKE_TARGET_UNAVAILABLE",
+                    "Для цільової перескладання немає безпечного актуального питання.",
+                )
+            menu_item_id, allergen_id = source_identity
+            matching_ids = set(
+                await db.scalars(
+                    select(QuestionSourceLink.question_version_id)
+                    .join(
+                        MenuItemVersionAllergen,
+                        MenuItemVersionAllergen.id
+                        == QuestionSourceLink.menu_item_version_allergen_id,
+                    )
+                    .join(
+                        MenuItemVersion,
+                        MenuItemVersion.id == MenuItemVersionAllergen.menu_item_version_id,
+                    )
+                    .where(
+                        QuestionSourceLink.question_version_id.in_(by_id),
+                        QuestionSourceLink.source_role == "correct_fact",
+                        MenuItemVersion.menu_item_id == menu_item_id,
+                        MenuItemVersionAllergen.allergen_id == allergen_id,
+                    )
+                )
+            )
+            matching_candidates = [candidate for candidate in by_id if candidate in matching_ids]
+            if not matching_candidates:
+                raise _error(
+                    409,
+                    "RETAKE_TARGET_UNAVAILABLE",
+                    "Для цільової перескладання немає безпечного актуального питання.",
+                )
+            if not any(item.question_version_id in matching_ids for item in selected):
+                replacement_id = min(matching_candidates, key=str)
+                replacement = next(
+                    FinalExamPoolCandidate(
+                        question_version_id=question.id,
+                        menu_item_key=str(candidate_menu_item_id),
+                        section_key=str(category_id),
+                        family=family,
+                        mechanic=question.mechanic,
+                        is_critical=question.is_critical,
+                    )
+                    for (
+                        _pool,
+                        question,
+                        candidate_menu_item_id,
+                        category_id,
+                        family,
+                    ) in by_id.values()
+                    if question.id == replacement_id
+                )
+                selected[-1] = replacement
         if len(selected) != 20:
             raise _error(409, "ASSESSMENT_NOT_READY", "Фінальний іспит ще готується.")
         attempt = AssessmentAttempt(

@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.attention import EmployeeAttentionSummary, EmployeeRetakeRequirementResponse
+
 
 class StrictAssessmentSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -491,6 +493,14 @@ class FinalExamSummaryResponse(StrictAssessmentSchema):
     active_attempt: FinalExamAttemptResponse | None
     certification: FinalExamCertificationResponse | None
     retake_available: bool = False
+    current_retake_requirement: EmployeeRetakeRequirementResponse | None = None
+    attention_summary: EmployeeAttentionSummary = Field(
+        default_factory=lambda: EmployeeAttentionSummary(
+            open_count=0,
+            has_critical_follow_up=False,
+            has_overdue_follow_up=False,
+        )
+    )
 
 
 class FinalExamAnswerRequest(StrictAssessmentSchema):

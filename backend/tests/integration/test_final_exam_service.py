@@ -1,13 +1,15 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
+from app.core.errors import APIError
 from app.db.session import create_engine, create_session_factory
-from app.models import OrganizationMembership, User
+from app.models import AttentionCase, OrganizationMembership, RetakeRequirement, User
 from app.schemas.assessment import FinalExamFinishResponse, SingleChoiceSubmission
 from app.services.admin_results import (
     get_admin_employee_results,
@@ -15,7 +17,11 @@ from app.services.admin_results import (
     get_admin_results_overview,
 )
 from app.services.final_exam_answers import save_final_exam_answer
-from app.services.final_exam_attempts import get_final_exam_attempt, get_final_exam_summary
+from app.services.final_exam_attempts import (
+    get_final_exam_attempt,
+    get_final_exam_summary,
+    start_or_resume_final_exam_attempt,
+)
 from app.services.final_exam_results import finish_final_exam_attempt, get_final_exam_history
 from tests.factories.assessments import (
     make_assessment,
@@ -180,6 +186,10 @@ async def test_final_exam_grades_once_certifies_and_exposes_canonical_results(
     actor_user_id = employee_user.id
     session_id = employee_session.id
     attempt_id = attempt.id
+    training_id = context.training.id
+    assignment_id = context.assignment.id
+    final_exam_id = final_exam.id
+    admin_user_id = context.actor.id
 
     summary = await get_final_exam_summary(
         db_session,
@@ -294,6 +304,93 @@ async def test_final_exam_grades_once_certifies_and_exposes_canonical_results(
     assert certified_summary.availability == "certified"
     assert certified_summary.can_start is False
     assert certified_summary.retake_available is False
+
+    authorized_requirement = RetakeRequirement(
+        organization_id=organization_id,
+        location_id=location_id,
+        training_id=training_id,
+        employee_profile_id=employee_profile_id,
+        assignment_id=assignment_id,
+        target_assessment_id=final_exam_id,
+        reason="management_follow_up",
+        state="active",
+        management_source_key="certified-follow-up",
+        target_policy={"assessment_type": "menu_final_exam", "minimum_result": "passed"},
+        confirmed_at=now + timedelta(minutes=31),
+        confirmed_by_user_id=admin_user_id,
+        due_at=now + timedelta(days=7),
+        revision=0,
+    )
+    db_session.add(authorized_requirement)
+    await db_session.commit()
+    authorized_summary = await get_final_exam_summary(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        session_id=session_id,
+        now=now + timedelta(minutes=32),
+    )
+    assert authorized_summary.availability == "eligible"
+    assert authorized_summary.can_start is True
+    assert authorized_summary.reason_codes == ["AUTHORIZED_RETAKE"]
+    assert authorized_summary.current_retake_requirement is not None
+    assert authorized_summary.current_retake_requirement.id == authorized_requirement.id
+
+    authorized_requirement.state = "cancelled"
+    authorized_requirement.cancelled_at = now + timedelta(minutes=33)
+    authorized_requirement.cancelled_by_user_id = admin_user_id
+    authorized_requirement.cancellation_comment = "Use a targeted critical follow-up instead."
+    critical_case = AttentionCase(
+        organization_id=organization_id,
+        location_id=location_id,
+        training_id=training_id,
+        employee_profile_id=employee_profile_id,
+        case_type="critical_allergen",
+        subject_key=f"menu_item:{uuid4()}:allergen:{uuid4()}",
+        state="open",
+        revision=0,
+        created_at=now + timedelta(minutes=34),
+        updated_at=now + timedelta(minutes=34),
+    )
+    db_session.add(critical_case)
+    await db_session.flush()
+    critical_requirement = RetakeRequirement(
+        organization_id=organization_id,
+        location_id=location_id,
+        training_id=training_id,
+        employee_profile_id=employee_profile_id,
+        assignment_id=assignment_id,
+        target_assessment_id=final_exam_id,
+        reason="critical_error",
+        state="active",
+        source_attention_case_id=critical_case.id,
+        target_policy={
+            "assessment_type": "menu_final_exam",
+            "minimum_result": "passed",
+            "required_subject_keys": [critical_case.subject_key],
+        },
+        confirmed_at=now + timedelta(minutes=34),
+        confirmed_by_user_id=admin_user_id,
+        due_at=now + timedelta(days=7),
+        revision=0,
+    )
+    db_session.add(critical_requirement)
+    await db_session.commit()
+    with pytest.raises(APIError) as unavailable:
+        await start_or_resume_final_exam_attempt(
+            db_session,
+            organization_id=organization_id,
+            location_id=location_id,
+            employee_profile_id=employee_profile_id,
+            actor_user_id=actor_user_id,
+            session_id=session_id,
+            presentation_locale="uk",
+            idempotency_key="critical-target-unavailable",
+            request_id=session_id,
+            now=now + timedelta(minutes=35),
+        )
+    assert unavailable.value.code == "RETAKE_TARGET_UNAVAILABLE"
 
     overview = await get_admin_results_overview(
         db_session,
