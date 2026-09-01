@@ -7,6 +7,7 @@ const links = [
   { to: "/admin/content", label: "Навчальні матеріали" },
   { to: "/admin/questions", label: "Банк питань" },
   { to: "/admin/results", label: "Результати" },
+  { to: "/admin/attention", label: "Attention" },
 ];
 
 function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {

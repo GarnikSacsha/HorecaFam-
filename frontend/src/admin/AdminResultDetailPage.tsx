@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import type { AdminEmployeeResultsDetailResponse } from "../api/contracts";
+import type {
+  AdminAttentionCollection,
+  AdminEmployeeResultsDetailResponse,
+  AdminRetakeRequirementCollection,
+} from "../api/contracts";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
@@ -12,6 +16,8 @@ export function AdminResultDetailPage() {
     (item) => item.is_organization_admin,
   )?.organization_id;
   const [detail, setDetail] = useState<AdminEmployeeResultsDetailResponse | null>(null);
+  const [attentionCount, setAttentionCount] = useState(0);
+  const [currentRetakeCount, setCurrentRetakeCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -20,7 +26,27 @@ export function AdminResultDetailPage() {
       .request<AdminEmployeeResultsDetailResponse>(
         `/organizations/${organizationId}/results/employees/${employeeId}`,
       )
-      .then(setDetail)
+      .then((response) => {
+        setDetail(response);
+        void Promise.all([
+          client.request<AdminAttentionCollection>(
+            `/organizations/${organizationId}/employees/${employeeId}/attention`,
+          ),
+          client.request<AdminRetakeRequirementCollection>(
+            `/organizations/${organizationId}/retake-requirements?q=${encodeURIComponent(employeeId)}`,
+          ),
+        ])
+          .then(([attention, retakes]) => {
+            setAttentionCount(attention.items.filter((item) => item.state !== "resolved").length);
+            setCurrentRetakeCount(
+              retakes.items.filter((item) => item.state === "proposed" || item.state === "active")
+                .length,
+            );
+          })
+          .catch(() => {
+            // Follow-up є додатковим контекстом: незмінна історія Results доступна незалежно.
+          });
+      })
       .catch(() => setError("Не вдалося завантажити історію результатів."));
   }, [client, employeeId, organizationId, status]);
 
@@ -59,6 +85,19 @@ export function AdminResultDetailPage() {
         ) : (
           <p>Final Exam ще не завершувався.</p>
         )}
+      </section>
+      <section className="bounded-section" aria-labelledby="follow-up-title">
+        <div>
+          <p className="eyebrow">Attention і перескладання</p>
+          <h2 id="follow-up-title">Поточний follow-up</h2>
+        </div>
+        <p>
+          Відкриті кейси: <strong>{attentionCount}</strong> · поточні вимоги:{" "}
+          <strong>{currentRetakeCount}</strong>
+        </p>
+        <Link className="button button-secondary" to="/admin/attention">
+          Відкрити робочу чергу
+        </Link>
       </section>
       {detail.final_exam.history.length ? (
         <ol className="results-history-list">

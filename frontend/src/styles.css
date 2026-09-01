@@ -2987,3 +2987,116 @@ h1 {
     width: 100%;
   }
 }
+/* Slice 8 follow-up surfaces keep urgent facts visible without punitive visual language. */
+.queue-filter-row,
+.queue-filter-grid,
+.follow-up-form,
+.follow-up-detail,
+.retake-status-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.queue-filter-row {
+  max-width: 28rem;
+  flex-direction: column;
+  margin-block: 1.5rem;
+}
+
+.queue-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+
+.follow-up-form {
+  width: min(100%, 48rem);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.follow-up-form .field-group {
+  flex: 1 1 14rem;
+}
+
+.queue-filter-row select {
+  width: 100%;
+}
+
+.queue-section {
+  margin-block: 2rem;
+}
+
+.follow-up-detail,
+.retake-status-card {
+  margin-block: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border, #d9d4c8);
+  border-radius: 1rem;
+  background: var(--color-surface, #fffdf8);
+}
+
+.follow-up-detail {
+  flex-direction: column;
+}
+
+.follow-up-detail .field-group {
+  width: min(100%, 42rem);
+}
+
+.queue-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+}
+
+.queue-card {
+  min-height: 5.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border, #d9d4c8);
+  border-radius: 0.875rem;
+  background: var(--color-surface, #fffdf8);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.queue-card:hover,
+.queue-card:focus-visible {
+  border-color: currentColor;
+}
+
+.queue-card > span {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.button-link {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.follow-up-note {
+  padding: 1rem;
+  border-left: 4px solid var(--color-accent, #7a6540);
+  background: var(--color-surface-subtle, #f6f1e7);
+}
+
+@media (max-width: 720px) {
+  .retake-status-card {
+    flex-direction: column;
+  }
+
+  .queue-card,
+  .follow-up-form .button,
+  .follow-up-detail .button,
+  .retake-status-card .button {
+    min-height: 44px;
+  }
+}

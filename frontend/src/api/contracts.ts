@@ -928,6 +928,31 @@ export interface FinalExamCertification {
   certified_at: string;
 }
 
+export type RetakeReason =
+  "failed_exam" | "critical_error" | "management_follow_up" | "material_content_change";
+export type RetakeTimingState = "scheduled" | "approaching" | "overdue" | "frozen";
+
+export interface EmployeeRetakeRequirement {
+  id: string;
+  training_id: string;
+  target_assessment_id: string;
+  reason: RetakeReason;
+  state: "active" | "completed" | "cancelled";
+  timing_state: RetakeTimingState | null;
+  due_at: string;
+  permitted_action: "start_retake" | "resume_retake" | "review_history" | "wait";
+  source_attempt_id: string | null;
+  completion_attempt_id: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+}
+
+export interface EmployeeAttentionSummary {
+  open_count: number;
+  has_critical_follow_up: boolean;
+  has_overdue_follow_up: boolean;
+}
+
 export interface FinalExamResultSummary {
   result_id: string;
   attempt_id: string;
@@ -1013,6 +1038,57 @@ export interface FinalExamSummaryResponse {
   active_attempt: FinalExamAttempt | null;
   certification: FinalExamCertification | null;
   retake_available: boolean;
+  current_retake_requirement: EmployeeRetakeRequirement | null;
+  attention_summary: EmployeeAttentionSummary;
+}
+
+export interface AdminRetakeRequirement extends Omit<EmployeeRetakeRequirement, "state"> {
+  state: "proposed" | "active" | "completed" | "cancelled";
+  organization_id: string;
+  location_id: string;
+  employee_profile_id: string;
+  assignment_id: string;
+  source_result_id: string | null;
+  source_attention_case_id: string | null;
+  management_source_key: string | null;
+  target_policy: Record<string, unknown>;
+  proposed_at: string | null;
+  confirmed_at: string | null;
+  clock_frozen_at: string | null;
+  cancellation_comment: string | null;
+  revision: number;
+}
+
+export interface AdminRetakeRequirementCollection {
+  items: AdminRetakeRequirement[];
+  next_cursor: string | null;
+}
+
+export interface AdminAttentionCase {
+  id: string;
+  organization_id: string;
+  location_id: string;
+  training_id: string;
+  employee_profile_id: string;
+  case_type: "critical_allergen" | "retake_overdue";
+  severity: "critical" | "overdue";
+  subject_key: string | null;
+  state: "open" | "acknowledged" | "resolved";
+  revision: number;
+  acknowledged_at: string | null;
+  resolution_type:
+    "clean_retake" | "admin_follow_up" | "requirement_completed" | "requirement_cancelled" | null;
+  resolved_at: string | null;
+  resolution_comment: string | null;
+  critical_error_ids: string[];
+  retake_requirement_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminAttentionCollection {
+  items: AdminAttentionCase[];
+  next_cursor: string | null;
 }
 
 export interface FinalExamAnswerResponse {

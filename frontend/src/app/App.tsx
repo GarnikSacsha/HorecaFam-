@@ -7,6 +7,7 @@ import { AdminQuestionBankPage } from "../admin/AdminQuestionBankPage";
 import { AdminResultDetailPage } from "../admin/AdminResultDetailPage";
 import { AdminResultsPage } from "../admin/AdminResultsPage";
 import { AdminTrainingPage } from "../admin/AdminTrainingPage";
+import { AdminAttentionPage } from "../admin/AdminAttentionPage";
 import { LoginPage } from "../auth/LoginPage";
 import { MfaPage } from "../auth/MfaPage";
 import { PendingPage } from "../employee/PendingPage";
@@ -77,6 +78,16 @@ export function App() {
               <ProtectedRoute audience="admin">
                 <AdminShell>
                   <AdminQuestionBankPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/attention"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminAttentionPage />
                 </AdminShell>
               </ProtectedRoute>
             }
