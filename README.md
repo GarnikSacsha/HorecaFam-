@@ -21,9 +21,9 @@ canonical Results are accepted and Done; CRA-67 is the exact eight-checkpoint ra
 `6be8f4d..703872b`. CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning is
 accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at `5352f89`, the accepted
 eight-checkpoint CRA-71 range `62a80a0..054d731`, and the CRA-72 documentation checkpoint through
-`4019262`. Local `main` and `origin/main` match at `4019262`. PR, merge, deployment, providers and
-production configuration remain separate gates. CRA-75 owns this publication-state documentation
-checkpoint; CRA-42 is unrelated Backlog work.
+`4019262`. CRA-75 publication-state documentation checkpoints follow that accepted product endpoint.
+PR, merge, deployment, providers and production configuration remain separate gates; CRA-42 is
+unrelated Backlog work.
 
 ## Start here
 

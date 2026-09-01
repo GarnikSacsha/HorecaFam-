@@ -12,8 +12,8 @@ CRA-42 is unrelated Backlog work.
 **Current boundary:** CRA-71 is published as the exact eight-checkpoint range
 `62a80a0..054d731` at Alembic head `0015_attention_retakes`. CRA-74 ordinary fast-forward published
 CRA-70 at `5352f89`, CRA-71, and the CRA-72 documentation checkpoint through
-`origin/main@4019262`. CRA-75 owns this publication-state documentation checkpoint. PR, merge,
-deployment, provider and production actions remain separately gated.
+the CRA-74 endpoint `4019262`. CRA-75 records the publication-state documentation checkpoints that
+follow it. PR, merge, deployment, provider and production actions remain separately gated.
 
 ## Accepted implementation and planning checkpoints
 
@@ -215,9 +215,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Repository and runtime state
 
-- Branch: `main`; the accepted remote product/documentation baseline is `origin/main@4019262`.
-  CRA-74 records the ordinary fast-forward publication, and CRA-75 owns this documentation-only
-  follow-up checkpoint.
+- Branch: `main`; accepted published history contains the CRA-74 product/documentation endpoint
+  `4019262`, followed by the CRA-75 publication-state documentation checkpoints.
 - Repository history includes the accepted backend and frontend MVP Vertical Slice 1 checkpoints
   published through the CRA-43 endpoint `fa30a1f`, the accepted CRA-46/CRA-48 documentation
   checkpoints, CRA-49 through `8028d6e`, CRA-54 through `d955f6a`, CRA-55 through `afc607a`, and
@@ -397,8 +396,8 @@ remain separate future scope and external-latency risks.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- CRA-75 is the active bounded documentation-only repository issue. CRA-19 remains a separate
-  visual-only track.
+- CRA-75 records the completed documentation-only publication-state synchronization. CRA-19 remains
+  a separate visual-only track.
 - CRA-71 is accepted, Done and published as `62a80a0..054d731`; CRA-72 records its exact
   nine-document synchronization, and CRA-74 records publication through `4019262`.
 - CRA-69 planning is accepted and Done; CRA-70 is published at `5352f89`.
