@@ -288,3 +288,35 @@ class AssessmentAttemptStatus(StrEnum):
     COMPLETED = "completed"
     EXPIRED = "expired"
     INVALIDATED = "invalidated"
+
+
+class AttentionCaseType(StrEnum):
+    CRITICAL_ALLERGEN = "critical_allergen"
+    RETAKE_OVERDUE = "retake_overdue"
+
+
+class AttentionCaseState(StrEnum):
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED = "resolved"
+
+
+class AttentionResolutionType(StrEnum):
+    CLEAN_RETAKE = "clean_retake"
+    ADMIN_FOLLOW_UP = "admin_follow_up"
+    REQUIREMENT_COMPLETED = "requirement_completed"
+    REQUIREMENT_CANCELLED = "requirement_cancelled"
+
+
+class RetakeRequirementReason(StrEnum):
+    FAILED_EXAM = "failed_exam"
+    CRITICAL_ERROR = "critical_error"
+    MANAGEMENT_FOLLOW_UP = "management_follow_up"
+    MATERIAL_CONTENT_CHANGE = "material_content_change"
+
+
+class RetakeRequirementState(StrEnum):
+    PROPOSED = "proposed"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"

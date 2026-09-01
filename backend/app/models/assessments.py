@@ -592,6 +592,14 @@ class AssessmentAttempt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "training_id",
             name="uq_assessment_attempts_eligibility_scope",
         ),
+        UniqueConstraint(
+            "id",
+            "employee_profile_id",
+            "organization_id",
+            "location_id",
+            "training_id",
+            name="uq_assessment_attempts_employee_training_scope",
+        ),
         CheckConstraint(
             "status IN ('in_progress', 'completed', 'expired', 'invalidated')",
             name="status_allowed",
@@ -748,6 +756,12 @@ class SubmittedAnswer(UUIDPrimaryKeyMixin, Base):
             "attempt_id", "attempt_question_id", name="uq_submitted_answers_attempt_question"
         ),
         UniqueConstraint("attempt_id", "idempotency_key", name="uq_submitted_answers_idempotency"),
+        UniqueConstraint(
+            "id",
+            "attempt_id",
+            "attempt_question_id",
+            name="uq_submitted_answers_source_scope",
+        ),
         CheckConstraint("jsonb_typeof(answer_payload) = 'object'", name="payload_object"),
         ForeignKeyConstraint(
             ["attempt_question_id", "attempt_id"],
@@ -798,6 +812,7 @@ class AttemptResult(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "attempt_results"
     __table_args__ = (
         UniqueConstraint("attempt_id", name="uq_attempt_results_attempt"),
+        UniqueConstraint("id", "attempt_id", name="uq_attempt_results_source_scope"),
         CheckConstraint("correct_count BETWEEN 0 AND total_count", name="correct_count_range"),
         CheckConstraint("total_count IN (5, 10, 20)", name="total_count_allowed"),
         CheckConstraint("score_basis_points BETWEEN 0 AND 10000", name="score_range"),
