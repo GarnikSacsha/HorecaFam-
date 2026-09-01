@@ -623,6 +623,36 @@ def test_assignment_completion_rollout_migration_downgrades_and_upgrades() -> No
 
 @pytest.mark.integration
 @pytest.mark.migration
+def test_employee_lifecycle_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    lifecycle_columns = {
+        "training_paused_at",
+        "training_pause_reason_code",
+        "training_pause_note",
+        "planned_resume_at",
+        "disabled_reason_code",
+        "disabled_note",
+    }
+
+    command.upgrade(config, "head")
+    try:
+        current_columns = asyncio.run(database_column_names(settings, "organization_memberships"))
+        assert current_columns >= lifecycle_columns
+
+        command.downgrade(config, "0016_security_recovery")
+        downgraded_columns = asyncio.run(
+            database_column_names(settings, "organization_memberships")
+        )
+        assert lifecycle_columns.isdisjoint(downgraded_columns)
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
 def test_interactive_training_migration_downgrades_and_upgrades() -> None:
     settings = database_settings()
     config = Config(str(BACKEND_ROOT / "alembic.ini"))

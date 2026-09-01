@@ -15,8 +15,11 @@ from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.schemas.employees import (
     EmployeeDetail,
+    EmployeeDisableRequest,
     EmployeeLifecycleActionResponse,
+    EmployeeLifecycleStateResponse,
     EmployeeListResponse,
+    EmployeePauseRequest,
     EmployeeUpdate,
     LocationSummary,
     OperationalRoleSummary,
@@ -32,12 +35,16 @@ from app.schemas.training import (
 )
 from app.services.employees import (
     activate_employee,
+    disable_employee,
     get_employee_detail,
     get_organization_summary,
     get_own_employee_profiles,
     list_employees,
     list_locations,
     list_operational_roles,
+    pause_employee,
+    reactivate_employee,
+    resume_employee,
     update_pending_employee_profile,
 )
 from app.services.training_assignments import (
@@ -174,6 +181,122 @@ async def employee_activate_route(
 ) -> EmployeeLifecycleActionResponse:
     clock = cast(Clock, request.app.state.clock)
     return await activate_employee(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}/disable",
+    response_model=EmployeeLifecycleStateResponse,
+)
+async def employee_disable_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    payload: EmployeeDisableRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeLifecycleStateResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await disable_employee(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        payload=payload,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}/reactivate",
+    response_model=EmployeeLifecycleStateResponse,
+)
+async def employee_reactivate_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeLifecycleStateResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await reactivate_employee(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}/pause",
+    response_model=EmployeeLifecycleStateResponse,
+)
+async def employee_pause_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    payload: EmployeePauseRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeLifecycleStateResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await pause_employee(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=authorization.user.id,
+        payload=payload,
+        idempotency_key=idempotency_key.strip(),
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/employees/{employee_id}/resume",
+    response_model=EmployeeLifecycleStateResponse,
+)
+async def employee_resume_route(
+    organization_id: UUID,
+    employee_id: UUID,
+    request: Request,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*"),
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EmployeeLifecycleStateResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await resume_employee(
         db,
         organization_id=organization_id,
         employee_id=employee_id,

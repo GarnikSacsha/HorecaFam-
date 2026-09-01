@@ -710,3 +710,54 @@ async def resume_retake_clock(
     )
     await db.flush()
     return True
+
+
+async def freeze_employee_retake_clocks(
+    db: AsyncSession,
+    *,
+    employee_profile_id: UUID,
+    now: datetime,
+) -> int:
+    """Заморожує лише активні зобов'язання працівника без зміни їхньої історії."""
+
+    requirements = list(
+        await db.scalars(
+            select(RetakeRequirement)
+            .where(
+                RetakeRequirement.employee_profile_id == employee_profile_id,
+                RetakeRequirement.state == "active",
+            )
+            .order_by(RetakeRequirement.id)
+            .with_for_update()
+        )
+    )
+    changed = 0
+    for requirement in requirements:
+        changed += int(await freeze_retake_clock(db, requirement=requirement, now=now))
+    return changed
+
+
+async def resume_employee_retake_clocks(
+    db: AsyncSession,
+    *,
+    employee_profile_id: UUID,
+    now: datetime,
+) -> int:
+    """Повертає точний заморожений час активним зобов'язанням працівника."""
+
+    requirements = list(
+        await db.scalars(
+            select(RetakeRequirement)
+            .where(
+                RetakeRequirement.employee_profile_id == employee_profile_id,
+                RetakeRequirement.state == "active",
+                RetakeRequirement.clock_frozen_at.is_not(None),
+            )
+            .order_by(RetakeRequirement.id)
+            .with_for_update()
+        )
+    )
+    changed = 0
+    for requirement in requirements:
+        changed += int(await resume_retake_clock(db, requirement=requirement, now=now))
+    return changed

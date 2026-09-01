@@ -5,8 +5,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import ApiIdempotencyRecord, AuditEvent, EmployeeProfile, OrganizationMembership
-from app.schemas.employees import EmployeeUpdate
-from app.services.employees import activate_employee, update_pending_employee_profile
+from app.schemas.employees import EmployeeDisableRequest, EmployeeUpdate
+from app.services.employees import (
+    activate_employee,
+    disable_employee,
+    update_pending_employee_profile,
+)
 from tests.factories.identity import (
     make_location,
     make_membership,
@@ -116,5 +120,55 @@ async def test_activation_rolls_back_domain_and_audit_when_commit_fails(
     stored = await db_session.get_one(OrganizationMembership, membership_id)
     assert stored.status == "pending"
     assert stored.activated_at is None
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(ApiIdempotencyRecord)) == 0
+
+
+async def test_disable_rolls_back_lifecycle_audit_and_idempotency_when_commit_fails(
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    organization = make_organization(name="Disable rollback organization")
+    admin = make_user(email_normalized="disable-rollback-admin@example.com")
+    employee = make_user(email_normalized="disable-rollback-employee@example.com")
+    membership = make_membership(organization, employee)
+    db_session.add_all([organization, admin, employee, membership])
+    await db_session.flush()
+    profile = EmployeeProfile(
+        membership_id=membership.id,
+        organization_id=organization.id,
+        first_name="Iryna",
+        last_name="Koval",
+    )
+    db_session.add(profile)
+    await db_session.commit()
+    organization_id = organization.id
+    membership_id = membership.id
+    profile_id = profile.id
+    admin_id = admin.id
+    now = profile.created_at
+    original_commit = db_session.commit
+
+    async def fail_commit() -> None:
+        raise RuntimeError("forced test-only disable commit failure")
+
+    monkeypatch.setattr(db_session, "commit", fail_commit)
+    with pytest.raises(RuntimeError, match="forced test-only disable commit failure"):
+        await disable_employee(
+            db_session,
+            organization_id=organization_id,
+            employee_id=profile_id,
+            actor_user_id=admin_id,
+            payload=EmployeeDisableRequest(reason_code="access_review"),
+            idempotency_key="rollback-disable",
+            now=now,
+            request_id=uuid4(),
+        )
+    monkeypatch.setattr(db_session, "commit", original_commit)
+
+    db_session.expire_all()
+    stored = await db_session.get_one(OrganizationMembership, membership_id)
+    assert stored.status == "active"
+    assert stored.disabled_at is None
     assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
     assert await db_session.scalar(select(func.count()).select_from(ApiIdempotencyRecord)) == 0

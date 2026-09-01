@@ -18,10 +18,12 @@ from app.models import (
     RetakeRequirementAction,
 )
 from app.services.retakes import (
+    freeze_employee_retake_clocks,
     freeze_retake_clock,
     project_final_exam_follow_up,
     project_managed_requirement_completion,
     project_retake_deadlines,
+    resume_employee_retake_clocks,
     resume_retake_clock,
     retake_timing_state,
 )
@@ -319,7 +321,14 @@ async def test_retake_timing_and_freeze_resume_preserve_exact_remaining_time(
     assert retake_timing_state(requirement, requirement.due_at) == "overdue"
 
     frozen_at = failed_at + timedelta(days=6)
-    assert await freeze_retake_clock(db_session, requirement=requirement, now=frozen_at)
+    assert (
+        await freeze_employee_retake_clocks(
+            db_session,
+            employee_profile_id=context.employee.id,
+            now=frozen_at,
+        )
+        == 1
+    )
     assert not await freeze_retake_clock(
         db_session,
         requirement=requirement,
@@ -328,7 +337,14 @@ async def test_retake_timing_and_freeze_resume_preserve_exact_remaining_time(
     assert retake_timing_state(requirement, failed_at + timedelta(days=20)) == "frozen"
 
     resumed_at = frozen_at + timedelta(hours=9)
-    assert await resume_retake_clock(db_session, requirement=requirement, now=resumed_at)
+    assert (
+        await resume_employee_retake_clocks(
+            db_session,
+            employee_profile_id=context.employee.id,
+            now=resumed_at,
+        )
+        == 1
+    )
     assert not await resume_retake_clock(
         db_session,
         requirement=requirement,

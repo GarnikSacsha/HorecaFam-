@@ -18,8 +18,11 @@ from app.models import (
 )
 from app.schemas.employees import (
     EmployeeDetail,
+    EmployeeDisableRequest,
     EmployeeLifecycleActionResponse,
+    EmployeeLifecycleStateResponse,
     EmployeeListResponse,
+    EmployeePauseRequest,
     EmployeeSummary,
     EmployeeUpdate,
     LocationSummary,
@@ -35,6 +38,11 @@ from app.services.idempotency import (
     request_fingerprint,
     reserve_idempotency,
 )
+from app.services.retakes import (
+    freeze_employee_retake_clocks,
+    resume_employee_retake_clocks,
+)
+from app.services.sessions import revoke_user_sessions
 
 EmployeeRow = tuple[
     EmployeeProfile,
@@ -127,6 +135,13 @@ def _employee_detail(row: EmployeeRow) -> EmployeeDetail:
         membership_created_at=membership.created_at,
         activated_at=membership.activated_at,
         disabled_at=membership.disabled_at,
+        training_participation_status=membership.training_participation_status,
+        training_paused_at=membership.training_paused_at,
+        training_pause_reason_code=membership.training_pause_reason_code,
+        training_pause_note=membership.training_pause_note,
+        planned_resume_at=membership.planned_resume_at,
+        disabled_reason_code=membership.disabled_reason_code,
+        disabled_note=membership.disabled_note,
     )
 
 
@@ -735,6 +750,567 @@ async def activate_employee(
 ) -> EmployeeLifecycleActionResponse:
     try:
         return await _activate_employee(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            actor_user_id=actor_user_id,
+            idempotency_key=idempotency_key,
+            now=now,
+            request_id=request_id,
+        )
+    except Exception:
+        await db.rollback()
+        raise
+
+
+def _employee_lifecycle_invalid_transition() -> APIError:
+    return APIError(
+        status_code=409,
+        code="EMPLOYEE_LIFECYCLE_INVALID_TRANSITION",
+        message="Ця зміна недоступна з поточного стану працівника.",
+    )
+
+
+def _planned_resume_invalid() -> APIError:
+    return APIError(
+        status_code=409,
+        code="EMPLOYEE_PLANNED_RESUME_INVALID",
+        message="Запланований час поновлення має бути в майбутньому.",
+    )
+
+
+async def _locked_lifecycle_membership(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+) -> tuple[EmployeeProfile, OrganizationMembership]:
+    locked = (
+        (
+            await db.execute(
+                select(EmployeeProfile, OrganizationMembership)
+                .join(
+                    OrganizationMembership,
+                    and_(
+                        OrganizationMembership.id == EmployeeProfile.membership_id,
+                        OrganizationMembership.organization_id == EmployeeProfile.organization_id,
+                    ),
+                )
+                .where(
+                    EmployeeProfile.id == employee_id,
+                    EmployeeProfile.organization_id == organization_id,
+                )
+                .with_for_update()
+            )
+        )
+        .tuples()
+        .one_or_none()
+    )
+    if locked is None:
+        raise _resource_not_found()
+    return locked
+
+
+def _lifecycle_response(
+    *,
+    profile: EmployeeProfile,
+    membership: OrganizationMembership,
+) -> EmployeeLifecycleStateResponse:
+    return EmployeeLifecycleStateResponse(
+        employee_id=profile.id,
+        organization_id=profile.organization_id,
+        membership_status=membership.status,
+        training_participation_status=membership.training_participation_status,
+        activated_at=membership.activated_at,
+        disabled_at=membership.disabled_at,
+        training_paused_at=membership.training_paused_at,
+        training_pause_reason_code=membership.training_pause_reason_code,
+        training_pause_note=membership.training_pause_note,
+        planned_resume_at=membership.planned_resume_at,
+        disabled_reason_code=membership.disabled_reason_code,
+        disabled_note=membership.disabled_note,
+    )
+
+
+async def _lifecycle_replay_response(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    expected_membership_status: str,
+    expected_training_status: str | None = None,
+) -> EmployeeLifecycleStateResponse:
+    profile, membership = await _locked_lifecycle_membership(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+    if membership.status != expected_membership_status or (
+        expected_training_status is not None
+        and membership.training_participation_status != expected_training_status
+    ):
+        raise RuntimeError("Idempotent Employee lifecycle state is unavailable")
+    response = _lifecycle_response(profile=profile, membership=membership)
+    await db.commit()
+    return response
+
+
+async def _reserve_lifecycle_action(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    action: str,
+    idempotency_key: str,
+    fingerprint_payload: dict[str, object],
+    now: datetime,
+) -> bool:
+    fingerprint = request_fingerprint(fingerprint_payload)
+    replay = await find_idempotency_replay(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action=action,
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        now=now,
+    )
+    if replay is not None:
+        if replay.resource_type != "employee_profile" or replay.resource_id != employee_id:
+            raise RuntimeError("Idempotent Employee lifecycle target is inconsistent")
+        return True
+    decision = await reserve_idempotency(
+        db,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        action=action,
+        key=idempotency_key,
+        fingerprint=fingerprint,
+        resource_type="employee_profile",
+        resource_id=employee_id,
+        response_status=200,
+        now=now,
+    )
+    return decision.replayed
+
+
+async def _disable_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    payload: EmployeeDisableRequest,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    replayed = await _reserve_lifecycle_action(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=actor_user_id,
+        action="employee.disable",
+        idempotency_key=idempotency_key,
+        fingerprint_payload={"employee_id": str(employee_id), **payload.model_dump(mode="json")},
+        now=now,
+    )
+    if replayed:
+        return await _lifecycle_replay_response(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            expected_membership_status="disabled",
+        )
+    profile, membership = await _locked_lifecycle_membership(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+    if membership.status not in {"pending", "active"}:
+        raise _employee_lifecycle_invalid_transition()
+    previous_status = membership.status
+    membership.status = "disabled"
+    membership.disabled_at = now
+    membership.disabled_reason_code = payload.reason_code
+    membership.disabled_note = payload.note
+    revoked_session_count = await revoke_user_sessions(
+        db,
+        user_id=membership.user_id,
+        now=now,
+        reason="membership_disabled",
+    )
+    frozen_retake_count = await freeze_employee_retake_clocks(
+        db,
+        employee_profile_id=employee_id,
+        now=now,
+    )
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="employee_disabled",
+            target_type="employee_profile",
+            target_id=employee_id,
+            old_values={
+                "membership_status": previous_status,
+                "training_participation_status": membership.training_participation_status,
+            },
+            new_values={
+                "membership_status": "disabled",
+                "training_participation_status": membership.training_participation_status,
+                "reason_code": payload.reason_code,
+                "revoked_session_count": revoked_session_count,
+                "frozen_retake_count": frozen_retake_count,
+            },
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    response = _lifecycle_response(profile=profile, membership=membership)
+    await db.commit()
+    return response
+
+
+async def disable_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    payload: EmployeeDisableRequest,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    try:
+        return await _disable_employee(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            actor_user_id=actor_user_id,
+            payload=payload,
+            idempotency_key=idempotency_key,
+            now=now,
+            request_id=request_id,
+        )
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def _reactivate_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    replayed = await _reserve_lifecycle_action(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=actor_user_id,
+        action="employee.reactivate",
+        idempotency_key=idempotency_key,
+        fingerprint_payload={"employee_id": str(employee_id)},
+        now=now,
+    )
+    if replayed:
+        return await _lifecycle_replay_response(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            expected_membership_status="active",
+        )
+    profile, membership = await _locked_lifecycle_membership(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+    if membership.status != "disabled":
+        raise _employee_lifecycle_invalid_transition()
+    if not (
+        profile.first_name
+        and profile.first_name.strip()
+        and profile.last_name
+        and profile.last_name.strip()
+        and profile.operational_role_id is not None
+        and profile.location_id is not None
+    ):
+        raise _employee_profile_incomplete()
+    await _validated_role(db, organization_id=organization_id, role_id=profile.operational_role_id)
+    await _validated_location(db, organization_id=organization_id, location_id=profile.location_id)
+    applicability = await evaluate_activation_applicability(
+        db,
+        organization_id=organization_id,
+        employee_profile_id=employee_id,
+        effective_membership_status="active",
+        now=now,
+    )
+    membership.status = "active"
+    membership.activated_at = membership.activated_at or now
+    membership.disabled_at = None
+    previous_reason_code = membership.disabled_reason_code
+    membership.disabled_reason_code = None
+    membership.disabled_note = None
+    resumed_retake_count = 0
+    if membership.training_participation_status == "active":
+        resumed_retake_count = await resume_employee_retake_clocks(
+            db,
+            employee_profile_id=employee_id,
+            now=now,
+        )
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="employee_reactivated",
+            target_type="employee_profile",
+            target_id=employee_id,
+            old_values={"membership_status": "disabled", "reason_code": previous_reason_code},
+            new_values={
+                "membership_status": "active",
+                "training_participation_status": membership.training_participation_status,
+                "resumed_retake_count": resumed_retake_count,
+                "training_applicability_effects": list(applicability.effects),
+                "assignment_count": applicability.assignment_count,
+                "notification_count": applicability.notification_count,
+            },
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    response = _lifecycle_response(profile=profile, membership=membership)
+    await db.commit()
+    return response
+
+
+async def reactivate_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    try:
+        return await _reactivate_employee(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            actor_user_id=actor_user_id,
+            idempotency_key=idempotency_key,
+            now=now,
+            request_id=request_id,
+        )
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def _pause_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    payload: EmployeePauseRequest,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    if payload.planned_resume_at is not None and (
+        payload.planned_resume_at.tzinfo is None or payload.planned_resume_at <= now
+    ):
+        raise _planned_resume_invalid()
+    replayed = await _reserve_lifecycle_action(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=actor_user_id,
+        action="employee.pause",
+        idempotency_key=idempotency_key,
+        fingerprint_payload={"employee_id": str(employee_id), **payload.model_dump(mode="json")},
+        now=now,
+    )
+    if replayed:
+        return await _lifecycle_replay_response(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            expected_membership_status="active",
+            expected_training_status="paused",
+        )
+    profile, membership = await _locked_lifecycle_membership(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+    if membership.status != "active" or membership.training_participation_status != "active":
+        raise _employee_lifecycle_invalid_transition()
+    membership.training_participation_status = "paused"
+    membership.training_paused_at = now
+    membership.training_pause_reason_code = payload.reason_code
+    membership.training_pause_note = payload.note
+    membership.planned_resume_at = payload.planned_resume_at
+    frozen_retake_count = await freeze_employee_retake_clocks(
+        db,
+        employee_profile_id=employee_id,
+        now=now,
+    )
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="employee_training_paused",
+            target_type="employee_profile",
+            target_id=employee_id,
+            old_values={"training_participation_status": "active"},
+            new_values={
+                "training_participation_status": "paused",
+                "reason_code": payload.reason_code,
+                "planned_resume_at": (
+                    payload.planned_resume_at.isoformat()
+                    if payload.planned_resume_at is not None
+                    else None
+                ),
+                "frozen_retake_count": frozen_retake_count,
+            },
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    response = _lifecycle_response(profile=profile, membership=membership)
+    await db.commit()
+    return response
+
+
+async def pause_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    payload: EmployeePauseRequest,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    try:
+        return await _pause_employee(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            actor_user_id=actor_user_id,
+            payload=payload,
+            idempotency_key=idempotency_key,
+            now=now,
+            request_id=request_id,
+        )
+    except Exception:
+        await db.rollback()
+        raise
+
+
+async def _resume_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    replayed = await _reserve_lifecycle_action(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+        actor_user_id=actor_user_id,
+        action="employee.resume",
+        idempotency_key=idempotency_key,
+        fingerprint_payload={"employee_id": str(employee_id)},
+        now=now,
+    )
+    if replayed:
+        return await _lifecycle_replay_response(
+            db,
+            organization_id=organization_id,
+            employee_id=employee_id,
+            expected_membership_status="active",
+            expected_training_status="active",
+        )
+    profile, membership = await _locked_lifecycle_membership(
+        db,
+        organization_id=organization_id,
+        employee_id=employee_id,
+    )
+    if membership.status != "active" or membership.training_participation_status != "paused":
+        raise _employee_lifecycle_invalid_transition()
+    previous_reason_code = membership.training_pause_reason_code
+    previous_planned_resume_at = membership.planned_resume_at
+    resumed_retake_count = await resume_employee_retake_clocks(
+        db,
+        employee_profile_id=employee_id,
+        now=now,
+    )
+    membership.training_participation_status = "active"
+    membership.training_paused_at = None
+    membership.training_pause_reason_code = None
+    membership.training_pause_note = None
+    membership.planned_resume_at = None
+    db.add(
+        AuditEvent(
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            actor_type="user",
+            action="employee_training_resumed",
+            target_type="employee_profile",
+            target_id=employee_id,
+            old_values={
+                "training_participation_status": "paused",
+                "reason_code": previous_reason_code,
+                "planned_resume_at": (
+                    previous_planned_resume_at.isoformat()
+                    if previous_planned_resume_at is not None
+                    else None
+                ),
+            },
+            new_values={
+                "training_participation_status": "active",
+                "resumed_retake_count": resumed_retake_count,
+            },
+            request_id=request_id,
+            outcome="success",
+        )
+    )
+    response = _lifecycle_response(profile=profile, membership=membership)
+    await db.commit()
+    return response
+
+
+async def resume_employee(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    employee_id: UUID,
+    actor_user_id: UUID,
+    idempotency_key: str,
+    now: datetime,
+    request_id: UUID,
+) -> EmployeeLifecycleStateResponse:
+    try:
+        return await _resume_employee(
             db,
             organization_id=organization_id,
             employee_id=employee_id,

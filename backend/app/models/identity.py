@@ -205,6 +205,43 @@ class OrganizationMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "(status <> 'pending' OR (activated_at IS NULL AND disabled_at IS NULL))",
             name="pending_timestamps",
         ),
+        CheckConstraint(
+            "(training_participation_status = 'active' "
+            "AND training_paused_at IS NULL "
+            "AND training_pause_reason_code IS NULL "
+            "AND training_pause_note IS NULL "
+            "AND planned_resume_at IS NULL) OR "
+            "(training_participation_status = 'paused' AND training_paused_at IS NOT NULL)",
+            name="training_pause_state",
+        ),
+        CheckConstraint(
+            "planned_resume_at IS NULL OR planned_resume_at > training_paused_at",
+            name="planned_resume_after_pause",
+        ),
+        CheckConstraint(
+            "training_pause_reason_code IS NULL OR "
+            "training_pause_reason_code ~ '^[a-z][a-z0-9_]{0,63}$'",
+            name="pause_reason_code_format",
+        ),
+        CheckConstraint(
+            "training_pause_note IS NULL OR "
+            "(training_pause_note = btrim(training_pause_note) "
+            "AND length(training_pause_note) BETWEEN 1 AND 500)",
+            name="pause_note_trimmed",
+        ),
+        CheckConstraint(
+            "status = 'disabled' OR (disabled_reason_code IS NULL AND disabled_note IS NULL)",
+            name="disabled_reason_state",
+        ),
+        CheckConstraint(
+            "disabled_reason_code IS NULL OR disabled_reason_code ~ '^[a-z][a-z0-9_]{0,63}$'",
+            name="disabled_reason_code_format",
+        ),
+        CheckConstraint(
+            "disabled_note IS NULL OR "
+            "(disabled_note = btrim(disabled_note) AND length(disabled_note) BETWEEN 1 AND 500)",
+            name="disabled_note_trimmed",
+        ),
     )
 
     organization_id: Mapped[UUID] = mapped_column(
@@ -233,6 +270,12 @@ class OrganizationMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    training_paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    training_pause_reason_code: Mapped[str | None] = mapped_column(String(64))
+    training_pause_note: Mapped[str | None] = mapped_column(String(500))
+    planned_resume_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    disabled_reason_code: Mapped[str | None] = mapped_column(String(64))
+    disabled_note: Mapped[str | None] = mapped_column(String(500))
 
     organization: Mapped[Organization] = relationship(back_populates="memberships")
     user: Mapped[User] = relationship(back_populates="memberships")

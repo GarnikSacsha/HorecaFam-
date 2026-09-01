@@ -104,6 +104,36 @@ async def test_training_participation_accepts_pause_and_rejects_unknown_state(
 
 
 @pytest.mark.integration
+async def test_lifecycle_reason_fields_follow_current_membership_state(
+    db_session: AsyncSession,
+) -> None:
+    organization = make_organization()
+    active_user = make_user(email_normalized="invalid-disable-reason@example.com")
+    invalid_active = make_membership(
+        organization,
+        active_user,
+        disabled_reason_code="leave",
+    )
+    db_session.add_all([organization, active_user, invalid_active])
+    await assert_integrity_error(db_session)
+
+    valid_organization = make_organization(name="Valid lifecycle state")
+    disabled_user = make_user(email_normalized="valid-disable-reason@example.com")
+    disabled = make_membership(
+        valid_organization,
+        disabled_user,
+        status="disabled",
+        activated_at=datetime.now(UTC),
+        disabled_at=datetime.now(UTC),
+        disabled_reason_code="scheduled_leave",
+        disabled_note="Approved leave",
+    )
+    db_session.add_all([valid_organization, disabled_user, disabled])
+    await db_session.commit()
+    assert disabled.disabled_reason_code == "scheduled_leave"
+
+
+@pytest.mark.integration
 @pytest.mark.parametrize(
     ("status", "activated_at", "disabled_at"),
     [

@@ -6,7 +6,7 @@ from typing import Literal, cast
 from uuid import UUID
 
 from pydantic import SecretStr
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -48,6 +48,26 @@ async def revoke_session(
         )
     )
     await db.commit()
+
+
+async def revoke_user_sessions(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    now: datetime,
+    reason: str,
+) -> int:
+    """Відкликає всі чинні сесії користувача всередині транзакції доменної дії."""
+
+    revoked = list(
+        await db.scalars(
+            update(Session)
+            .where(Session.user_id == user_id, Session.revoked_at.is_(None))
+            .values(revoked_at=now, revoke_reason=reason)
+            .returning(Session.id)
+        )
+    )
+    return len(revoked)
 
 
 def derive_csrf_token(raw_session_token: str, hmac_key: SecretStr) -> str:

@@ -61,6 +61,13 @@ class EmployeeDetail(EmployeeSummary):
     membership_created_at: datetime
     activated_at: datetime | None
     disabled_at: datetime | None
+    training_participation_status: Literal["active", "paused"]
+    training_paused_at: datetime | None
+    training_pause_reason_code: str | None
+    training_pause_note: str | None
+    planned_resume_at: datetime | None
+    disabled_reason_code: str | None
+    disabled_note: str | None
 
 
 class EmployeeLifecycleActionResponse(StrictSchema):
@@ -69,6 +76,49 @@ class EmployeeLifecycleActionResponse(StrictSchema):
     membership_status: Literal["active"]
     training_participation_status: Literal["active"]
     activated_at: datetime
+
+
+class EmployeeLifecycleStateResponse(StrictSchema):
+    employee_id: UUID
+    organization_id: UUID
+    membership_status: MembershipStatus
+    training_participation_status: Literal["active", "paused"]
+    activated_at: datetime | None
+    disabled_at: datetime | None
+    training_paused_at: datetime | None
+    training_pause_reason_code: str | None
+    training_pause_note: str | None
+    planned_resume_at: datetime | None
+    disabled_reason_code: str | None
+    disabled_note: str | None
+
+
+class EmployeeLifecycleReason(StrictSchema):
+    reason_code: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=64,
+        pattern=r"^[a-z][a-z0-9_]*$",
+    )
+    note: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @field_validator("note", mode="before")
+    @classmethod
+    def normalize_note(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Note must not be blank")
+        return normalized
+
+
+class EmployeeDisableRequest(EmployeeLifecycleReason):
+    pass
+
+
+class EmployeePauseRequest(EmployeeLifecycleReason):
+    planned_resume_at: datetime | None = None
 
 
 class EmployeeListResponse(StrictSchema):

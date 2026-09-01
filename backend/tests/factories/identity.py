@@ -66,6 +66,8 @@ def make_membership(
         "activated_at": datetime.now(UTC),
     }
     values.update(overrides)
+    if values.get("training_participation_status") == "paused":
+        values.setdefault("training_paused_at", datetime.now(UTC))
     return OrganizationMembership(**values)
 
 
