@@ -63,6 +63,8 @@ from tests.factories.auth import (
     make_admin_access,
     make_mfa_challenge,
     make_mfa_credential,
+    make_mfa_recovery_code,
+    make_password_reset_token,
     make_session,
 )
 
@@ -70,5 +72,7 @@ __all__ = [
     "make_admin_access",
     "make_mfa_challenge",
     "make_mfa_credential",
+    "make_mfa_recovery_code",
+    "make_password_reset_token",
     "make_session",
 ]

@@ -488,6 +488,7 @@ def test_metadata_contains_current_backend_tables() -> None:
         "menus",
         "mfa_challenges",
         "mfa_credentials",
+        "mfa_recovery_codes",
         "operational_roles",
         "organization_memberships",
         "organizations",
@@ -500,6 +501,7 @@ def test_metadata_contains_current_backend_tables() -> None:
         "question_versions",
         "questions",
         "critical_errors",
+        "password_reset_tokens",
         "retake_requirement_actions",
         "retake_requirements",
         "sessions",
@@ -754,6 +756,31 @@ def test_attention_retakes_migration_downgrades_and_upgrades() -> None:
 
         assert ATTENTION_RETAKE_TABLES.isdisjoint(downgraded_tables)
         assert "assessment_eligibilities" in downgraded_tables
+    finally:
+        command.upgrade(config, "head")
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_security_recovery_migration_downgrades_and_upgrades() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+
+    command.upgrade(config, "head")
+    try:
+        current_tables = asyncio.run(database_table_names(settings))
+        assert {"password_reset_tokens", "mfa_recovery_codes"} <= current_tables
+        current_columns = asyncio.run(database_column_names(settings, "email_deliveries"))
+        assert "password_reset_token_id" in current_columns
+
+        command.downgrade(config, "0015_attention_retakes")
+        downgraded_tables = asyncio.run(database_table_names(settings))
+        downgraded_columns = asyncio.run(database_column_names(settings, "email_deliveries"))
+
+        assert {"password_reset_tokens", "mfa_recovery_codes"}.isdisjoint(downgraded_tables)
+        assert "password_reset_token_id" not in downgraded_columns
     finally:
         command.upgrade(config, "head")
 

@@ -54,6 +54,7 @@ class AuthRateLimitAction(StrEnum):
 
 class BackgroundJobType(StrEnum):
     INVITATION_EMAIL = "invitation_email"
+    PASSWORD_RESET_EMAIL = "password_reset_email"
     TRAINING_ASSIGNMENT_NOTIFICATION = "training_assignment_notification"
     TRAINING_ROLLOUT_NOTIFICATION = "training_rollout_notification"
 

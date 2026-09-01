@@ -34,6 +34,8 @@ from app.models.auth import (
     AuthRateLimitBucket,
     MfaChallenge,
     MfaCredential,
+    MfaRecoveryCode,
+    PasswordResetToken,
     Session,
 )
 from app.models.enums import (
@@ -232,9 +234,11 @@ __all__ = [
     "MfaChallenge",
     "MfaCredential",
     "MfaCredentialType",
+    "MfaRecoveryCode",
     "OperationalRole",
     "Organization",
     "OrganizationMembership",
+    "PasswordResetToken",
     "Question",
     "QuestionCandidate",
     "QuestionCandidateStatus",

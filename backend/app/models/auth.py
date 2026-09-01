@@ -172,6 +172,39 @@ class MfaCredential(UUIDPrimaryKeyMixin, Base):
     last_used_counter: Mapped[int | None] = mapped_column(BigInteger)
 
     user: Mapped["User"] = relationship(back_populates="mfa_credentials")
+    recovery_codes: Mapped[list["MfaRecoveryCode"]] = relationship(back_populates="mfa_credential")
+
+
+class MfaRecoveryCode(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "mfa_recovery_codes"
+    __table_args__ = (
+        CheckConstraint("length(code_hash) = 64", name="code_hash_length"),
+        CheckConstraint(
+            "used_at IS NULL OR used_at >= created_at",
+            name="used_after_creation",
+        ),
+        Index(
+            "ix_mfa_recovery_codes_credential_unused",
+            "mfa_credential_id",
+            "created_at",
+            postgresql_where=text("used_at IS NULL"),
+        ),
+    )
+
+    mfa_credential_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("mfa_credentials.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    mfa_credential: Mapped["MfaCredential"] = relationship(back_populates="recovery_codes")
 
 
 class MfaChallenge(UUIDPrimaryKeyMixin, Base):
@@ -208,6 +241,49 @@ class MfaChallenge(UUIDPrimaryKeyMixin, Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="mfa_challenges")
+
+
+class PasswordResetToken(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = (
+        CheckConstraint("length(token_hash) = 64", name="token_hash_length"),
+        CheckConstraint("expires_at > created_at", name="expiry_after_creation"),
+        CheckConstraint(
+            "num_nonnulls(used_at, revoked_at) <= 1",
+            name="single_terminal_state",
+        ),
+        CheckConstraint(
+            "used_at IS NULL OR used_at >= created_at",
+            name="used_after_creation",
+        ),
+        CheckConstraint(
+            "revoked_at IS NULL OR revoked_at >= created_at",
+            name="revoked_after_creation",
+        ),
+        Index(
+            "ix_password_reset_tokens_user_active",
+            "user_id",
+            "expires_at",
+            postgresql_where=text("used_at IS NULL AND revoked_at IS NULL"),
+        ),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    user: Mapped["User"] = relationship(back_populates="password_reset_tokens")
 
 
 class AuthRateLimitBucket(UUIDPrimaryKeyMixin, TimestampMixin, Base):

@@ -27,7 +27,13 @@ from app.models.enums import (
 
 if TYPE_CHECKING:
     from app.models.audit import AuditEvent
-    from app.models.auth import AdminAccess, MfaChallenge, MfaCredential, Session
+    from app.models.auth import (
+        AdminAccess,
+        MfaChallenge,
+        MfaCredential,
+        PasswordResetToken,
+        Session,
+    )
 
 
 class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -159,6 +165,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     sessions: Mapped[list["Session"]] = relationship(back_populates="user")
     mfa_credentials: Mapped[list["MfaCredential"]] = relationship(back_populates="user")
     mfa_challenges: Mapped[list["MfaChallenge"]] = relationship(back_populates="user")
+    password_reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(back_populates="user")
 
     @validates("email_normalized")
     def _normalize_email(self, _: str, value: str) -> str:

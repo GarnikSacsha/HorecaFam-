@@ -29,7 +29,7 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UniqueConstraint("job_type", "idempotency_key", name="uq_background_jobs_type_key"),
         CheckConstraint(
             "job_type IN ('invitation_email', 'training_assignment_notification', "
-            "'training_rollout_notification')",
+            "'training_rollout_notification', 'password_reset_email')",
             name="job_type_allowed",
         ),
         CheckConstraint(
@@ -55,7 +55,10 @@ class BackgroundJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "AND length(payload->>'template_code') BETWEEN 1 AND 64 "
             "AND payload->>'locale' IN ('uk', 'en') "
             "AND payload - ARRAY['rollout_id', 'assignment_id', 'template_code', 'locale'] "
-            "= '{}'::jsonb))",
+            "= '{}'::jsonb) OR "
+            "(job_type = 'password_reset_email' "
+            "AND jsonb_typeof(payload->'password_reset_token_id') = 'string' "
+            "AND payload - ARRAY['password_reset_token_id'] = '{}'::jsonb))",
             name="payload_matches_job_type",
         ),
         CheckConstraint("priority >= 0", name="priority_nonnegative"),
@@ -128,6 +131,12 @@ class EmailDelivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "email_deliveries"
     __table_args__ = (
         ForeignKeyConstraint(
+            ["job_id"],
+            ["background_jobs.id"],
+            name="fk_email_deliveries_job",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
             ["job_id", "organization_id"],
             ["background_jobs.id", "background_jobs.organization_id"],
             name="fk_email_deliveries_job_organization",
@@ -139,8 +148,28 @@ class EmailDelivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="fk_email_deliveries_invitation_organization",
             ondelete="RESTRICT",
         ),
+        ForeignKeyConstraint(
+            ["password_reset_token_id"],
+            ["password_reset_tokens.id"],
+            name="fk_email_deliveries_password_reset_token",
+            ondelete="RESTRICT",
+        ),
         UniqueConstraint("job_id", name="uq_email_deliveries_job_id"),
-        CheckConstraint("message_type = 'invitation_email'", name="message_type_allowed"),
+        CheckConstraint(
+            "message_type IN ('invitation_email', 'password_reset_email')",
+            name="message_type_allowed",
+        ),
+        CheckConstraint(
+            "num_nonnulls(invitation_id, password_reset_token_id) = 1",
+            name="exactly_one_source",
+        ),
+        CheckConstraint(
+            "(message_type = 'invitation_email' AND organization_id IS NOT NULL "
+            "AND invitation_id IS NOT NULL AND password_reset_token_id IS NULL) OR "
+            "(message_type = 'password_reset_email' AND organization_id IS NULL "
+            "AND invitation_id IS NULL AND password_reset_token_id IS NOT NULL)",
+            name="source_matches_message_type",
+        ),
         CheckConstraint(
             "status IN ('pending', 'accepted', 'delivered', 'bounced', 'failed')",
             name="status_allowed",
@@ -155,12 +184,18 @@ class EmailDelivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint("status <> 'bounced' OR bounced_at IS NOT NULL", name="bounced_at_present"),
         CheckConstraint("status <> 'failed' OR failed_at IS NOT NULL", name="failed_at_present"),
         Index("ix_email_deliveries_invitation_created", "invitation_id", "created_at"),
+        Index(
+            "ix_email_deliveries_password_reset_created",
+            "password_reset_token_id",
+            "created_at",
+        ),
         Index("ix_email_deliveries_provider_message", "provider", "provider_message_id"),
     )
 
-    organization_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    organization_id: Mapped[UUID | None] = mapped_column(PostgreSQLUUID(as_uuid=True))
     job_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
-    invitation_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    invitation_id: Mapped[UUID | None] = mapped_column(PostgreSQLUUID(as_uuid=True))
+    password_reset_token_id: Mapped[UUID | None] = mapped_column(PostgreSQLUUID(as_uuid=True))
     message_type: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
