@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     auth_throttle_hmac_key: SecretStr | None = None
     invitation_token_hmac_keys: list[SecretStr] = []
     password_reset_token_hmac_keys: list[SecretStr] = []
+    public_app_url: str | None = None
+    resend_api_key: SecretStr | None = None
+    email_from_address: str | None = None
+    worker_id: str = "horeca-worker"
+    worker_idle_seconds: float = 1.0
+    worker_heartbeat_interval_seconds: float = 15.0
     storage_bucket: str | None = None
     storage_endpoint_url: str | None = None
     storage_region: str = "auto"
@@ -38,6 +44,23 @@ class Settings(BaseSettings):
     def require_async_postgresql(cls, value: str) -> str:
         if not value.startswith("postgresql+asyncpg://"):
             raise ValueError("DATABASE_URL must use postgresql+asyncpg")
+        return value
+
+    @field_validator("public_app_url")
+    @classmethod
+    def normalize_public_app_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().rstrip("/")
+        if not normalized.startswith(("http://", "https://")):
+            raise ValueError("PUBLIC_APP_URL must be an absolute HTTP(S) URL")
+        return normalized
+
+    @field_validator("worker_idle_seconds", "worker_heartbeat_interval_seconds")
+    @classmethod
+    def require_positive_worker_timing(cls, value: float) -> float:
+        if value <= 0:
+            raise ValueError("Worker timing must be positive")
         return value
 
     def validate_auth_security(self) -> None:
@@ -75,6 +98,20 @@ class Settings(BaseSettings):
         )
         if any(value is None for value in required):
             raise ValueError("Private storage configuration is incomplete")
+
+    def validate_worker_readiness(self) -> None:
+        self.validate_invitation_security()
+        self.validate_password_reset_security()
+        if self.public_app_url is None:
+            raise ValueError("PUBLIC_APP_URL is required for the worker")
+        if self.app_env in {"staging", "production"} and not self.public_app_url.startswith(
+            "https://"
+        ):
+            raise ValueError("PUBLIC_APP_URL must use HTTPS outside development and test")
+        if self.resend_api_key is None:
+            raise ValueError("RESEND_API_KEY is required for the worker")
+        if not self.email_from_address or not self.email_from_address.strip():
+            raise ValueError("EMAIL_FROM_ADDRESS is required for the worker")
 
 
 @lru_cache

@@ -95,6 +95,63 @@ def test_password_reset_security_rejects_short_hmac_key() -> None:
         settings.validate_password_reset_security()
 
 
+def test_worker_readiness_requires_complete_provider_configuration() -> None:
+    settings = Settings(
+        app_env="production",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca",
+        invitation_token_hmac_keys=["i" * 32],
+        password_reset_token_hmac_keys=["r" * 32],
+    )
+
+    with pytest.raises(ValueError, match="PUBLIC_APP_URL"):
+        settings.validate_worker_readiness()
+
+
+def test_worker_readiness_rejects_insecure_public_url_outside_development() -> None:
+    settings = Settings(
+        app_env="production",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca",
+        invitation_token_hmac_keys=["i" * 32],
+        password_reset_token_hmac_keys=["r" * 32],
+        public_app_url="http://academy.example.com",
+        resend_api_key="provider-secret",
+        email_from_address="Bacara Academy <academy@example.com>",
+    )
+
+    with pytest.raises(ValueError, match="HTTPS"):
+        settings.validate_worker_readiness()
+
+
+def test_worker_readiness_accepts_complete_production_configuration() -> None:
+    settings = Settings(
+        app_env="production",
+        database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca",
+        invitation_token_hmac_keys=["i" * 32],
+        password_reset_token_hmac_keys=["r" * 32],
+        public_app_url="https://academy.example.com/",
+        resend_api_key="provider-secret",
+        email_from_address="Bacara Academy <academy@example.com>",
+        worker_idle_seconds=0.25,
+        worker_heartbeat_interval_seconds=5,
+    )
+
+    settings.validate_worker_readiness()
+    assert settings.public_app_url == "https://academy.example.com"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("worker_idle_seconds", 0), ("worker_heartbeat_interval_seconds", -1)],
+)
+def test_worker_timing_must_be_positive(field: str, value: float) -> None:
+    with pytest.raises(ValidationError, match=field):
+        Settings(
+            app_env="test",
+            database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+            **{field: value},
+        )
+
+
 def test_test_database_guard_accepts_explicit_test_database() -> None:
     settings = Settings(
         app_env="test",
