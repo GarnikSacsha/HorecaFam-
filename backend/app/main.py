@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,10 +14,19 @@ from app.db.session import create_engine, create_session_factory
 from app.security.passwords import PasswordManager
 
 
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    try:
+        yield
+    finally:
+        # РџСѓР» Р·'С”РґРЅР°РЅСЊ Р·Р°РєСЂРёРІР°С”РјРѕ РїРµСЂРµРґ Р·СѓРїРёРЅРєРѕСЋ РїСЂРѕС†РµСЃСѓ.
+        await application.state.engine.dispose()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
     configure_observability(resolved_settings)
-    application = FastAPI(title="HoReCa Training Platform API")
+    application = FastAPI(title="HoReCa Training Platform API", lifespan=lifespan)
     application.state.settings = resolved_settings
     application.state.clock = utc_now
     application.state.password_manager = PasswordManager()
