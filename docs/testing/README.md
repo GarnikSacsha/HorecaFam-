@@ -280,3 +280,18 @@ unperformed provider/restore/load/UAT gates are recorded in
 [`operations-hardening-slice-9-acceptance.md`](operations-hardening-slice-9-acceptance.md). Fresh
 independent review, browser accessibility-tree/keyboard/contrast review and the complete local gate
 pass. CRA-77 is accepted and Done in Linear; publication remains pending and deployment is not implied.
+
+## CRA-119 deployment and provider readiness candidate
+
+The authorized seven-checkpoint local candidate adds fail-closed deployment configuration, an
+API container entry point, complete durable-worker composition, idempotent async Resend adapters,
+an unprivileged Caddy frontend artifact, and an unapplied Railway topology. Its final local gate
+reports 544 backend tests passed with 86% statement/branch coverage, 72 Vitest tests passed,
+frontend format/lint/types/build green, Alembic current/no-drift green at `0018_job_runtime`, and
+Railway topology typecheck plus three static tests green.
+
+The exact boundary, evidence, security review, contract impact, and unperformed Docker/provider/
+Railway gates are recorded in
+[`deployment-provider-readiness-cra-119.md`](deployment-provider-readiness-cra-119.md). CRA-119 is
+not yet accepted or published. No Railway plan/apply, provider call, deployment, push, PR, merge,
+or production mutation is implied.

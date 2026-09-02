@@ -5,7 +5,8 @@
 accepted and Done. CRA-74 fast-forward published CRA-70, CRA-71 and CRA-72 on `origin/main` through
 `4019262`. CRA-77 Operations and Hardening has passed fresh local acceptance as the complete
 thirteen-checkpoint range `974feeb..ef74be4` and is accepted and Done in Linear. Publication is
-still pending.
+still pending. CRA-119 Deployment and Provider Readiness is the active bounded issue and now has a
+complete seven-checkpoint local implementation candidate awaiting Denys acceptance.
 The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
@@ -15,7 +16,9 @@ CRA-42 is unrelated Backlog work.
 advances code and test state to Alembic head `0018_job_runtime` with recovery/MFA enrollment,
 Employee lifecycle administration, durable workers/maintenance, audit/operator tooling,
 structured observability and dry-run-first venue bootstrap. Push, PR, merge, deployment, provider,
-non-test bootstrap and production actions remain separately gated.
+non-test bootstrap and production actions remain separately gated. CRA-119 adds only local runtime,
+container, Resend-adapter and Railway-topology readiness; it has not provisioned or called any
+external service.
 
 ## Accepted implementation and planning checkpoints
 
@@ -84,6 +87,9 @@ non-test bootstrap and production actions remain separately gated.
 - CRA-77 local implementation and hardening uses the authorized thirteen-checkpoint map. The full
   local range is `974feeb..ef74be4`; fresh independent review and the complete local gate pass.
   CRA-77 is accepted and Done in Linear; publication remains pending.
+- CRA-119 uses the authorized seven-checkpoint map. Its local implementation candidate starts at
+  `b1d145b` and includes API/worker runtime composition, async idempotent Resend adapters, Caddy
+  frontend delivery, and an unapplied Railway topology. Acceptance and publication remain pending.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -385,10 +391,24 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   are in
   [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
 
+## CRA-119 local readiness candidate
+
+- Full dedicated-PostgreSQL gate: 544 passed, 0 failed, 0 skipped with 86% overall
+  statement/branch coverage.
+- Ruff format/check, strict mypy, Alembic current/no-drift at `0018_job_runtime`, frontend
+  formatting/lint/types/build and 72 Vitest tests passed.
+- Frontend deployment-artifact checks report 2 passed; Railway topology typecheck and 3 static
+  tests passed.
+- Docker container builds were not run because the local Docker engine was unavailable. Railway
+  plan/apply, provisioning/deploy/rollback, real Resend delivery, provider configuration, and all
+  production mutations remain unperformed.
+- Detailed boundary, evidence, security review, contract impact, and next gate:
+  [`docs/testing/deployment-provider-readiness-cra-119.md`](docs/testing/deployment-provider-readiness-cra-119.md).
+
 ## Remaining to a functional and pilot-ready MVP
 
-Following the successful CRA-77 acceptance and canonical Linear synchronization, no bounded product
-implementation issue is active. Pilot release still requires separately authorized external evidence:
+CRA-119 is the active bounded issue and its local candidate awaits Denys acceptance. Pilot release
+still requires separately authorized external evidence:
 
 1. Real Bacara content validation and venue UAT.
 2. Provider configuration, backup retention plus isolated restore proof, and deploy/rollback smoke.
@@ -414,6 +434,8 @@ reported as passing.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
+- CRA-119 is the active bounded issue. Its local seven-checkpoint readiness candidate awaits Denys
+  acceptance; it is neither published nor deployed.
 - CRA-77 has passed local acceptance and is accepted and Done in Linear. CRA-19 remains a separate
   visual-only track.
 - CRA-71 is accepted, Done and published as `62a80a0..054d731`; CRA-72 records its exact

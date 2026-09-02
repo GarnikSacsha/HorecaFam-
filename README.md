@@ -6,7 +6,11 @@ fresh local acceptance as the complete thirteen-checkpoint range `974feeb..ef74b
 `0018_job_runtime` and is accepted and Done in Linear. Publication remains pending. Its exact local
 evidence and remaining pilot gates are in
 [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
-Push, PR, merge, deployment, providers, production configuration and non-test bootstrap remain
+CRA-119 Deployment and Provider Readiness now has a complete seven-checkpoint local candidate with
+API/worker containers, async idempotent Resend adapters, Caddy delivery, and an unapplied Railway
+topology. It awaits Denys acceptance; exact evidence and limitations are in
+[`docs/testing/deployment-provider-readiness-cra-119.md`](docs/testing/deployment-provider-readiness-cra-119.md).
+Push, PR, merge, deployment, provider calls, production configuration and non-test bootstrap remain
 separate approval gates; CRA-42 is unrelated Backlog work.
 
 ## Start here
@@ -100,3 +104,9 @@ critical-set coverage, 72 Vitest tests and 42 Playwright executions. Providers, 
 apply, deployment, backup restore, staging load and real-venue UAT remain outside the verified
 local boundary. Its provider, restore, rollback and physical-UAT gates are itemized in
 [`docs/testing/operations-hardening-slice-9-release-checklists.md`](docs/testing/operations-hardening-slice-9-release-checklists.md).
+
+The CRA-119 candidate defines the production process boundaries without applying them: Uvicorn API,
+durable Job worker, Caddy SPA/API proxy, managed PostgreSQL reference, private object-storage
+configuration, and Resend delivery. Its final local gate reports 544 backend tests and 72 Vitest
+tests with no failures or skips. Docker image smoke, Railway plan/apply, provider calls, backup/
+restore, staging load, and venue UAT remain external gates.

@@ -327,7 +327,7 @@ async def test_elevated_password_change_requires_recent_mfa(
     auth_settings: Settings,
     db_session: AsyncSession,
 ) -> None:
-    now = datetime(2026, 9, 1, 12, tzinfo=UTC)
+    now = datetime.now(UTC).replace(microsecond=0)
     auth_app.state.clock = lambda: now
     user = make_user(
         email_normalized="elevated-change@example.com",
