@@ -19,6 +19,7 @@ class InvitationEmailMessage:
     email: str
     token: str
     expires_at: datetime
+    idempotency_key: str
 
 
 @dataclass(frozen=True)
@@ -136,6 +137,7 @@ async def deliver_invitation_email(
             email=invitation.email_normalized,
             token=raw_token,
             expires_at=invitation.expires_at,
+            idempotency_key=job.idempotency_key,
         )
     )
     delivery.provider = result.provider
@@ -200,6 +202,7 @@ async def deliver_claimed_invitation_email(
             email=invitation.email_normalized,
             token=raw_token,
             expires_at=invitation.expires_at,
+            idempotency_key=job.idempotency_key,
         )
     )
     delivery.provider = result.provider

@@ -87,6 +87,7 @@ async def test_delivery_reconstructs_token_only_inside_adapter_boundary(
             email=invitation.email_normalized,
             token=raw_token,
             expires_at=invitation.expires_at,
+            idempotency_key=job.idempotency_key,
         )
     ]
     assert raw_token not in json.dumps(job.payload)

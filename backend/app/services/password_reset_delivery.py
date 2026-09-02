@@ -19,6 +19,7 @@ class PasswordResetEmailMessage:
     email: str
     token: str
     expires_at: datetime
+    idempotency_key: str
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ async def enqueue_password_reset_email(
         status="pending",
         payload={"password_reset_token_id": str(token.id)},
         idempotency_key=f"password-reset:{token.id}",
+        next_run_at=token.created_at,
     )
     db.add(job)
     await db.flush()
@@ -148,6 +150,7 @@ async def deliver_password_reset_email(
             email=token.user.email_normalized,
             token=raw_token,
             expires_at=token.expires_at,
+            idempotency_key=job.idempotency_key,
         )
     )
     delivery.provider = result.provider
@@ -203,6 +206,7 @@ async def deliver_claimed_password_reset_email(
             email=token.user.email_normalized,
             token=raw_token,
             expires_at=token.expires_at,
+            idempotency_key=job.idempotency_key,
         )
     )
     delivery.provider = result.provider

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.adapters.resend_email import ResendEmailAdapter
 from app.core.config import Settings, get_settings
 from app.core.observability import configure_observability
 from app.db.session import create_engine, create_session_factory
@@ -267,3 +268,29 @@ async def run_worker_runtime(runtime: WorkerRuntime, *, settings: Settings) -> N
         )
     finally:
         await runtime.close()
+
+
+def build_default_worker_runtime(settings: Settings) -> WorkerRuntime:
+    settings.validate_worker_readiness()
+    if settings.public_app_url is None or settings.resend_api_key is None:
+        raise RuntimeError("Worker readiness validation did not resolve provider settings")
+    adapter = ResendEmailAdapter(
+        api_key=settings.resend_api_key.get_secret_value(),
+        from_address=settings.email_from_address or "",
+        public_app_url=settings.public_app_url,
+    )
+    return build_worker_runtime(
+        settings,
+        invitation_adapter=adapter,
+        password_reset_adapter=adapter,
+    )
+
+
+def main() -> None:
+    settings = get_settings()
+    runtime = build_default_worker_runtime(settings)
+    asyncio.run(run_worker_runtime(runtime, settings=settings))
+
+
+if __name__ == "__main__":
+    main()
