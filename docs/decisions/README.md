@@ -26,6 +26,6 @@ implementation authority.
 
 No standalone repository ADR exists yet. CRA-20 implementation decisions, CRA-21 baseline scope
 and CRA-77 Operations/Hardening choices remain recorded in their canonical Linear issues and
-verified code/tests. The local CRA-77 candidate did not introduce a separately accepted
+verified code/tests. The locally accepted CRA-77 range did not introduce a separately accepted
 repository-local architectural decision. Add the first record only when a future bounded issue
 explicitly accepts one.

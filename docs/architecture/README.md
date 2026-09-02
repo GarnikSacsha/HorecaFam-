@@ -6,9 +6,9 @@ Exam and Results at `703872b`, published with CRA-68 synchronization through `9e
 Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74 ordinary
 fast-forward published CRA-70 at `5352f89`, CRA-71 as `62a80a0..054d731`, and the CRA-72
 documentation checkpoint through `4019262`; CRA-75 owns the publication-state documentation
-checkpoint. CRA-77 Operations and Hardening is a verified local candidate, not yet accepted/Done
-or published, at Alembic head `0018_job_runtime`. Canonical product behavior and contracts remain
-in Linear.
+checkpoint. CRA-77 Operations and Hardening has passed fresh local acceptance as
+`974feeb..ef74be4` and is accepted and Done in Linear; publication remains pending. Its
+Alembic head is `0018_job_runtime`. Canonical product behavior and contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -60,9 +60,9 @@ required environment configuration
   component, allergen and description rules; `0014_practice_persistence` adds the accepted
   Practice/eligibility persistence closure. Accepted CRA-71 migration `0015_attention_retakes` adds
   Attention/Retake persistence and deterministic historical backfill; CRA-74 published it through
-  `4019262`. Local CRA-77 revisions `0016_security_recovery`, `0017_employee_lifecycle`, and
-  `0018_job_runtime` add bounded recovery persistence, Employee lifecycle state, leased jobs and
-  immutable attempts.
+  `4019262`. Locally accepted CRA-77 revisions `0016_security_recovery`,
+  `0017_employee_lifecycle`, and `0018_job_runtime` add bounded recovery persistence, Employee
+  lifecycle state, leased jobs and immutable attempts.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
   organization boundaries. Membership states are limited to Pending, Active, and Disabled.
 
@@ -344,7 +344,7 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 There is still no provider-backed email execution, Sentry/Railway resource, deployed worker,
 production bootstrap, backup/restore proof, staging load acceptance or real-venue UAT. Organization
-and reference CRUD beyond the bounded bootstrap remains outside the local candidate. The frontend
-lives in [`../../frontend/`](../../frontend/) and includes accepted CRA-67/CRA-71 flows plus local
-CRA-77 operations interfaces. Adding or executing any absent capability requires a bounded Linear
+and reference CRUD beyond the bounded bootstrap remains outside the local acceptance. The frontend
+lives in [`../../frontend/`](../../frontend/) and includes accepted CRA-67/CRA-71 flows plus locally
+accepted CRA-77 operations interfaces. Adding or executing any absent capability requires a bounded Linear
 issue and approval. CRA-19 remains a separate visual-only track.

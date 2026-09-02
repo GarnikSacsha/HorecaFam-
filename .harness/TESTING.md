@@ -287,16 +287,18 @@ TypeScript and production build passed. Full Vitest reports 58 passed and full P
 passed across desktop, compact and mobile. Denys accepted this evidence and the exact
 eight-checkpoint range; CRA-74 ordinary fast-forward published it through `4019262`.
 
-## CRA-77 local Operations and Hardening gate
+## CRA-77 accepted local Operations and Hardening gate
 
-The authorized thirteen-checkpoint local candidate was verified on Python 3.12.10 and dedicated
-PostgreSQL 16. The exact full backend command reports 530 passed, 0 failed, 0 skipped in 1262.95s,
+The authorized thirteen-checkpoint local range `974feeb..ef74be4` was independently revalidated on
+Python 3.12.10 and dedicated PostgreSQL 16. The exact full backend command reports 530 passed,
+0 failed, 0 skipped in 1334.59s,
 86% overall statement/branch coverage and 81% aggregate coverage across the predeclared nine-file
 critical set. Ruff format/check and strict mypy pass. Alembic upgrade, current-head and no-drift
 pass at `0018_job_runtime`.
 
 Frontend Prettier, ESLint, TypeScript and production build pass. Full Vitest reports 72 passed and
-full Playwright reports 42 passed. Exact evidence and limitations are in
+full Playwright reports 42 passed. Browser accessibility-tree, keyboard, contrast and reduced-motion
+review also passes within its documented proxy boundary. Exact evidence and limitations are in
 [`../docs/testing/operations-hardening-slice-9-acceptance.md`](../docs/testing/operations-hardening-slice-9-acceptance.md).
 
 The bootstrap command is dry-run-first. Any non-test `--apply`, provider call, deployment, restore

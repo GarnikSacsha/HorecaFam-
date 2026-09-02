@@ -23,8 +23,9 @@ exact eight-checkpoint range `6be8f4d..703872b`, and CRA-68 is Done and publishe
 `9ef9fe1`. CRA-69 Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74
 ordinary fast-forward published CRA-70 at `5352f89`, CRA-71 at `62a80a0..054d731`, and the CRA-72
 documentation checkpoint through `4019262`. CRA-75 records that published state. CRA-77 Operations
-and Hardening is now a verified local thirteen-checkpoint candidate at Alembic head
-`0018_job_runtime`; it has not been accepted as Done or published. CRA-42 is unrelated Backlog
+and Hardening has passed fresh local acceptance as the complete thirteen-checkpoint range
+`974feeb..ef74be4` at Alembic head `0018_job_runtime` and is accepted and Done in Linear.
+Publication remains pending. CRA-42 is unrelated Backlog
 work. Provider execution, PR, merge, deployment, non-test bootstrap and production configuration
 require separate approval or later bounded issues.
 
@@ -164,8 +165,8 @@ Latest/Best history, Admin readiness and responsive Employee UI. Evidence is in
 `4019262`; [CRA-75](https://linear.app/craftspacee/issue/CRA-75) owns the current repository
 documentation synchronization.
 
-[CRA-77](https://linear.app/craftspacee/issue/CRA-77) is the verified local Operations and Hardening
-candidate. Its authorized thirteen checkpoints add security recovery and MFA enrollment, Employee
+[CRA-77](https://linear.app/craftspacee/issue/CRA-77) is the locally accepted Operations and Hardening
+range. Its authorized thirteen checkpoints add security recovery and MFA enrollment, Employee
 lifecycle controls, leased worker/job attempts and maintenance, tenant audit plus platform operator
 surfaces, structured redacted correlation, one-venue dry-run/idempotent bootstrap and synthetic
 end-to-end acceptance. The clean local gate is 530 backend tests at 86% overall coverage, 81%
@@ -175,13 +176,13 @@ unperformed external gates are recorded in
 
 ## Repository map
 
-- [`backend/app`](backend/app): published accepted runtime through CRA-71 plus the local CRA-77
-  candidate.
+- [`backend/app`](backend/app): published accepted runtime through CRA-71 plus the locally accepted
+  CRA-77 range.
 - [`backend/migrations`](backend/migrations): Alembic environment and local head
   `0018_job_runtime`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted experiences through CRA-71 plus local CRA-77 security,
+- [`frontend`](frontend): accepted experiences through CRA-71 plus locally accepted CRA-77 security,
   lifecycle, audit and operator interfaces with component and Playwright evidence.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.

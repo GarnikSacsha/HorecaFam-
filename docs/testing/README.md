@@ -266,15 +266,17 @@ approval gates are recorded in
 this evidence and the exact eight-checkpoint range. CRA-74 ordinary fast-forward published it
 through `4019262`; PR, merge and deployment remain separately gated.
 
-## CRA-77 local Operations and Hardening evidence
+## CRA-77 accepted local Operations and Hardening evidence
 
-The authorized thirteen-checkpoint local candidate reports 530 backend tests passed with 86%
-overall statement/branch coverage and 81% aggregate coverage across the predeclared critical set.
+The authorized thirteen-checkpoint local range `974feeb..ef74be4` reports 530 backend tests passed
+with 86% overall statement/branch coverage and 81% aggregate coverage across the predeclared
+critical set.
 Ruff format/check, strict mypy and Alembic upgrade/current/no-drift pass at `0018_job_runtime`.
 Frontend formatting, lint, TypeScript and production build pass; full Vitest reports 72 passed and
 full Playwright reports 42 passed.
 
 The scenario boundary, RED-to-GREEN compatibility corrections, security review, checkpoint map and
 unperformed provider/restore/load/UAT gates are recorded in
-[`operations-hardening-slice-9-acceptance.md`](operations-hardening-slice-9-acceptance.md). This is
-local candidate evidence only; it does not imply CRA-77 acceptance, publication or deployment.
+[`operations-hardening-slice-9-acceptance.md`](operations-hardening-slice-9-acceptance.md). Fresh
+independent review, browser accessibility-tree/keyboard/contrast review and the complete local gate
+pass. CRA-77 is accepted and Done in Linear; publication remains pending and deployment is not implied.

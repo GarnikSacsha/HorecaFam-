@@ -1,9 +1,10 @@
 # HoReCaFam
 
 Repository for the HoReCa Training Platform. The published accepted baseline through CRA-74 ends
-at `4019262` and includes CRA-71 Attention and Retakes. CRA-77 Operations and Hardening is now a
-verified local thirteen-checkpoint candidate at Alembic head `0018_job_runtime`; it is not yet an
-accepted/Done or published baseline. Its exact local evidence and remaining pilot gates are in
+at `4019262` and includes CRA-71 Attention and Retakes. CRA-77 Operations and Hardening has passed
+fresh local acceptance as the complete thirteen-checkpoint range `974feeb..ef74be4` at Alembic head
+`0018_job_runtime` and is accepted and Done in Linear. Publication remains pending. Its exact local
+evidence and remaining pilot gates are in
 [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
 Push, PR, merge, deployment, providers, production configuration and non-test bootstrap remain
 separate approval gates; CRA-42 is unrelated Backlog work.
@@ -22,7 +23,7 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed runtime;
-  the CRA-77 local candidate is at head `0018_job_runtime`.
+  the locally accepted CRA-77 range is at head `0018_job_runtime`.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
   Playwright, including local CRA-77 security, lifecycle, audit and operator interfaces.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.
@@ -92,9 +93,10 @@ The accepted CRA-71 implementation adds Attention/Retakes administration and Emp
 follow-up behavior;
 its exact evidence is in
 [`docs/testing/attention-retakes-slice-8-acceptance.md`](docs/testing/attention-retakes-slice-8-acceptance.md).
-The CRA-77 local candidate adds recovery/MFA enrollment, Employee lifecycle controls, durable
+The locally accepted CRA-77 range adds recovery/MFA enrollment, Employee lifecycle controls, durable
 workers and maintenance, audit/operator tooling, structured observability and dry-run-first venue
 bootstrap. Its final local gate reports 530 backend tests at 86% overall coverage, 81% aggregate
 critical-set coverage, 72 Vitest tests and 42 Playwright executions. Providers, non-test bootstrap
 apply, deployment, backup restore, staging load and real-venue UAT remain outside the verified
-local boundary.
+local boundary. Its provider, restore, rollback and physical-UAT gates are itemized in
+[`docs/testing/operations-hardening-slice-9-release-checklists.md`](docs/testing/operations-hardening-slice-9-release-checklists.md).
