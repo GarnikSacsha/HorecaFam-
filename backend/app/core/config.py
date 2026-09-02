@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def require_async_postgresql(cls, value: str) -> str:
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+asyncpg://", 1)
         if not value.startswith("postgresql+asyncpg://"):
             raise ValueError("DATABASE_URL must use postgresql+asyncpg")
         return value

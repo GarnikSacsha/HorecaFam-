@@ -1,0 +1,16 @@
+{
+  "name": "horeca-railway-iac",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.6.2",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "node --test topology.test.mjs"
+  },
+  "dependencies": {
+    "railway": "3.11.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.2"
+  }
+}

@@ -21,6 +21,15 @@ def test_database_url_must_use_async_postgresql() -> None:
         Settings(app_env="test", database_url="sqlite+aiosqlite:///horeca_test.db")
 
 
+def test_railway_postgresql_url_is_normalized_for_asyncpg() -> None:
+    settings = Settings(
+        app_env="production",
+        database_url="postgresql://user:password@postgres.railway.internal:5432/railway",
+    )
+
+    assert settings.database_url.startswith("postgresql+asyncpg://")
+
+
 def test_log_level_rejects_unknown_values() -> None:
     with pytest.raises(ValidationError, match="log_level"):
         Settings(
@@ -139,16 +148,21 @@ def test_worker_readiness_accepts_complete_production_configuration() -> None:
     assert settings.public_app_url == "https://academy.example.com"
 
 
-@pytest.mark.parametrize(
-    ("field", "value"),
-    [("worker_idle_seconds", 0), ("worker_heartbeat_interval_seconds", -1)],
-)
-def test_worker_timing_must_be_positive(field: str, value: float) -> None:
-    with pytest.raises(ValidationError, match=field):
+def test_worker_idle_timing_must_be_positive() -> None:
+    with pytest.raises(ValidationError, match="worker_idle_seconds"):
         Settings(
             app_env="test",
             database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
-            **{field: value},
+            worker_idle_seconds=0,
+        )
+
+
+def test_worker_heartbeat_timing_must_be_positive() -> None:
+    with pytest.raises(ValidationError, match="worker_heartbeat_interval_seconds"):
+        Settings(
+            app_env="test",
+            database_url="postgresql+asyncpg://postgres:postgres@localhost:5432/horeca_test",
+            worker_heartbeat_interval_seconds=-1,
         )
 
 
