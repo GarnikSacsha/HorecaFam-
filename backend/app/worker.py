@@ -1,13 +1,20 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.observability import configure_observability
+from app.db.session import create_engine, create_session_factory
 from app.models.enums import BackgroundJobType
+from app.security.invitation_tokens import InvitationTokenManager
+from app.services.background_job_handlers import (
+    BackgroundJobHandlers,
+    TrainingNotificationMessage,
+)
 from app.services.background_jobs import (
     ClaimedJob,
     claim_next_job,
@@ -15,9 +22,74 @@ from app.services.background_jobs import (
     fail_job,
     heartbeat_job,
 )
+from app.services.invitation_delivery import InvitationEmailAdapter
+from app.services.password_reset_delivery import (
+    PasswordResetEmailAdapter,
+    PasswordResetTokenManager,
+)
 
 JobHandler = Callable[[ClaimedJob], Awaitable[None]]
 logger = logging.getLogger("app.worker")
+
+
+class InProductTrainingNotificationAdapter:
+    async def send_training_notification(self, message: TrainingNotificationMessage) -> None:
+        # РџСЂРёР·РЅР°С‡РµРЅРЅСЏ РІР¶Рµ РІРёРґРёРјРµ Сѓ РїСЂРѕРґСѓРєС‚С–.
+        # Job РїС–РґС‚РІРµСЂРґР¶СѓС” РґРѕСЃС‚СѓРїРЅС–СЃС‚СЊ С†СЊРѕРіРѕ СЃС‚Р°РЅСѓ.
+        logger.info(
+            "training.notification_available",
+            extra={
+                "organization_id": message.organization_id,
+                "assignment_id": message.assignment_id,
+                "rollout_id": message.rollout_id,
+                "template_code": message.template_code,
+                "locale": message.locale,
+            },
+        )
+
+
+@dataclass
+class WorkerRuntime:
+    engine: AsyncEngine
+    session_factory: async_sessionmaker[AsyncSession]
+    worker_id: str
+    handlers: Mapping[BackgroundJobType, JobHandler]
+    idle_seconds: float
+    heartbeat_interval_seconds: float
+
+    async def close(self) -> None:
+        await self.engine.dispose()
+
+
+def build_worker_runtime(
+    settings: Settings,
+    *,
+    invitation_adapter: InvitationEmailAdapter,
+    password_reset_adapter: PasswordResetEmailAdapter,
+) -> WorkerRuntime:
+    settings.validate_invitation_security()
+    settings.validate_password_reset_security()
+    configure_observability(settings)
+    engine = create_engine(settings)
+    session_factory = create_session_factory(engine)
+    handlers = BackgroundJobHandlers(
+        session_factory,
+        invitation_token_manager=InvitationTokenManager(settings.invitation_token_hmac_keys),
+        password_reset_token_manager=PasswordResetTokenManager(
+            [key.get_secret_value() for key in settings.password_reset_token_hmac_keys]
+        ),
+        invitation_adapter=invitation_adapter,
+        password_reset_adapter=password_reset_adapter,
+        training_notification_adapter=InProductTrainingNotificationAdapter(),
+    ).registry()
+    return WorkerRuntime(
+        engine=engine,
+        session_factory=session_factory,
+        worker_id=settings.worker_id,
+        handlers=handlers,
+        idle_seconds=settings.worker_idle_seconds,
+        heartbeat_interval_seconds=settings.worker_heartbeat_interval_seconds,
+    )
 
 
 def _job_log_context(claimed: ClaimedJob) -> dict[str, object]:
@@ -167,14 +239,31 @@ async def run_worker(
     worker_id: str,
     handlers: Mapping[BackgroundJobType, JobHandler],
     idle_seconds: float = 1.0,
+    heartbeat_interval_seconds: float = 15.0,
+    settings: Settings | None = None,
 ) -> None:
-    configure_observability(get_settings())
+    configure_observability(settings or get_settings())
     logger.info("worker.started")
     while True:
         claimed = await run_worker_once(
             session_factory,
             worker_id=worker_id,
             handlers=handlers,
+            heartbeat_interval_seconds=heartbeat_interval_seconds,
         )
         if not claimed:
             await asyncio.sleep(idle_seconds)
+
+
+async def run_worker_runtime(runtime: WorkerRuntime, *, settings: Settings) -> None:
+    try:
+        await run_worker(
+            runtime.session_factory,
+            worker_id=runtime.worker_id,
+            handlers=runtime.handlers,
+            idle_seconds=runtime.idle_seconds,
+            heartbeat_interval_seconds=runtime.heartbeat_interval_seconds,
+            settings=settings,
+        )
+    finally:
+        await runtime.close()
