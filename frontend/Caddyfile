@@ -1,0 +1,24 @@
+{
+  admin off
+  auto_https off
+}
+
+:8080 {
+  encode zstd gzip
+
+  header {
+    -Server
+    X-Content-Type-Options nosniff
+    Referrer-Policy same-origin
+  }
+
+  handle /api/* {
+    reverse_proxy {$API_UPSTREAM:http://api.railway.internal:8000}
+  }
+
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+}
