@@ -287,7 +287,7 @@ TypeScript and production build passed. Full Vitest reports 58 passed and full P
 passed across desktop, compact and mobile. Denys accepted this evidence and the exact
 eight-checkpoint range; CRA-74 ordinary fast-forward published it through `4019262`.
 
-## CRA-77 accepted local Operations and Hardening gate
+## CRA-77 accepted and published Operations and Hardening gate
 
 The authorized thirteen-checkpoint local range `974feeb..ef74be4` was independently revalidated on
 Python 3.12.10 and dedicated PostgreSQL 16. The exact full backend command reports 530 passed,
@@ -303,3 +303,18 @@ review also passes within its documented proxy boundary. Exact evidence and limi
 
 The bootstrap command is dry-run-first. Any non-test `--apply`, provider call, deployment, restore
 or load test remains separately gated; never infer those permissions from the local test result.
+
+CRA-77 is accepted and published as part of the repository baseline through `c8a1135`.
+
+## CRA-119 accepted and published deployment readiness gate
+
+The accepted seven-checkpoint range `b1d145b..2644b79` reports 544 backend tests passed,
+0 failed, and 0 skipped at 86% statement/branch coverage. Ruff format/check, strict mypy,
+Alembic current/no-drift at `0018_job_runtime`, frontend format/lint/types/build, 72 Vitest tests,
+two frontend deployment-artifact tests, Railway topology typecheck, and three static topology tests
+passed. Docker image/container smoke was not executed because the local Linux engine was
+unavailable. The range is accepted, Done, and published through `2644b796`.
+
+CRA-121 is the active bounded staging-provisioning task. Its accepted execution map does not make
+Railway plan/apply, resource creation, provider calls, secret entry, migration, deployment,
+production mutation, backup/restore, load, or real-venue UAT a passing or authorized gate.

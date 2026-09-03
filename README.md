@@ -1,17 +1,19 @@
 # HoReCaFam
 
-Repository for the HoReCa Training Platform. The published accepted baseline through CRA-74 ends
-at `4019262` and includes CRA-71 Attention and Retakes. CRA-77 Operations and Hardening has passed
-fresh local acceptance as the complete thirteen-checkpoint range `974feeb..ef74be4` at Alembic head
-`0018_job_runtime` and is accepted and Done in Linear. Publication remains pending. Its exact local
-evidence and remaining pilot gates are in
-[`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
-CRA-119 Deployment and Provider Readiness now has a complete seven-checkpoint local candidate with
-API/worker containers, async idempotent Resend adapters, Caddy delivery, and an unapplied Railway
-topology. It awaits Denys acceptance; exact evidence and limitations are in
+Repository for the HoReCa Training Platform. The accepted published implementation baseline is
+`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. It includes the accepted
+CRA-77 Operations and Hardening range at Alembic head `0018_job_runtime` and the accepted
+seven-checkpoint CRA-119 Deployment and Provider Readiness range. Exact evidence and remaining
+pilot gates are in
+[`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md)
+and
 [`docs/testing/deployment-provider-readiness-cra-119.md`](docs/testing/deployment-provider-readiness-cra-119.md).
-Push, PR, merge, deployment, provider calls, production configuration and non-test bootstrap remain
-separate approval gates; CRA-42 is unrelated Backlog work.
+CRA-121 Provision Isolated Staging Resources and Providers is the active bounded product task with
+an accepted six-stage execution map. Local `main` contains its documentation-only Stage 1
+synchronization checkpoint above the published implementation endpoint. No Railway resource,
+provider call, deployment, production
+configuration, or non-test data action is authorized by that acceptance. Push, PR, merge, and all
+external mutations remain separate approval gates; CRA-42 is unrelated Backlog work.
 
 ## Start here
 
@@ -105,7 +107,8 @@ apply, deployment, backup restore, staging load and real-venue UAT remain outsid
 local boundary. Its provider, restore, rollback and physical-UAT gates are itemized in
 [`docs/testing/operations-hardening-slice-9-release-checklists.md`](docs/testing/operations-hardening-slice-9-release-checklists.md).
 
-The CRA-119 candidate defines the production process boundaries without applying them: Uvicorn API,
+The accepted and published CRA-119 range defines the production process boundaries without applying
+them: Uvicorn API,
 durable Job worker, Caddy SPA/API proxy, managed PostgreSQL reference, private object-storage
 configuration, and Resend delivery. Its final local gate reports 544 backend tests and 72 Vitest
 tests with no failures or skips. Docker image smoke, Railway plan/apply, provider calls, backup/

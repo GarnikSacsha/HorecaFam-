@@ -2,22 +2,16 @@
 
 ## Current baseline state
 
-The repository is on `main`. The published history contains the accepted Stage 0 repository
-baseline and the accepted backend MVP Vertical Slice 1 through CRA-40. CRA-41 and CRA-43 are Done;
-the backend and frontend slice history was fast-forward published without rewriting through
-the CRA-43 endpoint `fa30a1f`. CRA-46 is Done, and its documentation checkpoint advances the
-published `origin/main` baseline to `586f8c5`. CRA-47 Menu Slice 2 planning is accepted and Done.
-The CRA-48 documentation checkpoint `3b95b3c` and its corrective publication record are published;
-CRA-48 is Done. CRA-49 is accepted: its original ten implementation checkpoints end at `22927f7`,
-and its corrective acceptance tail is fast-forward published on `origin/main` through `8028d6e`.
-CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54's nine checkpoints are
-published through `d955f6a`, and CRA-55 advances the documentation baseline to `afc607a`. CRA-56
-planning and CRA-57 implementation are accepted and Done. CRA-57's nine checkpoints are
-fast-forward published through `d4e0184`; the CRA-58 documentation checkpoint containing this
-record follows that range. CRA-60 planning and CRA-61 Interactive Training are accepted and Done;
-the accepted CRA-61 range ends at `614da3d`, and CRA-62 governs its repository synchronization and
-publication. CRA-42 is unrelated Backlog work. `origin` points to the approved HoReCa GitHub
-repository, and local `main` has upstream tracking.
+The repository is on `main`, with upstream tracking to the approved HoReCa GitHub repository.
+The accepted published implementation history resolves as
+`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. It includes the complete
+accepted product and documentation history through CRA-77 plus the accepted seven-checkpoint
+CRA-119 Deployment and Provider Readiness range `b1d145b..2644b79`. That publication was an
+ordinary fast-forward with no merge commit or history rewrite. Local `main` contains the
+documentation-only CRA-121 Stage 1 synchronization checkpoint above that published endpoint.
+CRA-121 is the active bounded provisioning task; its accepted execution map does not authorize
+another push, provider/resource mutation, deployment, secret entry, or non-test data action.
+CRA-42 is unrelated Backlog work.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
 the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
@@ -114,19 +108,8 @@ baseline intentionally excludes:
 
 Publication of any checkpoint does not authorize the next implementation stage. Every subsequent
 change still requires an active bounded Linear issue, an agreed commit map, and the applicable
-local-commit and remote-action approvals. Backend Stages 1–7 and Frontend MVP Vertical Slice 1 are
-accepted and published through `fa30a1f`; CRA-41 and CRA-43 are Done. No product implementation
-issue is active. CRA-46 is Done and published as the repository documentation checkpoint at
-`586f8c5`; CRA-47 planning is accepted and Done. CRA-48 is Done and published with no pending push.
-CRA-49 implementation and corrective acceptance tail are accepted and published through `8028d6e`.
-CRA-53 planning and CRA-54 implementation are accepted and Done; CRA-54 is published through
-`d955f6a`, and CRA-55 follows at `afc607a`. CRA-56 and CRA-57 are accepted and Done; CRA-57 is
-published through `d4e0184`, followed by the CRA-58 documentation checkpoint. CRA-60 and CRA-61
-are accepted and Done; CRA-62 published the accepted CRA-61 range through documentation endpoint
-`c79db9d`. CRA-63 planning and CRA-64 Practice are accepted and Done; the exact local range is
-`74c5741..cc1c05a`; CRA-65 is Done and published through `4164b9c`. CRA-66/67 are accepted and
-Done, and CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning and CRA-71
-Attention and Retakes are accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at
-`5352f89`, CRA-71 as `62a80a0..054d731`, and the CRA-72 documentation checkpoint through
-`4019262`. CRA-75 owns the publication-state documentation checkpoint. Every later remote action
-remains separately gated.
+local-commit and remote-action approvals. The accepted historical checkpoints through CRA-75 are
+recorded in Linear and the repository evidence index. CRA-77 is accepted and published as part of
+the baseline through `c8a1135`; CRA-119 is accepted, Done, and published through `2644b796`.
+CRA-121 is the single active product task. Every later push, PR, merge, history rewrite, provider,
+resource, secret, deployment, and non-test data action remains separately gated.

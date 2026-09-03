@@ -25,9 +25,15 @@ ordinary fast-forward published CRA-70 at `5352f89`, CRA-71 at `62a80a0..054d731
 documentation checkpoint through `4019262`. CRA-75 records that published state. CRA-77 Operations
 and Hardening has passed fresh local acceptance as the complete thirteen-checkpoint range
 `974feeb..ef74be4` at Alembic head `0018_job_runtime` and is accepted and Done in Linear.
-Publication remains pending. CRA-42 is unrelated Backlog
-work. Provider execution, PR, merge, deployment, non-test bootstrap and production configuration
-require separate approval or later bounded issues.
+It is published as part of the baseline through `c8a1135`. CRA-119 Deployment and Provider
+Readiness is accepted, Done, and published as the seven-checkpoint range `b1d145b..2644b79`;
+the published implementation endpoint is
+`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. Local `main` contains the
+documentation-only CRA-121 Stage 1 synchronization checkpoint above that endpoint.
+CRA-121 Provision Isolated Staging Resources and Providers is the active bounded product task with
+an accepted six-stage execution map. CRA-42 is unrelated Backlog work. Provider execution, PR,
+merge, deployment, non-test bootstrap and production configuration require separate approval or
+later bounded issues.
 
 This document gives a new agent enough durable local context to orient safely. It intentionally
 does not reproduce full product, API, data, RBAC, or test-stage contracts.
@@ -174,16 +180,24 @@ aggregate critical-set coverage, 72 Vitest tests and 42 Playwright executions. E
 unperformed external gates are recorded in
 [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
 
+[CRA-119](https://linear.app/craftspacee/issue/CRA-119) is accepted, Done, and published through
+`2644b796`. It adds fail-closed deployment configuration, explicit API and worker processes,
+unprivileged backend/frontend container artifacts, idempotent async Resend adapters, and an
+unapplied Railway topology. Its accepted evidence reports 544 backend tests, 72 Vitest tests, and
+three Railway topology tests with zero required skips. Docker image smoke and every provider,
+provisioning, deployment, migration, backup/restore, load, and venue-UAT action remain unperformed.
+[CRA-121](https://linear.app/craftspacee/issue/CRA-121) is the active bounded provisioning task; its
+accepted map begins with source synchronization and read-only provider preflight.
+
 ## Repository map
 
-- [`backend/app`](backend/app): published accepted runtime through CRA-71 plus the locally accepted
-  CRA-77 range.
+- [`backend/app`](backend/app): published accepted runtime through CRA-119.
 - [`backend/migrations`](backend/migrations): Alembic environment and local head
   `0018_job_runtime`.
 - [`backend/tests`](backend/tests): API, unit, integration, and migration tests.
 - [`backend/pyproject.toml`](backend/pyproject.toml): Python requirements and tool configuration.
-- [`frontend`](frontend): accepted experiences through CRA-71 plus locally accepted CRA-77 security,
-  lifecycle, audit and operator interfaces with component and Playwright evidence.
+- [`frontend`](frontend): published accepted experiences through CRA-77 plus the CRA-119 Caddy
+  delivery artifact.
 - [`docs/architecture`](docs/architecture): verified local architecture summaries.
 - [`docs/decisions`](docs/decisions): repository-local engineering decision index.
 - [`docs/testing`](docs/testing): testing structure and accepted evidence index.

@@ -1,13 +1,14 @@
-# CRA-119 deployment and provider readiness candidate
+# CRA-119 accepted deployment and provider readiness evidence
 
 **Evidence date:** 2026-09-02
 **Bounded issue:** [CRA-119](https://linear.app/craftspacee/issue/CRA-119/implement-deployment-and-provider-readiness)
-**Repository base:** `c8a1135` (`origin/main` when this candidate was built)
-**Acceptance state:** local implementation candidate; Denys acceptance and publication are pending
+**Repository base:** `c8a11359318757fecffa18ea7f2bc120ebc2a842`
+**Published endpoint:** `2644b796b122b9d160392f8e95cc515e736f7de9`
+**Acceptance state:** accepted, Done, and fast-forward published on 2026-09-02
 
 ## Implemented boundary
 
-CRA-119 turns the accepted CRA-77 application into a repository-defined deployment candidate
+CRA-119 turns the accepted CRA-77 application into a repository-defined deployment artifact
 without creating or changing external infrastructure. The seven authorized checkpoints are:
 
 1. a fail-closed API/worker environment contract and a secret-safe variable inventory;
@@ -28,9 +29,10 @@ The implementation checkpoints preceding this record are:
 | `a823d4d` | Idempotent Resend adapters |
 | `b2a3e0e` | Frontend Caddy image |
 | `915af8e` | Railway project topology |
+| `2644b79` | Integrated readiness evidence and repository-state record |
 
-The final documentation commit is the seventh checkpoint. No commit in this range was pushed by
-CRA-119.
+The exact seven-checkpoint range `b1d145b..2644b79` was accepted and fast-forward published without
+a merge commit or history rewrite. Publication did not apply the Railway topology or call a provider.
 
 ## Runtime topology and contract impact
 
@@ -118,8 +120,8 @@ These items are **not** passing evidence and remain separately authorized extern
 
 ## Rollback and next safe gate
 
-No external state exists to roll back. If the local candidate is rejected, its seven coherent
-checkpoints can be reverted in reverse order after separate approval; accepted history must not be
-rewritten. The next safe sequence is Denys acceptance of CRA-119, separately authorized
-fast-forward publication, and then a new bounded provisioning/smoke issue that reviews Railway
-plan output before any apply and records the external gates above.
+No external provider state exists to roll back. Accepted published history must not be rewritten;
+any repository correction requires a new corrective commit. CRA-121 is the active bounded
+provisioning issue with an accepted six-stage map. Its first external step is read-only provider
+preflight after source synchronization. Railway plan/apply, resource creation, secret entry,
+deployment, migration, provider delivery, and non-test data actions each remain separately gated.

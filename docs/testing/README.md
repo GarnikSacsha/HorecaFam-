@@ -279,11 +279,12 @@ The scenario boundary, RED-to-GREEN compatibility corrections, security review, 
 unperformed provider/restore/load/UAT gates are recorded in
 [`operations-hardening-slice-9-acceptance.md`](operations-hardening-slice-9-acceptance.md). Fresh
 independent review, browser accessibility-tree/keyboard/contrast review and the complete local gate
-pass. CRA-77 is accepted and Done in Linear; publication remains pending and deployment is not implied.
+pass. CRA-77 is accepted, Done, and published as part of the baseline through `c8a1135`; deployment
+is not implied.
 
-## CRA-119 deployment and provider readiness candidate
+## Accepted CRA-119 deployment and provider readiness evidence
 
-The authorized seven-checkpoint local candidate adds fail-closed deployment configuration, an
+The accepted seven-checkpoint range `b1d145b..2644b79` adds fail-closed deployment configuration, an
 API container entry point, complete durable-worker composition, idempotent async Resend adapters,
 an unprivileged Caddy frontend artifact, and an unapplied Railway topology. Its final local gate
 reports 544 backend tests passed with 86% statement/branch coverage, 72 Vitest tests passed,
@@ -293,5 +294,5 @@ Railway topology typecheck plus three static tests green.
 The exact boundary, evidence, security review, contract impact, and unperformed Docker/provider/
 Railway gates are recorded in
 [`deployment-provider-readiness-cra-119.md`](deployment-provider-readiness-cra-119.md). CRA-119 is
-not yet accepted or published. No Railway plan/apply, provider call, deployment, push, PR, merge,
-or production mutation is implied.
+accepted, Done, and published through `2644b796`. CRA-121 is the active bounded provisioning task;
+no Railway plan/apply, provider call, deployment, production mutation, or secret entry is implied.

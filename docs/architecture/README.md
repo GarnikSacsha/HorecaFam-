@@ -6,9 +6,10 @@ Exam and Results at `703872b`, published with CRA-68 synchronization through `9e
 Slice 8 planning and CRA-71 Attention and Retakes are accepted and Done. CRA-74 ordinary
 fast-forward published CRA-70 at `5352f89`, CRA-71 as `62a80a0..054d731`, and the CRA-72
 documentation checkpoint through `4019262`; CRA-75 owns the publication-state documentation
-checkpoint. CRA-77 Operations and Hardening has passed fresh local acceptance as
-`974feeb..ef74be4` and is accepted and Done in Linear; publication remains pending. Its
-Alembic head is `0018_job_runtime`. Canonical product behavior and contracts remain in Linear.
+checkpoint. CRA-77 Operations and Hardening is accepted and published as part of the baseline
+through `c8a1135`. CRA-119 Deployment and Provider Readiness is accepted, Done, and published
+through `2644b796`; Alembic head remains `0018_job_runtime`. Canonical product behavior and
+contracts remain in Linear.
 
 ## Stage 0 runtime path
 
@@ -60,7 +61,7 @@ required environment configuration
   component, allergen and description rules; `0014_practice_persistence` adds the accepted
   Practice/eligibility persistence closure. Accepted CRA-71 migration `0015_attention_retakes` adds
   Attention/Retake persistence and deterministic historical backfill; CRA-74 published it through
-  `4019262`. Locally accepted CRA-77 revisions `0016_security_recovery`,
+  `4019262`. Accepted and published CRA-77 revisions `0016_security_recovery`,
   `0017_employee_lifecycle`, and `0018_job_runtime` add bounded recovery persistence, Employee
   lifecycle state, leased jobs and immutable attempts.
 - Composite PostgreSQL foreign keys prevent EmployeeProfile role/location references from crossing
@@ -309,9 +310,9 @@ correctness. The responsive frontend adds Admin Attention/Retakes operations, Re
 and calm Employee scheduled, approaching, overdue, frozen and critical states. Providers, deployed
 workers and production configuration are not added.
 
-## CRA-77 local Operations and Hardening architecture
+## Accepted CRA-77 Operations and Hardening architecture
 
-The local candidate extends the existing boundaries rather than adding a parallel stack:
+The accepted implementation extends the existing boundaries rather than adding a parallel stack:
 
 ```text
 recovery/MFA + Employee lifecycle
@@ -334,6 +335,23 @@ uses advisory locking plus stable identities for one-venue replay. No non-test a
 The frontend adds responsive security recovery/enrollment, Employee lifecycle, Organization audit
 and platform operator job pages under existing session/RBAC route guards.
 
+## Accepted CRA-119 deployment artifact architecture
+
+The published artifact adds explicit deployment processes without applying external infrastructure:
+
+```text
+public Caddy web -> private Uvicorn API -> PostgreSQL 16
+                                      -> private object storage
+durable Job worker -> Resend adapter
+```
+
+The API and worker use separate unprivileged runtime boundaries. The worker registers the closed
+durable Job catalogue and derives stable provider idempotency from the Job identity. Caddy serves
+the React SPA and proxies same-origin `/api` traffic to the private API. The value-free Railway
+topology declares PostgreSQL plus separate API, worker, and web services while preserving
+provider-owned secret values. No topology apply, provider call, deployment, or production mutation
+occurred.
+
 ## Test boundary
 
 API tests run in-process through HTTPX ASGITransport. Persistence and migration tests require a
@@ -342,9 +360,10 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is still no provider-backed email execution, Sentry/Railway resource, deployed worker,
+There is still no live provider-backed email execution, Sentry/Railway resource, deployed worker,
 production bootstrap, backup/restore proof, staging load acceptance or real-venue UAT. Organization
-and reference CRUD beyond the bounded bootstrap remains outside the local acceptance. The frontend
-lives in [`../../frontend/`](../../frontend/) and includes accepted CRA-67/CRA-71 flows plus locally
-accepted CRA-77 operations interfaces. Adding or executing any absent capability requires a bounded Linear
-issue and approval. CRA-19 remains a separate visual-only track.
+and reference CRUD beyond the bounded bootstrap remains outside acceptance. The frontend lives in
+[`../../frontend/`](../../frontend/) and includes accepted CRA-67/CRA-71 flows, CRA-77 operations
+interfaces, and the CRA-119 Caddy artifact. CRA-121 is the active bounded provisioning issue, but
+adding or executing any external capability still requires its applicable approval. CRA-19 remains
+a separate visual-only track.

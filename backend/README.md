@@ -32,11 +32,13 @@ checkpoint.
 
 Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
-CRA-119 Deployment and Provider Readiness has a complete local candidate awaiting Denys acceptance.
+CRA-119 Deployment and Provider Readiness is accepted, Done, and published through `2644b796`.
 It adds `app.api_server:app` for Uvicorn, `python -m app.worker` for the complete durable-worker
 composition, an unprivileged backend container, async Resend adapters with stable Job-derived
 idempotency, and fail-closed production environment validation. It adds no API path, schema object,
-or migration. Exact evidence and unperformed external gates are in
+or migration. CRA-121 is the active staging-provisioning boundary; its accepted planning map does
+not authorize a provider, deployment, secret, or non-test data mutation. Exact CRA-119 evidence and
+unperformed external gates are in
 [`../docs/testing/deployment-provider-readiness-cra-119.md`](../docs/testing/deployment-provider-readiness-cra-119.md).
 
 Before backend work, read [`AGENTS.md`](AGENTS.md) and the repository
@@ -145,7 +147,7 @@ strict mypy and Alembic upgrade/current/no-drift green at `0015_attention_retake
 and remaining external gates are in
 [`../docs/testing/attention-retakes-slice-8-acceptance.md`](../docs/testing/attention-retakes-slice-8-acceptance.md).
 
-The CRA-119 local candidate reports 544 backend tests passed, 0 failed and 0 skipped with 86%
+The accepted CRA-119 gate reports 544 backend tests passed, 0 failed and 0 skipped with 86%
 statement/branch coverage. Ruff format/check, strict mypy and Alembic current/no-drift pass at
 `0018_job_runtime`; focused provider/worker integration reports 12 passed. Docker image smoke,
 Railway plan/apply, a real Resend send and every production action remain unperformed and separately

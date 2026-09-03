@@ -1,24 +1,25 @@
 # HoReCa Repository Status
 
-**Snapshot date:** 2026-09-02
-**Published product implementation:** CRA-69 Slice 8 planning and CRA-71 Attention and Retakes are
-accepted and Done. CRA-74 fast-forward published CRA-70, CRA-71 and CRA-72 on `origin/main` through
-`4019262`. CRA-77 Operations and Hardening has passed fresh local acceptance as the complete
-thirteen-checkpoint range `974feeb..ef74be4` and is accepted and Done in Linear. Publication is
-still pending. CRA-119 Deployment and Provider Readiness is the active bounded issue and now has a
-complete seven-checkpoint local implementation candidate awaiting Denys acceptance.
+**Snapshot date:** 2026-09-03
+**Published product implementation:** CRA-77 Operations and Hardening is accepted and published as
+part of the baseline through `c8a1135`. CRA-119 Deployment and Provider Readiness is accepted, Done,
+and fast-forward published through `2644b796b122b9d160392f8e95cc515e736f7de9`.
+CRA-121 Provision Isolated Staging Resources and Providers is the active bounded product task with
+an accepted six-stage execution map.
 The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
 CRA-42 is unrelated Backlog work.
 
-**Current boundary:** the published endpoint remains CRA-74 at `4019262`. The accepted local CRA-77 range
-advances code and test state to Alembic head `0018_job_runtime` with recovery/MFA enrollment,
-Employee lifecycle administration, durable workers/maintenance, audit/operator tooling,
-structured observability and dry-run-first venue bootstrap. Push, PR, merge, deployment, provider,
-non-test bootstrap and production actions remain separately gated. CRA-119 adds only local runtime,
-container, Resend-adapter and Railway-topology readiness; it has not provisioned or called any
-external service.
+**Current boundary:** the published implementation endpoint is
+`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`; local `main` contains the
+documentation-only CRA-121 Stage 1 synchronization checkpoint above it. The published CRA-77 range
+advances code and test state to Alembic head `0018_job_runtime` with
+recovery/MFA enrollment, Employee lifecycle administration, durable workers/maintenance,
+audit/operator tooling, structured observability and dry-run-first venue bootstrap. Published
+CRA-119 adds runtime, container, Resend-adapter and value-free Railway-topology readiness without
+provisioning or calling an external service. Push, PR, merge, deployment, provider, secret,
+non-test bootstrap, and production actions remain separately gated.
 
 ## Accepted implementation and planning checkpoints
 
@@ -86,10 +87,12 @@ external service.
 - CRA-75 owns this publication-state documentation checkpoint.
 - CRA-77 local implementation and hardening uses the authorized thirteen-checkpoint map. The full
   local range is `974feeb..ef74be4`; fresh independent review and the complete local gate pass.
-  CRA-77 is accepted and Done in Linear; publication remains pending.
-- CRA-119 uses the authorized seven-checkpoint map. Its local implementation candidate starts at
+  CRA-77 is accepted, Done, and published as part of the baseline through `c8a1135`.
+- CRA-119 uses the authorized seven-checkpoint map. Its accepted range starts at
   `b1d145b` and includes API/worker runtime composition, async idempotent Resend adapters, Caddy
-  frontend delivery, and an unapplied Railway topology. Acceptance and publication remain pending.
+  frontend delivery, and an unapplied Railway topology. It is Done and published through `2644b796`.
+- CRA-121 staging provisioning planning and its six-stage execution map are accepted. It is the
+  active bounded product task; provider/resource mutations remain separately gated.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -391,7 +394,7 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   are in
   [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md).
 
-## CRA-119 local readiness candidate
+## CRA-119 accepted deployment readiness evidence
 
 - Full dedicated-PostgreSQL gate: 544 passed, 0 failed, 0 skipped with 86% overall
   statement/branch coverage.
@@ -407,8 +410,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Remaining to a functional and pilot-ready MVP
 
-CRA-119 is the active bounded issue and its local candidate awaits Denys acceptance. Pilot release
-still requires separately authorized external evidence:
+CRA-121 is the active bounded provisioning issue with an accepted six-stage execution map. Pilot
+release still requires separately authorized external evidence:
 
 1. Real Bacara content validation and venue UAT.
 2. Provider configuration, backup retention plus isolated restore proof, and deploy/rollback smoke.
@@ -434,10 +437,12 @@ reported as passing.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- CRA-119 is the active bounded issue. Its local seven-checkpoint readiness candidate awaits Denys
-  acceptance; it is neither published nor deployed.
-- CRA-77 has passed local acceptance and is accepted and Done in Linear. CRA-19 remains a separate
-  visual-only track.
+- CRA-121 is the active bounded issue. Its planning scope and execution map are accepted; the
+  repository part of Stage 1 is this documentation-only local checkpoint. Linear synchronization
+  remains a separate action-time gate.
+- CRA-119 is accepted, Done, and published through `2644b796`; it is not deployed.
+- CRA-77 is accepted, Done, and published as part of the baseline through `c8a1135`. CRA-19 remains
+  a separate visual-only track.
 - CRA-71 is accepted, Done and published as `62a80a0..054d731`; CRA-72 records its exact
   nine-document synchronization, and CRA-74 records publication through `4019262`.
 - CRA-69 planning is accepted and Done; CRA-70 is published at `5352f89`.
