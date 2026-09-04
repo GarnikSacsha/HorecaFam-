@@ -33,11 +33,11 @@ checkpoint.
 Python 3.12 and PostgreSQL 16 are the approved runtime versions.
 
 CRA-119 Deployment and Provider Readiness is accepted, Done, and published through `2644b796`.
-It adds `app.api_server:app` for Uvicorn, `python -m app.worker` for the complete durable-worker
+It adds `python -m app.api_server` (Uvicorn factory `app.main:create_app`), `python -m app.worker` for the complete durable-worker
 composition, an unprivileged backend container, async Resend adapters with stable Job-derived
 idempotency, and fail-closed production environment validation. It adds no API path, schema object,
-or migration. CRA-121 is the active staging-provisioning boundary; its accepted planning map does
-not authorize a provider, deployment, secret, or non-test data mutation. Exact CRA-119 evidence and
+or migration. CRA-121 provisioning is accepted and Done; CRA-122 deployment Stage 2 planning is
+active. Source binding, provider, deployment, secret, and non-test data actions remain gated. Exact CRA-119 evidence and
 unperformed external gates are in
 [`../docs/testing/deployment-provider-readiness-cra-119.md`](../docs/testing/deployment-provider-readiness-cra-119.md).
 

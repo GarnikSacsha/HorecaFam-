@@ -1,11 +1,14 @@
 # HoReCa Repository Status
 
-**Snapshot date:** 2026-09-03
+**Snapshot date:** 2026-09-04
 **Published product implementation:** CRA-77 Operations and Hardening is accepted and published as
 part of the baseline through `c8a1135`. CRA-119 Deployment and Provider Readiness is accepted, Done,
 and fast-forward published through `2644b796b122b9d160392f8e95cc515e736f7de9`.
-CRA-121 Provision Isolated Staging Resources and Providers is the active bounded product task with
-an accepted six-stage execution map.
+CRA-121 Provision Isolated Staging Resources and Providers is accepted and Done.
+CRA-122 Deploy and Accept Staging is active; Stage 1 is complete and Stage 2 planning is in progress.
+CRA-123 is the bounded local Caddy correction: implemented and locally verified. Denys authorized
+the three mapped local commits; publication remains separately gated. See [its evidence](docs/testing/caddy-delivery-cra-123.md).
+The local correction is `ec27d19`; the Stage 2 plan is `93c815f`. Neither is published or deployed.
 The canonical routing entry is the Linear
 [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
 PR, merge, deployment, provider, and production-configuration actions remain separately gated.
@@ -91,8 +94,9 @@ non-test bootstrap, and production actions remain separately gated.
 - CRA-119 uses the authorized seven-checkpoint map. Its accepted range starts at
   `b1d145b` and includes API/worker runtime composition, async idempotent Resend adapters, Caddy
   frontend delivery, and an unapplied Railway topology. It is Done and published through `2644b796`.
-- CRA-121 staging provisioning planning and its six-stage execution map are accepted. It is the
-  active bounded product task; provider/resource mutations remain separately gated.
+- CRA-121 staging provisioning is accepted and Done, with Resend setup explicitly deferred.
+- CRA-122 is active. Its latest recorded provider preflight is 2026-09-03; application services
+  were offline without sources and PostgreSQL was online. No application deployment is accepted.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -410,8 +414,9 @@ CRA-25; the canonical acceptance history remains in CRA-20.
 
 ## Remaining to a functional and pilot-ready MVP
 
-CRA-121 is the active bounded provisioning issue with an accepted six-stage execution map. Pilot
-release still requires separately authorized external evidence:
+CRA-122 is the active bounded deployment issue. Its [Stage 2 plan](docs/deployment/staging-cra-122.md)
+records source/build/variable/rollback decisions and unresolved gates. Pilot release still requires
+separately authorized external evidence:
 
 1. Real Bacara content validation and venue UAT.
 2. Provider configuration, backup retention plus isolated restore proof, and deploy/rollback smoke.
@@ -437,9 +442,9 @@ reported as passing.
 
 - The currently active bounded task is always determined through Linear START HERE and the single
   active Linear issue, not through this snapshot.
-- CRA-121 is the active bounded issue. Its planning scope and execution map are accepted; the
-  repository part of Stage 1 is this documentation-only local checkpoint. Linear synchronization
-  remains a separate action-time gate.
+- CRA-121 is accepted and Done. CRA-122 Stage 1 is complete; Stage 2 planning and status
+  synchronization were requested by Denys on 2026-09-04. This is not source-binding, secret,
+  migration, deployment, provider-send, or local-commit authorization.
 - CRA-119 is accepted, Done, and published through `2644b796`; it is not deployed.
 - CRA-77 is accepted, Done, and published as part of the baseline through `c8a1135`. CRA-19 remains
   a separate visual-only track.

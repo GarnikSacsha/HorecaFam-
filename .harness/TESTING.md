@@ -315,6 +315,11 @@ two frontend deployment-artifact tests, Railway topology typecheck, and three st
 passed. Docker image/container smoke was not executed because the local Linux engine was
 unavailable. The range is accepted, Done, and published through `2644b796`.
 
-CRA-121 is the active bounded staging-provisioning task. Its accepted execution map does not make
-Railway plan/apply, resource creation, provider calls, secret entry, migration, deployment,
-production mutation, backup/restore, load, or real-venue UAT a passing or authorized gate.
+CRA-121 provisioning is accepted and Done, with provider evidence recorded in Linear and Resend
+setup deferred. CRA-122 is active with Stage 1 complete and Stage 2 planning in progress. Local
+checks alone do not prove real email, deployed API/worker/cron, migration, backup/restore,
+load, or venue UAT. Use the [Stage 2 plan](../docs/deployment/staging-cra-122.md) before external work.
+
+CRA-123's [local container evidence](../docs/testing/caddy-delivery-cra-123.md) records the Docker
+builds and 9 passing real Caddy HTTP tests, with exact reproduction commands and limitations.
+This is a locally verified candidate, not an accepted deployment or published replacement SHA.

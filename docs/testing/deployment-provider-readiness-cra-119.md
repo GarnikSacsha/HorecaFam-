@@ -36,7 +36,7 @@ a merge commit or history rewrite. Publication did not apply the Railway topolog
 
 ## Runtime topology and contract impact
 
-- The API runs `app.api_server:app` under Uvicorn and disposes its async SQLAlchemy engine during
+- The API starts with `python -m app.api_server`, using Uvicorn factory `app.main:create_app`, and disposes its async SQLAlchemy engine during
   lifespan shutdown.
 - The worker runs `python -m app.worker`, uses the existing durable Job lease/heartbeat runtime,
   and registers invitation, password-reset, training-notification, maintenance, and audit handlers.
@@ -120,8 +120,13 @@ These items are **not** passing evidence and remain separately authorized extern
 
 ## Rollback and next safe gate
 
-No external provider state exists to roll back. Accepted published history must not be rewritten;
-any repository correction requires a new corrective commit. CRA-121 is the active bounded
-provisioning issue with an accepted six-stage map. Its first external step is read-only provider
-preflight after source synchronization. Railway plan/apply, resource creation, secret entry,
-deployment, migration, provider delivery, and non-test data actions each remain separately gated.
+The unperformed gates above describe the CRA-119 acceptance boundary on 2026-09-02, not current
+provider inventory. CRA-121 subsequently provisioned isolated Railway staging and is accepted and
+Done. CRA-122 Stage 1 is complete; Stage 2 planning is active. Application deployment and Resend
+acceptance remain unperformed in the latest recorded evidence. Exact targets and rollback gates
+are in the [Stage 2 plan](../deployment/staging-cra-122.md).
+
+The 2026-09-04 audit identified missing explicit Caddy HTML/asset cache policy and the broader
+`/api/*` proxy matcher relative to the CRA-119 draft contract. Existing static tests do not cover
+those requirements. These are corrective-work inputs, not new passing evidence. Accepted published
+history must not be rewritten; any application correction needs a separately accepted artifact SHA.

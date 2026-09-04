@@ -8,12 +8,15 @@ pilot gates are in
 [`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md)
 and
 [`docs/testing/deployment-provider-readiness-cra-119.md`](docs/testing/deployment-provider-readiness-cra-119.md).
-CRA-121 Provision Isolated Staging Resources and Providers is the active bounded product task with
-an accepted six-stage execution map. Local `main` contains its documentation-only Stage 1
-synchronization checkpoint above the published implementation endpoint. No Railway resource,
-provider call, deployment, production
-configuration, or non-test data action is authorized by that acceptance. Push, PR, merge, and all
-external mutations remain separate approval gates; CRA-42 is unrelated Backlog work.
+CRA-121 provisioning is accepted and Done. CRA-122 Deploy and Accept Staging is the active bounded
+deployment task: Stage 1 read-only preflight is complete; Stage 2 planning is in progress.
+Local history includes documentation checkpoint `78952feb`, CRA-123 correction `ec27d19`,
+and Stage 2 plan `93c815f` above the published application artifact. These are not pushed.
+The latest provider evidence (2026-09-03) records isolated staging resources with PostgreSQL online
+and application services offline without source bindings. The next reviewed deliverable is the
+[Stage 2 deployment plan](docs/deployment/staging-cra-122.md). Provider state must be rechecked
+before action. Commits, push, source binding, secrets, migration, deployment and non-test data
+remain separately gated; CRA-42 is unrelated Backlog work.
 
 ## Start here
 

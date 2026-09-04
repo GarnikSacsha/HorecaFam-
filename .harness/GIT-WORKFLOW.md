@@ -9,8 +9,10 @@ accepted product and documentation history through CRA-77 plus the accepted seve
 CRA-119 Deployment and Provider Readiness range `b1d145b..2644b79`. That publication was an
 ordinary fast-forward with no merge commit or history rewrite. Local `main` contains the
 documentation-only CRA-121 Stage 1 synchronization checkpoint above that published endpoint.
-CRA-121 is the active bounded provisioning task; its accepted execution map does not authorize
-another push, provider/resource mutation, deployment, secret entry, or non-test data action.
+CRA-121 provisioning is accepted and Done. CRA-122 is the active deployment task, with Stage 1
+complete and Stage 2 planning in progress. The application artifact remains `2644b796`; local
+documentation checkpoints are not deployment artifacts. No later push, source binding,
+provider/resource mutation, deployment, secret entry, or non-test data action is implied.
 CRA-42 is unrelated Backlog work.
 
 HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
@@ -111,5 +113,5 @@ change still requires an active bounded Linear issue, an agreed commit map, and 
 local-commit and remote-action approvals. The accepted historical checkpoints through CRA-75 are
 recorded in Linear and the repository evidence index. CRA-77 is accepted and published as part of
 the baseline through `c8a1135`; CRA-119 is accepted, Done, and published through `2644b796`.
-CRA-121 is the single active product task. Every later push, PR, merge, history rewrite, provider,
+CRA-122 is the active deployment task. Every later push, PR, merge, history rewrite, provider,
 resource, secret, deployment, and non-test data action remains separately gated.

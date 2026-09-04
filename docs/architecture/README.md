@@ -360,10 +360,11 @@ real dedicated PostgreSQL 16 database. See [`../testing/README.md`](../testing/R
 
 ## Explicitly absent
 
-There is still no live provider-backed email execution, Sentry/Railway resource, deployed worker,
+There is still no proven live email delivery, Sentry integration, deployed application worker,
 production bootstrap, backup/restore proof, staging load acceptance or real-venue UAT. Organization
 and reference CRUD beyond the bounded bootstrap remains outside acceptance. The frontend lives in
 [`../../frontend/`](../../frontend/) and includes accepted CRA-67/CRA-71 flows, CRA-77 operations
-interfaces, and the CRA-119 Caddy artifact. CRA-121 is the active bounded provisioning issue, but
-adding or executing any external capability still requires its applicable approval. CRA-19 remains
-a separate visual-only track.
+interfaces, and the CRA-119 Caddy artifact. CRA-121 is accepted and Done: the 2026-09-03 evidence
+records isolated Railway staging resources and online PostgreSQL, with application services offline
+without sources. CRA-122 Stage 1 is complete; Stage 2 planning is active. Provider state must be
+rechecked before any action. CRA-19 remains a separate visual-only track.

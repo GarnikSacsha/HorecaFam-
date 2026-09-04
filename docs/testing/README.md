@@ -294,5 +294,11 @@ Railway topology typecheck plus three static tests green.
 The exact boundary, evidence, security review, contract impact, and unperformed Docker/provider/
 Railway gates are recorded in
 [`deployment-provider-readiness-cra-119.md`](deployment-provider-readiness-cra-119.md). CRA-119 is
-accepted, Done, and published through `2644b796`. CRA-121 is the active bounded provisioning task;
-no Railway plan/apply, provider call, deployment, production mutation, or secret entry is implied.
+accepted, Done, and published through `2644b796`. CRA-121 provisioning is accepted and Done;
+CRA-122 Stage 1 is complete and Stage 2 planning is active. Provider resource evidence is separate
+from application/container/email acceptance. See [the deployment plan](../deployment/staging-cra-122.md).
+
+## CRA-123 local Caddy correction
+
+[Local evidence](caddy-delivery-cra-123.md): real image build RED/GREEN, 9 final Caddy HTTP tests,
+72 Vitest tests and 5 static artifact/topology tests pass. Acceptance/publication is pending.

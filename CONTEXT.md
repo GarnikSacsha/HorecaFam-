@@ -30,8 +30,8 @@ Readiness is accepted, Done, and published as the seven-checkpoint range `b1d145
 the published implementation endpoint is
 `origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. Local `main` contains the
 documentation-only CRA-121 Stage 1 synchronization checkpoint above that endpoint.
-CRA-121 Provision Isolated Staging Resources and Providers is the active bounded product task with
-an accepted six-stage execution map. CRA-42 is unrelated Backlog work. Provider execution, PR,
+CRA-121 provisioning is accepted and Done. CRA-122 Deploy and Accept Staging is active: Stage 1
+preflight is complete and Stage 2 planning is in progress. CRA-42 is unrelated Backlog work. Provider execution, PR,
 merge, deployment, non-test bootstrap and production configuration require separate approval or
 later bounded issues.
 
@@ -184,10 +184,24 @@ unperformed external gates are recorded in
 `2644b796`. It adds fail-closed deployment configuration, explicit API and worker processes,
 unprivileged backend/frontend container artifacts, idempotent async Resend adapters, and an
 unapplied Railway topology. Its accepted evidence reports 544 backend tests, 72 Vitest tests, and
-three Railway topology tests with zero required skips. Docker image smoke and every provider,
-provisioning, deployment, migration, backup/restore, load, and venue-UAT action remain unperformed.
-[CRA-121](https://linear.app/craftspacee/issue/CRA-121) is the active bounded provisioning task; its
-accepted map begins with source synchronization and read-only provider preflight.
+three Railway topology tests with zero required skips. At that accepted endpoint, Docker image smoke, real email delivery,
+application deployment, migration, backup/restore, load, and venue-UAT gates remain unproven.
+[CRA-121](https://linear.app/craftspacee/issue/CRA-121) is accepted and Done: isolated Railway staging
+resources exist according to the 2026-09-03 provider evidence. Resend setup was explicitly deferred.
+[CRA-122](https://linear.app/craftspacee/issue/CRA-122) is active, with Stage 1 complete and the
+[Stage 2 deployment plan](docs/deployment/staging-cra-122.md) under preparation/review.
+Subsequent CRA-123 local evidence verifies both image builds, backend import/non-root smoke and
+9 Caddy HTTP checks; acceptance/publication remains pending. See
+[the bounded corrective record](docs/testing/caddy-delivery-cra-123.md).
+
+## Current visual direction
+
+The [approved 2026-09-03 visual direction](https://linear.app/craftspacee/document/frontend-visual-direction-horecafam-bacara-pilot-ee0ace76276f)
+supersedes the earlier Inter/lime direction for the Bacara pilot: white, Bacara blue and Klaster
+Sans, with an official logo and approved font rights. The public start page and post-activation
+Welcome are separate states. Current frontend code still uses provisional tokens and redirects
+anonymous root visits to login. CRA-19 remains the separate visual track; its assets and broader
+authenticated visual implementation require their own bounded map. No runtime redesign is implied.
 
 ## Repository map
 
