@@ -10,7 +10,7 @@ function projectFile(name) {
 test("Caddy serves the SPA and proxies same-origin API requests", () => {
   const caddyfile = projectFile("Caddyfile");
 
-  assert.match(caddyfile, /handle \/api\/\*/);
+  assert.match(caddyfile, /@api path \/api\/v1 \/api\/v1\/\*/);
   assert.match(caddyfile, /reverse_proxy \{\$API_UPSTREAM:http:\/\/api\.railway\.internal:8000\}/);
   assert.match(caddyfile, /try_files \{path\} \/index\.html/);
   assert.match(caddyfile, /file_server/);

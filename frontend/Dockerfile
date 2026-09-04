@@ -14,7 +14,8 @@ FROM caddy:2.10-alpine
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /workspace/dist /srv
 
-RUN chown -R caddy:caddy /srv /config /data
+RUN addgroup -S caddy && adduser -S -D -H -G caddy caddy \
+    && chown -R caddy:caddy /srv /config /data
 
 USER caddy
 EXPOSE 8080
