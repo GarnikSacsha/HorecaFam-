@@ -5,6 +5,34 @@ from app.core.config import Settings
 from app.db.safety import UnsafeTestDatabaseError, assert_safe_test_database
 
 
+@pytest.fixture(autouse=True)
+def disable_local_env_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+
+
+@pytest.mark.parametrize("style", ["auto", "virtual", "path"])
+def test_storage_addressing_style_from_environment(
+    monkeypatch: pytest.MonkeyPatch, style: str
+) -> None:
+    monkeypatch.setenv("STORAGE_ADDRESSING_STYLE", style)
+    settings = Settings(
+        _env_file=None,
+        app_env="test",
+        database_url="postgresql+asyncpg://localhost/horeca_test",
+    )
+    assert settings.storage_addressing_style == style
+
+
+def test_storage_addressing_style_rejects_unknown_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STORAGE_ADDRESSING_STYLE", "virtual-host")
+    with pytest.raises(ValidationError, match="storage_addressing_style"):
+        Settings(
+            _env_file=None,
+            app_env="test",
+            database_url="postgresql+asyncpg://localhost/horeca_test",
+        )
+
+
 def test_missing_required_configuration_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("APP_ENV", raising=False)
     monkeypatch.delenv("DATABASE_URL", raising=False)

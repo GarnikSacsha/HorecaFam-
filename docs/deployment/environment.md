@@ -21,8 +21,18 @@ and ignored local files.
 | `STORAGE_BUCKET` | API | Private training asset bucket. |
 | `STORAGE_ENDPOINT_URL` | API | Private S3-compatible endpoint. |
 | `STORAGE_REGION` | API | Storage region, default `auto`. |
+| `STORAGE_ADDRESSING_STYLE` | API | S3 addressing: `auto` (default), `virtual`, or `path`. Use `virtual` for the verified Railway staging bucket. |
 | `STORAGE_ACCESS_KEY_ID` | API | Private storage credential identifier. |
 | `STORAGE_SECRET_ACCESS_KEY` | API | Private storage credential secret. |
+
+The storage endpoint remains the provider endpoint without a bucket prefix. With `virtual`,
+the SDK places the bucket in the hostname for signed POST uploads, object inspection and GET
+downloads. `path` places it in the URL path; `auto` retains SDK selection. Region `auto` is a
+separate setting. Choose the style from the actual bucket's provider metadata, not its display
+name. See [Railway bucket access](https://docs.railway.com/storage-buckets) and
+[Boto3 S3 configuration](https://docs.aws.amazon.com/boto3/latest/guide/configuration.html).
+This setting does not configure bucket CORS or prove live upload acceptance; staging still
+requires an authorized browser upload/download check.
 
 ## Worker-only variables
 

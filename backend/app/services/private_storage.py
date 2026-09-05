@@ -107,10 +107,12 @@ def build_private_storage(settings: Settings) -> Boto3PrivateStorage:
     ):
         raise RuntimeError("Private storage configuration invariant is broken")
     boto3 = import_module("boto3")
+    botocore_config = import_module("botocore.config")
     client = boto3.client(
         "s3",
         endpoint_url=settings.storage_endpoint_url,
         region_name=settings.storage_region,
+        config=botocore_config.Config(s3={"addressing_style": settings.storage_addressing_style}),
         aws_access_key_id=settings.storage_access_key_id.get_secret_value(),
         aws_secret_access_key=settings.storage_secret_access_key.get_secret_value(),
     )

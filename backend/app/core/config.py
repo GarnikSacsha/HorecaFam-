@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     storage_bucket: str | None = None
     storage_endpoint_url: str | None = None
     storage_region: str = "auto"
+    storage_addressing_style: Literal["auto", "virtual", "path"] = "auto"
     storage_access_key_id: SecretStr | None = None
     storage_secret_access_key: SecretStr | None = None
     cors_allowed_origins: list[str] = []
