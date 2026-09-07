@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
+from pydantic import ValidationError
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -650,7 +651,10 @@ async def _update_menu_item(
     values = current.model_dump()
     for field in payload.model_fields_set - {"expected_revision"}:
         values[field] = getattr(payload, field)
-    merged = MenuItemWrite.model_validate(values)
+    try:
+        merged = MenuItemWrite.model_validate(values)
+    except ValidationError:
+        raise _validation_error() from None
     target_category = await _version_category(
         db,
         version=version,
