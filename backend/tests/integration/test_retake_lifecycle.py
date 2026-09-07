@@ -336,6 +336,20 @@ async def test_retake_timing_and_freeze_resume_preserve_exact_remaining_time(
     )
     assert retake_timing_state(requirement, failed_at + timedelta(days=20)) == "frozen"
 
+    frozen_revision = requirement.revision
+    frozen_due_at = requirement.due_at
+    with pytest.raises(ValueError, match="Resume time cannot precede freeze time"):
+        await resume_retake_clock(
+            db_session, requirement=requirement, now=frozen_at - timedelta(seconds=1)
+        )
+    assert requirement.revision == frozen_revision
+    assert requirement.due_at == frozen_due_at
+    assert requirement.clock_frozen_at == frozen_at
+    with pytest.raises(ValueError, match="timezone-aware"):
+        retake_timing_state(requirement, failed_at.replace(tzinfo=None))
+    with pytest.raises(ValueError, match="timezone-aware"):
+        await project_retake_deadlines(db_session, now=failed_at.replace(tzinfo=None))
+
     resumed_at = frozen_at + timedelta(hours=9)
     assert (
         await resume_employee_retake_clocks(
