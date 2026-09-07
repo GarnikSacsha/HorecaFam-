@@ -340,3 +340,90 @@ async def test_worker_runtime_never_persists_raw_handler_exceptions(
     assert job.last_error_code == "JOB_HANDLER_ERROR"
     assert job.last_error_message == "Approved Job handler failed."
     assert "raw-password-reset-token" not in (attempt.error_message or "")
+
+
+async def test_worker_missing_handler_fails_once_and_empty_queue_does_not_claim(
+    db_session: AsyncSession,
+    migrated_test_database: Settings,
+) -> None:
+    now = datetime.now(UTC)
+    job = make_maintenance_job(now=now, idempotency_key="missing-handler", max_attempts=1)
+    db_session.add(job)
+    await db_session.commit()
+    engine = create_engine(migrated_test_database)
+    sessions = create_session_factory(engine)
+    try:
+        assert await run_worker_once(sessions, worker_id="worker-a", handlers={}, now=now)
+        assert not await run_worker_once(sessions, worker_id="worker-a", handlers={}, now=now)
+    finally:
+        await engine.dispose()
+    await db_session.refresh(job)
+    attempts = list(await db_session.scalars(select(JobAttempt).where(JobAttempt.job_id == job.id)))
+    assert job.status == "failed" and job.attempt_count == 1
+    assert job.last_error_code == "JOB_HANDLER_UNAVAILABLE"
+    assert len(attempts) == 1 and attempts[0].outcome == "failed"
+
+
+async def test_worker_losing_lease_cannot_finalize_a_reclaimed_job(
+    db_session: AsyncSession,
+    migrated_test_database: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from typing import Any
+
+    from app import worker
+
+    now = datetime.now(UTC)
+    job = make_maintenance_job(now=now, idempotency_key="lease-transfer")
+    db_session.add(job)
+    await db_session.commit()
+    engine = create_engine(migrated_test_database)
+    sessions = create_session_factory(engine)
+    lost = asyncio.Event()
+    replacement: list[ClaimedJob] = []
+    original_heartbeat = heartbeat_job
+
+    async def observe_heartbeat(*args: Any, **kwargs: Any) -> bool:
+        owned = await original_heartbeat(*args, **kwargs)
+        if not owned:
+            lost.set()
+        return owned
+
+    monkeypatch.setattr(worker, "heartbeat_job", observe_heartbeat)
+
+    async def release_and_reclaim(claimed: ClaimedJob) -> None:
+        async with sessions() as session, session.begin():
+            released = await fail_job(
+                session,
+                job_id=claimed.job_id,
+                attempt_id=claimed.attempt_id,
+                worker_id="worker-a",
+                now=now,
+                error_code="RETRY_REQUIRED",
+                error_message="Retry required.",
+                jitter_seconds=0,
+            )
+        assert released.next_run_at is not None
+        async with sessions() as session, session.begin():
+            new_claim = await claim_next_job(
+                session, worker_id="worker-b", now=released.next_run_at
+            )
+            assert new_claim is not None
+            replacement.append(new_claim)
+        await asyncio.wait_for(lost.wait(), timeout=5)
+
+    try:
+        assert await run_worker_once(
+            sessions,
+            worker_id="worker-a",
+            handlers={BackgroundJobType.ATTEMPT_EXPIRY: release_and_reclaim},
+            now=now,
+            heartbeat_interval_seconds=0.01,
+        )
+    finally:
+        await engine.dispose()
+    assert lost.is_set() and len(replacement) == 1
+    await db_session.refresh(job)
+    assert job.status == "processing" and job.locked_by == "worker-b"
+    attempt = await db_session.get_one(JobAttempt, replacement[0].attempt_id)
+    assert attempt.outcome == "processing" and attempt.finished_at is None

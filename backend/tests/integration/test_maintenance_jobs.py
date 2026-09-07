@@ -16,6 +16,7 @@ from app.models import (
 from app.services.background_jobs import claim_next_job
 from app.services.maintenance import (
     cleanup_security_records,
+    expire_attempts,
     recover_stale_jobs,
     run_audit_retention,
     schedule_cron_task,
@@ -198,3 +199,107 @@ async def test_audit_retention_deletes_only_bounded_old_rows_and_appends_summary
     )
     assert summary is not None
     assert summary.new_values == {"deleted_count": 1, "cutoff_at": cutoff.isoformat()}
+
+
+@pytest.mark.parametrize("task", ["expiry", "security", "audit", "stale"])
+@pytest.mark.parametrize("invalid", ["naive", "zero_batch", "large_batch"])
+async def test_invalid_maintenance_bounds_have_no_effect(
+    db_session: AsyncSession, task: str, invalid: str
+) -> None:
+    now = datetime(2031, 1, 2, tzinfo=UTC)
+    if invalid == "naive":
+        now = now.replace(tzinfo=None)
+    batch = {"naive": 1, "zero_batch": 0, "large_batch": 1001}[invalid]
+    with pytest.raises(ValueError):
+        if task == "expiry":
+            await expire_attempts(db_session, cutoff_at=now, batch_size=batch)
+        elif task == "security":
+            await cleanup_security_records(db_session, cutoff_at=now, batch_size=batch)
+        elif task == "audit":
+            await run_audit_retention(
+                db_session, cutoff_at=now, batch_size=batch, request_id=uuid4()
+            )
+        else:
+            await recover_stale_jobs(
+                db_session, now=now, batch_size=batch, lease_timeout=timedelta(minutes=5)
+            )
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == 0
+
+
+@pytest.mark.parametrize("seconds", [0, -1])
+async def test_stale_recovery_requires_positive_lease_timeout(
+    db_session: AsyncSession, seconds: int
+) -> None:
+    with pytest.raises(ValueError, match="bounds"):
+        await recover_stale_jobs(
+            db_session,
+            now=datetime(2031, 1, 2, tzinfo=UTC),
+            lease_timeout=timedelta(seconds=seconds),
+        )
+    assert await db_session.scalar(select(func.count()).select_from(JobAttempt)) == 0
+
+
+@pytest.mark.parametrize("missing_attempt", [False, True])
+async def test_exhausted_stale_job_is_terminal_at_exact_lease_boundary(
+    db_session: AsyncSession, missing_attempt: bool
+) -> None:
+    now = datetime(2031, 1, 2, tzinfo=UTC)
+    job = await schedule_cron_task(db_session, task="attempt-expiry", now=now)
+    job.max_attempts = 1
+    await db_session.commit()
+    if missing_attempt:
+        job.status = "processing"
+        job.attempt_count = 1
+        job.locked_by = "stale-worker"
+        job.locked_at = job.heartbeat_at = job.started_at = now
+    else:
+        claim = await claim_next_job(db_session, worker_id="stale-worker", now=now)
+        assert claim is not None
+    await db_session.commit()
+    recovered = await recover_stale_jobs(
+        db_session, now=now + timedelta(minutes=5), lease_timeout=timedelta(minutes=5)
+    )
+    await db_session.commit()
+    assert recovered == [job.id]
+    await db_session.refresh(job)
+    assert job.status == "failed" and job.failed_at == now + timedelta(minutes=5)
+    assert job.locked_by is None and job.heartbeat_at is None
+    attempt = await db_session.scalar(select(JobAttempt).where(JobAttempt.job_id == job.id))
+    assert attempt is not None and attempt.outcome == "failed"
+    assert attempt.error_code == "STALE_LEASE" and attempt.next_retry_at is None
+    assert (
+        await recover_stale_jobs(
+            db_session, now=now + timedelta(minutes=10), lease_timeout=timedelta(minutes=5)
+        )
+        == []
+    )
+
+
+@pytest.mark.parametrize("with_old_row", [False, True])
+async def test_retention_preview_preserves_rows_and_records_exact_count(
+    db_session: AsyncSession, with_old_row: bool
+) -> None:
+    cutoff = datetime(2031, 1, 2, tzinfo=UTC)
+    if with_old_row:
+        db_session.add(
+            AuditEvent(
+                actor_type="system",
+                action="old.event",
+                target_type="test",
+                outcome="success",
+                created_at=cutoff - timedelta(seconds=1),
+            )
+        )
+        await db_session.commit()
+    count = await run_audit_retention(
+        db_session, cutoff_at=cutoff, batch_size=1, request_id=uuid4(), dry_run=True
+    )
+    await db_session.commit()
+    assert count == int(with_old_row)
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == count + 1
+    summary = await db_session.scalar(
+        select(AuditEvent).where(AuditEvent.action == "audit.retention_previewed")
+    )
+    assert summary is not None and summary.new_values is not None
+    assert summary.new_values["deleted_count"] == count

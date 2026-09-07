@@ -69,3 +69,74 @@ async def test_in_product_training_adapter_logs_only_safe_identity(
     assert captured["event"] == "training.notification_available"
     assert captured["assignment_id"] == message.assignment_id
     assert "payload" not in captured
+
+
+@pytest.mark.parametrize("failure", [False, True])
+async def test_runtime_always_closes_after_worker_returns_or_fails(
+    monkeypatch: pytest.MonkeyPatch, failure: bool
+) -> None:
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app import worker
+
+    runtime = MagicMock()
+    runtime.close = AsyncMock()
+    run = AsyncMock(side_effect=RuntimeError("controlled-stop") if failure else None)
+    monkeypatch.setattr(worker, "run_worker", run)
+    settings = Settings(app_env="test", database_url="postgresql+asyncpg://localhost/horeca_test")
+    if failure:
+        with pytest.raises(RuntimeError, match="controlled-stop"):
+            await worker.run_worker_runtime(runtime, settings=settings)
+    else:
+        await worker.run_worker_runtime(runtime, settings=settings)
+    runtime.close.assert_awaited_once()
+    run.assert_awaited_once_with(
+        runtime.session_factory,
+        worker_id=runtime.worker_id,
+        handlers=runtime.handlers,
+        idle_seconds=runtime.idle_seconds,
+        heartbeat_interval_seconds=runtime.heartbeat_interval_seconds,
+        settings=settings,
+    )
+
+
+async def test_worker_sleeps_only_when_queue_is_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app import worker
+
+    session_factory = MagicMock()
+    settings = Settings(app_env="test", database_url="postgresql+asyncpg://localhost/horeca_test")
+    run_once = AsyncMock(side_effect=[True, False, RuntimeError("controlled-stop")])
+    sleep = AsyncMock()
+    monkeypatch.setattr(worker, "run_worker_once", run_once)
+    monkeypatch.setattr("app.worker.asyncio.sleep", sleep)
+    monkeypatch.setattr(worker, "configure_observability", MagicMock())
+    with pytest.raises(RuntimeError, match="controlled-stop"):
+        await worker.run_worker(
+            session_factory,
+            worker_id="test-worker",
+            handlers={},
+            idle_seconds=0.25,
+            heartbeat_interval_seconds=2,
+            settings=settings,
+        )
+    assert run_once.await_count == 3
+    sleep.assert_awaited_once_with(0.25)
+
+
+@pytest.mark.parametrize("interval", [0, -1])
+async def test_worker_rejects_invalid_heartbeat_before_opening_database(interval: float) -> None:
+    from unittest.mock import MagicMock
+
+    from app import worker
+
+    session_factory = MagicMock()
+    with pytest.raises(ValueError, match="Heartbeat interval"):
+        await worker.run_worker_once(
+            session_factory,
+            worker_id="test-worker",
+            handlers={},
+            heartbeat_interval_seconds=interval,
+        )
+    session_factory.assert_not_called()

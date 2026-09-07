@@ -3,9 +3,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import AdminAccess, AuditEvent, MfaCredential, MfaRecoveryCode
@@ -310,3 +311,125 @@ async def test_no_self_service_mfa_disable_route(auth_client: AsyncClient) -> No
     response = await auth_client.post("/api/v1/auth/mfa/disable")
 
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize("problem", ["password", "stale", "unconfirmed", "cipher", "code"])
+async def test_rejected_recovery_regeneration_preserves_all_codes(
+    auth_app: FastAPI, auth_client: AsyncClient, db_session: AsyncSession, problem: str
+) -> None:
+    context = await _complete_enrollment(
+        auth_app, auth_client, db_session, email="rejected-regeneration@example.com"
+    )
+    credential = await db_session.scalar(
+        select(MfaCredential).where(MfaCredential.user_id == context.user_id)
+    )
+    assert credential is not None
+    if problem == "unconfirmed":
+        credential.disabled_at = context.clock["now"]
+    elif problem == "cipher":
+        credential.secret_encrypted = "invalid-ciphertext"
+    await db_session.commit()
+    codes_before = list(
+        (
+            await db_session.execute(
+                select(MfaRecoveryCode.id, MfaRecoveryCode.used_at).order_by(MfaRecoveryCode.id)
+            )
+        ).all()
+    )
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    context.clock["now"] += timedelta(minutes=16) if problem == "stale" else timedelta(seconds=30)
+    code = TotpVerifier().generate(context.secret, context.clock["now"])
+    if problem == "code":
+        code = str((int(code) + 1) % 1000000).zfill(6)
+        valid_codes = {
+            TotpVerifier().generate(
+                context.secret, context.clock["now"] + timedelta(seconds=offset)
+            )
+            for offset in (-30, 0, 30)
+        }
+        while code in valid_codes:
+            code = str((int(code) + 1) % 1000000).zfill(6)
+    denied = await auth_client.post(
+        "/api/v1/auth/mfa/recovery-codes/regenerate",
+        headers={"Origin": "https://frontend.test", "X-CSRF-Token": context.csrf_token},
+        json={
+            "current_password": "wrong-password" if problem == "password" else "correct-password",
+            "totp_code": code,
+        },
+    )
+    expected = {
+        "password": "CURRENT_PASSWORD_INVALID",
+        "stale": "RECENT_MFA_REQUIRED",
+        "unconfirmed": "MFA_CHALLENGE_INVALID",
+        "cipher": "MFA_CHALLENGE_INVALID",
+        "code": "MFA_CODE_INVALID",
+    }[problem]
+    assert denied.status_code == (403 if problem == "stale" else 401)
+    assert denied.json()["code"] == expected
+    assert "recovery_codes" not in denied.json() and "invalid-ciphertext" not in denied.text
+    assert (
+        list(
+            (
+                await db_session.execute(
+                    select(MfaRecoveryCode.id, MfaRecoveryCode.used_at).order_by(MfaRecoveryCode.id)
+                )
+            ).all()
+        )
+        == codes_before
+    )
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+
+
+@pytest.mark.parametrize("state", ["configured", "revoked_access", "disabled_credential"])
+async def test_mfa_challenge_rejections_preserve_credentials_codes_and_sessions(
+    auth_app: FastAPI,
+    auth_client: AsyncClient,
+    db_session: AsyncSession,
+    state: str,
+) -> None:
+    from app.models import Session
+
+    context = await _complete_enrollment(
+        auth_app, auth_client, db_session, email=f"challenge-{state}@example.com"
+    )
+    login = await auth_client.post(
+        "/api/v1/auth/login", json={"email": context.email, "password": "correct-password"}
+    )
+    assert login.status_code == 202
+    if state == "revoked_access":
+        access = await db_session.scalar(
+            select(AdminAccess).where(AdminAccess.user_id == context.user_id)
+        )
+        assert access is not None
+        access.status = "revoked"
+        access.revoked_at = context.clock["now"]
+    elif state == "disabled_credential":
+        credential = await db_session.scalar(
+            select(MfaCredential).where(MfaCredential.user_id == context.user_id)
+        )
+        assert credential is not None
+        credential.disabled_at = context.clock["now"]
+    await db_session.commit()
+    models = (MfaCredential, MfaRecoveryCode, Session, AuditEvent)
+    before = [await db_session.scalar(select(func.count()).select_from(model)) for model in models]
+    if state == "configured":
+        response = await auth_client.post("/api/v1/auth/mfa/enrollment/start")
+        assert response.status_code == 409
+        assert response.json()["code"] == "MFA_ALREADY_CONFIGURED"
+    else:
+        response = await auth_client.post(
+            "/api/v1/auth/mfa/recovery/verify", json={"code": context.recovery_codes[0]}
+        )
+        assert response.status_code == 401
+        assert response.json()["code"] == "MFA_CHALLENGE_INVALID"
+    assert [
+        await db_session.scalar(select(func.count()).select_from(model)) for model in models
+    ] == before
+    assert (
+        await db_session.scalar(
+            select(func.count())
+            .select_from(MfaRecoveryCode)
+            .where(MfaRecoveryCode.used_at.is_not(None))
+        )
+        == 0
+    )

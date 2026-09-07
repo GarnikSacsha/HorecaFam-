@@ -3,12 +3,14 @@ from datetime import UTC, datetime
 
 import pytest
 from pydantic import SecretStr
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
 from app.db.session import create_engine, create_session_factory
 from app.models import (
+    AuditEvent,
     BackgroundJob,
     BackgroundJobType,
     EmailDelivery,
@@ -255,3 +257,55 @@ async def test_password_reset_handler_reconstructs_active_token_and_finalizes_jo
     assert len(reset_adapter.messages) == 1
     assert reset_adapter.messages[0].email == user.email_normalized
     assert reset_manager.derive_matching(token) == reset_adapter.messages[0].token
+
+
+@pytest.mark.parametrize(
+    "job_type",
+    ["attempt_expiry", "retake_deadline_projection", "security_record_cleanup", "audit_retention"],
+)
+@pytest.mark.parametrize("timestamp", [None, 123, "invalid-date", "2031-01-02T00:00:00"])
+async def test_worker_rejects_malformed_maintenance_timestamp_without_cleanup(
+    db_session: AsyncSession,
+    migrated_test_database: Settings,
+    job_type: str,
+    timestamp: object,
+) -> None:
+    now = datetime.now(UTC)
+    field = "projected_at" if job_type == "retake_deadline_projection" else "cutoff_at"
+    job = BackgroundJob(
+        job_type=job_type,
+        status="pending",
+        payload={field: timestamp},
+        idempotency_key="invalid-maintenance",
+        next_run_at=now,
+    )
+    db_session.add(job)
+    if not isinstance(timestamp, str):
+        with pytest.raises(IntegrityError) as rejected:
+            await db_session.commit()
+        assert "ck_background_jobs_payload_matches_job_type" in str(rejected.value)
+        await db_session.rollback()
+        assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == 0
+        return
+    await db_session.commit()
+    engine = create_engine(migrated_test_database)
+    session_factory = create_session_factory(engine)
+    try:
+        assert await run_worker_once(
+            session_factory,
+            worker_id="validation-worker",
+            now=now,
+            handlers=handler_registry(
+                session_factory,
+                token_manager=InvitationTokenManager([SecretStr("i" * 32)]),
+                adapter=FlakyInvitationAdapter(fail_first=False),
+            ),
+        )
+    finally:
+        await engine.dispose()
+    await db_session.refresh(job)
+    assert job.status == "pending" and job.attempt_count == 1
+    assert job.next_run_at > now
+    assert job.last_error_message == "Approved Job handler failed."
+    assert job.locked_by is None and job.heartbeat_at is None
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == 0

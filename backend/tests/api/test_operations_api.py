@@ -1,7 +1,10 @@
 import asyncio
+import base64
+import json
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import func, select
@@ -13,6 +16,114 @@ from tests.factories.auth import make_admin_access
 from tests.factories.identity import make_organization, make_user
 
 FIXED_NOW = datetime(2031, 2, 3, 12, 0, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("damage", ["encoding", "shape", "id", "date", "naive"])
+async def test_operator_pagination_filters_and_invalid_cursor_are_controlled(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession, damage: str
+) -> None:
+    await _arrange_elevated_session(auth_client, auth_app, db_session, scope="platform_operator")
+    organization = make_organization()
+    db_session.add(organization)
+    await db_session.flush()
+    jobs = [
+        BackgroundJob(
+            organization_id=organization.id,
+            job_type="attempt_expiry",
+            status="pending",
+            payload={"cutoff_at": FIXED_NOW.isoformat()},
+            idempotency_key=f"cursor-{index}",
+            next_run_at=FIXED_NOW,
+            created_at=FIXED_NOW + timedelta(seconds=index),
+            last_error_message="private token" if index == 0 else None,
+        )
+        for index in range(2)
+    ]
+    db_session.add_all(jobs)
+    await db_session.commit()
+    base = "/api/v1/operator/jobs"
+    params = {"limit": "1", "job_type": "attempt_expiry", "organization_id": str(organization.id)}
+    first = await auth_client.get(base, params=params)
+    assert first.status_code == 200
+    assert first.json()["items"][0]["id"] == str(jobs[1].id)
+    cursor = first.json()["next_cursor"]
+    assert isinstance(cursor, str)
+    second = await auth_client.get(base, params={**params, "cursor": cursor})
+    assert second.status_code == 200 and second.json()["next_cursor"] is None
+    assert second.json()["items"][0]["id"] == str(jobs[0].id)
+    assert second.json()["items"][0]["last_error_message"] == "[REDACTED]"
+    assert "private token" not in second.text
+    if damage == "encoding":
+        damaged = "invalid-cursor"
+    else:
+        decoded = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+        if damage == "shape":
+            decoded = {}
+        elif damage == "id":
+            decoded["id"] = "invalid"
+        else:
+            decoded["created_at"] = "2031-01-02T00:00:00" if damage == "naive" else "invalid"
+        damaged = base64.urlsafe_b64encode(json.dumps(decoded).encode()).decode().rstrip("=")
+    rejected = await auth_client.get(base, params={**params, "cursor": damaged})
+    assert rejected.status_code == 422 and rejected.json()["code"] == "INVALID_CURSOR"
+    missing = await auth_client.get(f"{base}/{uuid4()}")
+    assert missing.status_code == 404 and missing.json()["code"] == "RESOURCE_NOT_FOUND"
+
+
+@pytest.mark.parametrize("rejection", ["missing", "reason_changed", "key_changed"])
+async def test_operator_rejected_retry_creates_no_duplicate_job_or_audit(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession, rejection: str
+) -> None:
+    _, csrf = await _arrange_elevated_session(
+        auth_client, auth_app, db_session, scope="platform_operator"
+    )
+    job = BackgroundJob(
+        job_type="attempt_expiry",
+        status="failed",
+        payload={"cutoff_at": FIXED_NOW.isoformat()},
+        idempotency_key="retry-rejection",
+        next_run_at=FIXED_NOW,
+        failed_at=FIXED_NOW,
+    )
+    db_session.add(job)
+    await db_session.commit()
+    headers = {
+        "Origin": "https://frontend.test",
+        "X-CSRF-Token": csrf,
+        "Idempotency-Key": "first-retry",
+    }
+    url = f"/api/v1/operator/jobs/{job.id}/retry"
+    if rejection != "missing":
+        accepted = await auth_client.post(url, headers=headers, json={"reason": "Reviewed failure"})
+        assert accepted.status_code == 200
+    counts = [
+        await db_session.scalar(select(func.count()).select_from(m))
+        for m in (BackgroundJob, AuditEvent)
+    ]
+    if rejection == "missing":
+        url = f"/api/v1/operator/jobs/{uuid4()}/retry"
+    if rejection == "key_changed":
+        headers["Idempotency-Key"] = "second-retry"
+    denied = await auth_client.post(
+        url,
+        headers=headers,
+        json={
+            "reason": "Different reason" if rejection == "reason_changed" else "Reviewed failure"
+        },
+    )
+    assert denied.status_code == (404 if rejection == "missing" else 409)
+    assert (
+        denied.json()["code"]
+        == {
+            "missing": "RESOURCE_NOT_FOUND",
+            "reason_changed": "IDEMPOTENCY_KEY_REUSED",
+            "key_changed": "JOB_RETRY_ALREADY_CREATED",
+        }[rejection]
+    )
+    assert [
+        await db_session.scalar(select(func.count()).select_from(m))
+        for m in (BackgroundJob, AuditEvent)
+    ] == counts
 
 
 async def _arrange_elevated_session(

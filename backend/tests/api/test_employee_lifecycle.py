@@ -274,3 +274,98 @@ async def test_concurrent_disable_with_different_keys_has_one_transition(
         )
         == 1
     )
+
+
+async def test_lifecycle_replays_do_not_duplicate_audit_or_change_activation(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    organization, membership, profile, csrf = await _arrange_lifecycle_context(
+        auth_client, auth_app, db_session
+    )
+    base = f"/api/v1/organizations/{organization.id}/employees/{profile.id}"
+    activated_at = membership.activated_at
+    membership_id = membership.id
+    steps: list[tuple[str, dict[str, str] | None, str]] = [
+        ("disable", {"reason_code": "leave"}, "disabled"),
+        ("reactivate", None, "active"),
+        ("pause", {"reason_code": "leave"}, "active"),
+        ("resume", None, "active"),
+    ]
+    for action, body, expected in steps:
+        headers = _headers(csrf, f"lifecycle-once-{action}")
+        first = await auth_client.post(f"{base}/{action}", headers=headers, json=body)
+        assert first.status_code == 200
+        assert first.json()["membership_status"] == expected
+        before = list(await db_session.scalars(select(AuditEvent.id)))
+        replay = await auth_client.post(f"{base}/{action}", headers=headers, json=body)
+        assert replay.status_code == 200
+        assert replay.json() == first.json()
+        assert list(await db_session.scalars(select(AuditEvent.id))) == before
+        rejected = await auth_client.post(
+            f"{base}/{action}", headers=_headers(csrf, f"repeat-{action}"), json=body
+        )
+        assert rejected.status_code == 409
+        assert list(await db_session.scalars(select(AuditEvent.id))) == before
+    db_session.expire_all()
+    stored = await db_session.get_one(OrganizationMembership, membership_id)
+    assert stored.activated_at == activated_at
+    assert stored.status == stored.training_participation_status == "active"
+
+
+async def test_employee_missing_targets_and_invalid_search_leave_profile_unchanged(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+) -> None:
+    import base64
+
+    organization, _membership, profile, csrf = await _arrange_lifecycle_context(
+        auth_client, auth_app, db_session
+    )
+    base = f"/api/v1/organizations/{organization.id}/employees"
+    detail_url = f"{base}/{profile.id}"
+    before = (await auth_client.get(detail_url)).json()
+    audit_before = list(await db_session.scalars(select(AuditEvent.id)))
+    missing = f"{base}/{uuid4()}"
+    assert (await auth_client.get(missing)).status_code == 404
+    assert (
+        await auth_client.patch(
+            missing, headers=_headers(csrf, "missing-edit"), json={"first_name": "New"}
+        )
+    ).status_code == 404
+    assert (
+        await auth_client.post(
+            f"{missing}/disable",
+            headers=_headers(csrf, "missing-disable"),
+            json={"reason_code": "leave"},
+        )
+    ).status_code == 404
+    naive_cursor = base64.urlsafe_b64encode(f"2031-01-10T12:00:00|{profile.id}".encode()).decode()
+    for params in ({"query": "   "}, {"cursor": naive_cursor}):
+        response = await auth_client.get(base, params=params)
+        assert response.status_code == 422
+        assert response.json()["code"] == "VALIDATION_ERROR"
+    assert (await auth_client.get(detail_url)).json() == before
+    assert list(await db_session.scalars(select(AuditEvent.id))) == audit_before
+
+
+async def test_invalid_lifecycle_notes_preserve_membership_and_history(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession
+) -> None:
+    organization, _membership, profile, csrf = await _arrange_lifecycle_context(
+        auth_client, auth_app, db_session
+    )
+    base = f"/api/v1/organizations/{organization.id}/employees/{profile.id}"
+    before = (await auth_client.get(base)).json()
+    audit_before = list(await db_session.scalars(select(AuditEvent.id)))
+    for note in (123, "   "):
+        response = await auth_client.post(
+            f"{base}/disable",
+            headers=_headers(csrf, f"invalid-note-{note}"),
+            json={"reason_code": "leave", "note": note},
+        )
+        assert response.status_code == 422
+    assert (await auth_client.get(base)).json() == before
+    assert list(await db_session.scalars(select(AuditEvent.id))) == audit_before

@@ -370,3 +370,66 @@ async def test_elevated_password_change_requires_recent_mfa(
 
     assert response.status_code == 403
     assert response.json()["code"] == "RECENT_MFA_REQUIRED"
+
+
+async def test_password_reset_throttle_rejects_repeats_and_recovers_at_window_boundary(
+    auth_app: FastAPI,
+    auth_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    from sqlalchemy import func
+
+    clock = {"now": datetime(2031, 1, 1, 12, tzinfo=UTC)}
+    auth_app.state.clock = lambda: clock["now"]
+    user = make_user(
+        email_normalized="window-reset@example.com",
+        password_hash=PasswordManager().hash("old-password"),
+    )
+    db_session.add(user)
+    await db_session.commit()
+    body = {"email": user.email_normalized}
+    for _ in range(5):
+        response = await auth_client.post("/api/v1/auth/password/forgot", json=body)
+        assert response.status_code == 202
+    before = await db_session.scalar(select(func.count()).select_from(BackgroundJob))
+    for _ in range(2):
+        response = await auth_client.post("/api/v1/auth/password/forgot", json=body)
+        assert response.status_code == 429 and response.json()["code"] == "AUTH_RATE_LIMITED"
+        assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == before
+    clock["now"] += timedelta(minutes=15)
+    recovered = await auth_client.post("/api/v1/auth/password/forgot", json=body)
+    assert recovered.status_code == 202
+    assert before is not None
+    assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == before + 1
+
+
+async def test_wrong_current_password_preserves_password_sessions_and_audit(
+    auth_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    user = make_user(
+        email_normalized="wrong-current@example.com",
+        password_hash=PasswordManager().hash("old-password"),
+    )
+    db_session.add(user)
+    await db_session.commit()
+    user_id = user.id
+    login = await auth_client.post(
+        "/api/v1/auth/login", json={"email": user.email_normalized, "password": "old-password"}
+    )
+    assert login.status_code == 200
+    before = list(await db_session.scalars(select(AuditEvent.id)))
+    response = await auth_client.post(
+        "/api/v1/auth/password/change",
+        headers={"Origin": "https://frontend.test", "X-CSRF-Token": login.json()["csrf_token"]},
+        json={"current_password": "incorrect-password", "new_password": "new-password"},
+    )
+    assert response.status_code == 401 and response.json()["code"] == "CURRENT_PASSWORD_INVALID"
+    db_session.expire_all()
+    stored = await db_session.get_one(User, user_id)
+    assert stored.password_hash is not None and PasswordManager().verify(
+        stored.password_hash, "old-password"
+    )
+    assert list(await db_session.scalars(select(AuditEvent.id))) == before
+    sessions = list(await db_session.scalars(select(Session).where(Session.user_id == user_id)))
+    assert sessions and all(session.revoked_at is None for session in sessions)
