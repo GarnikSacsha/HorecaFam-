@@ -948,3 +948,101 @@ def test_rollout_openapi_exposes_preview_and_confirm_without_assessment(
     assert "assessment" not in serialized
     assert "answer_key" not in serialized
     assert "certification" not in serialized
+
+
+async def test_rollout_rule_and_revision_rejections_preserve_preview_and_assignments(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession
+) -> None:
+    org_id, location_id, _, csrf, rollout, changed_id, unchanged_id = await arrange_rollout_context(
+        auth_client, auth_app, db_session
+    )
+    base = f"/api/v1/organizations/{org_id}/locations/{location_id}/training-rollouts/{rollout.id}"
+    models = (AuditEvent, BackgroundJob, TrainingAssignment, LessonCompletion)
+
+    async def reject(
+        method: str, target: str, payload: dict[str, object], status: int, code: str
+    ) -> None:
+        before = await auth_client.get(base)
+        counts = [
+            await db_session.scalar(select(func.count()).select_from(model)) for model in models
+        ]
+        denied = await auth_client.request(
+            method,
+            target,
+            headers=mutation_headers(csrf, key=str(uuid4())),
+            json=payload,
+        )
+        assert denied.status_code == status and denied.json()["code"] == code
+        after = await auth_client.get(base)
+        assert after.json() == before.json()
+        assert [
+            await db_session.scalar(select(func.count()).select_from(model)) for model in models
+        ] == counts
+
+    await reject(
+        "PATCH",
+        f"{base}/lesson-rules/{changed_id}",
+        {"expected_revision": 0, "rule": "preserve_completion"},
+        409,
+        "TRAINING_ROLLOUT_NOT_READY",
+    )
+    await reject("POST", f"{base}/preview", {"expected_revision": 99}, 409, "REVISION_CONFLICT")
+    await reject(
+        "POST", f"{base}/confirm", {"expected_revision": 0}, 409, "TRAINING_ROLLOUT_NOT_READY"
+    )
+    preview = await auth_client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key="rule-preview"),
+        json={"expected_revision": 0},
+    )
+    assert preview.status_code == 200
+    await reject(
+        "PATCH",
+        f"{base}/lesson-rules/{uuid4()}",
+        {"expected_revision": 1, "rule": "preserve_completion"},
+        404,
+        "RESOURCE_NOT_FOUND",
+    )
+    await reject(
+        "PATCH",
+        f"{base}/lesson-rules/{unchanged_id}",
+        {"expected_revision": 1, "rule": "needs_repeat"},
+        409,
+        "ROLLOUT_RULE_REQUIRED",
+    )
+    await reject(
+        "PATCH",
+        f"{base}/lesson-rules/{changed_id}",
+        {"expected_revision": 99, "rule": "preserve_completion"},
+        409,
+        "REVISION_CONFLICT",
+    )
+    decision = await auth_client.patch(
+        f"{base}/lesson-rules/{changed_id}",
+        headers=mutation_headers(csrf),
+        json={"expected_revision": 1, "rule": "preserve_completion"},
+    )
+    assert decision.status_code == 200
+    refreshed = await auth_client.post(
+        f"{base}/preview",
+        headers=mutation_headers(csrf, key="rule-repreview"),
+        json={"expected_revision": 2},
+    )
+    assert refreshed.status_code == 200
+    await reject("POST", f"{base}/confirm", {"expected_revision": 99}, 409, "REVISION_CONFLICT")
+    completed = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="rule-confirm"),
+        json={"expected_revision": 3},
+    )
+    assert completed.status_code == 200 and completed.json()["status"] == "completed"
+    await reject(
+        "POST", f"{base}/preview", {"expected_revision": 4}, 409, "TRAINING_ROLLOUT_NOT_READY"
+    )
+    await reject(
+        "PATCH",
+        f"{base}/lesson-rules/{changed_id}",
+        {"expected_revision": 4, "rule": "preserve_completion"},
+        409,
+        "TRAINING_ROLLOUT_NOT_READY",
+    )

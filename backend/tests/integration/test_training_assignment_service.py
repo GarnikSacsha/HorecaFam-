@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -307,3 +308,104 @@ async def test_completion_rolls_back_fact_assignment_audit_and_idempotency(
         )
         == 0
     )
+
+
+@pytest.mark.parametrize("operation", ["create", "reassign"])
+@pytest.mark.parametrize("state", ["missing_employee", "no_location", "draft", "pending"])
+async def test_assignment_invalid_targets_roll_back_all_effects(
+    db_session: AsyncSession, operation: str, state: str
+) -> None:
+    from app.models import EmployeeProfile, OrganizationMembership, Training
+    from app.schemas.training import TrainingAssignmentReassign
+    from app.services.training_assignments import reassign_training_assignment
+
+    context = await arrange_completion_graph(db_session, required_count=1)
+    assignment = await db_session.get_one(TrainingAssignment, context.assignment_id)
+    employee = await db_session.get_one(EmployeeProfile, context.employee_id)
+    version_id = assignment.training_version_id
+    if state == "no_location":
+        employee.location_id = None
+    elif state == "pending":
+        membership = await db_session.get_one(OrganizationMembership, employee.membership_id)
+        membership.status = "pending"
+        membership.activated_at = None
+    elif state == "draft":
+        training = await db_session.get_one(Training, assignment.training_id)
+        draft = make_training_version(training, context.user_id, version_number=2)
+        db_session.add(draft)
+        version_id = draft.id
+    await db_session.commit()
+    models = (TrainingAssignment, BackgroundJob, AuditEvent, ApiIdempotencyRecord)
+    before = [await db_session.scalar(select(func.count()).select_from(model)) for model in models]
+    employee_id = uuid4() if state == "missing_employee" else context.employee_id
+    code = (
+        "RESOURCE_NOT_FOUND"
+        if state == "missing_employee"
+        else "TRAINING_ASSIGNMENT_VERSION_INVALID"
+    )
+    with pytest.raises(APIError, match=code):
+        if operation == "create":
+            await create_training_assignment(
+                db_session,
+                organization_id=context.organization_id,
+                employee_id=employee_id,
+                actor_user_id=context.user_id,
+                payload=TrainingAssignmentCreate(training_version_id=version_id),
+                idempotency_key="invalid-create",
+                now=FIXED_NOW,
+                request_id=uuid4(),
+            )
+        else:
+            await reassign_training_assignment(
+                db_session,
+                organization_id=context.organization_id,
+                employee_id=employee_id,
+                actor_user_id=context.user_id,
+                assignment_id=context.assignment_id,
+                payload=TrainingAssignmentReassign(training_version_id=version_id),
+                idempotency_key="invalid-reassign",
+                now=FIXED_NOW,
+                request_id=uuid4(),
+            )
+    assert [
+        await db_session.scalar(select(func.count()).select_from(model)) for model in models
+    ] == before
+    stored = await db_session.get_one(TrainingAssignment, context.assignment_id)
+    assert stored.status == "assigned" and stored.revoked_at is None
+
+
+async def test_assignment_revoke_replay_and_missing_targets_preserve_single_notification(
+    db_session: AsyncSession,
+) -> None:
+    from app.schemas.training import TrainingAssignmentRevoke
+    from app.services.training_assignments import revoke_training_assignment
+
+    context = await arrange_completion_graph(db_session, required_count=1)
+    args: dict[str, Any] = dict(
+        organization_id=context.organization_id,
+        employee_id=context.employee_id,
+        actor_user_id=context.user_id,
+        payload=TrainingAssignmentRevoke(reason="Schedule changed"),
+        now=FIXED_NOW,
+        request_id=uuid4(),
+    )
+    with pytest.raises(APIError, match="RESOURCE_NOT_FOUND"):
+        await revoke_training_assignment(
+            db_session, **args, assignment_id=uuid4(), idempotency_key="missing-revoke"
+        )
+    first = await revoke_training_assignment(
+        db_session, **args, assignment_id=context.assignment_id, idempotency_key="revoke-once"
+    )
+    models = (TrainingAssignment, BackgroundJob, AuditEvent, ApiIdempotencyRecord)
+    before = [await db_session.scalar(select(func.count()).select_from(model)) for model in models]
+    replay = await revoke_training_assignment(
+        db_session, **args, assignment_id=context.assignment_id, idempotency_key="revoke-once"
+    )
+    assert replay == first and first.status == "revoked"
+    with pytest.raises(APIError, match="TRAINING_ASSIGNMENT_REVOKED"):
+        await revoke_training_assignment(
+            db_session, **args, assignment_id=context.assignment_id, idempotency_key="revoke-again"
+        )
+    assert [
+        await db_session.scalar(select(func.count()).select_from(model)) for model in models
+    ] == before

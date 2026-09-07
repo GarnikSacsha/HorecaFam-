@@ -2,11 +2,12 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
+    AuditEvent,
     LessonContentBlock,
     LessonContentBlockTranslation,
     LessonTranslation,
@@ -16,6 +17,7 @@ from app.models import (
     TrainingModule,
     TrainingModuleTranslation,
     TrainingModuleVersion,
+    TrainingVersion,
     User,
 )
 from app.services.training_drafts import (
@@ -380,3 +382,176 @@ async def test_second_draft_is_rejected(db_session: AsyncSession) -> None:
         )
 
     assert duplicate.value.code == "TRAINING_DRAFT_EXISTS"
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("problem", ["title", "description", "minutes", "module", "location"])
+async def test_rejected_lesson_creation_rolls_back_partial_rows(
+    db_session: AsyncSession, problem: str
+) -> None:
+    organization, location, user = await identity_root(db_session)
+    organization_id, location_id, user_id = organization.id, location.id, user.id
+    draft = await create_training_draft(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        actor_user_id=user_id,
+        request_id=uuid4(),
+        base_version_id=None,
+    )
+    draft_id = draft.id
+    module = await db_session.scalar(
+        select(TrainingModuleVersion).where(TrainingModuleVersion.training_version_id == draft_id)
+    )
+    assert module is not None
+    module_id = module.id
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    with pytest.raises(APIError) as rejected:
+        await create_lesson(
+            db_session,
+            organization_id=organization_id,
+            location_id=uuid4() if problem == "location" else location_id,
+            version_id=draft_id,
+            module_id=uuid4() if problem == "module" else module_id,
+            actor_user_id=user_id,
+            request_id=uuid4(),
+            expected_revision=0,
+            title_uk="  " if problem == "title" else "Урок",
+            description_uk="я" * 2001 if problem == "description" else None,
+            required=True,
+            estimated_minutes=0 if problem == "minutes" else None,
+        )
+    assert rejected.value.code == (
+        "RESOURCE_NOT_FOUND" if problem in {"module", "location"} else "VALIDATION_ERROR"
+    )
+    assert (await db_session.get_one(TrainingVersion, draft_id)).revision == 0
+    assert await db_session.scalar(select(func.count()).select_from(LessonVersion)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(LessonTranslation)) == 0
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    created = await create_lesson(
+        db_session,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=draft_id,
+        module_id=module_id,
+        actor_user_id=user_id,
+        request_id=uuid4(),
+        expected_revision=0,
+        title_uk=" Урок ",
+        description_uk="  ",
+        required=True,
+        estimated_minutes=None,
+    )
+    assert created.revision == 1
+    translation = await db_session.scalar(
+        select(LessonTranslation).where(LessonTranslation.lesson_version_id == created.entity.id)
+    )
+    assert translation is not None
+    assert translation.title == "Урок" and translation.description is None
+
+
+async def test_training_structure_rejections_and_translation_staleness_are_atomic(
+    db_session: AsyncSession,
+) -> None:
+    from typing import Any
+
+    organization, location, user = await identity_root(db_session)
+    draft = await create_training_draft(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        actor_user_id=user.id,
+        request_id=uuid4(),
+        base_version_id=None,
+    )
+    module = await db_session.scalar(
+        select(TrainingModuleVersion).where(TrainingModuleVersion.training_version_id == draft.id)
+    )
+    assert module is not None
+    args: dict[str, Any] = dict(
+        organization_id=organization.id,
+        location_id=location.id,
+        actor_user_id=user.id,
+        request_id=uuid4(),
+        version_id=draft.id,
+    )
+    module_id = module.id
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    with pytest.raises(APIError, match="RESOURCE_NOT_FOUND"):
+        await update_module(
+            db_session,
+            **args,
+            expected_revision=0,
+            module_id=uuid4(),
+            title_uk="Menu",
+            description_uk=None,
+            required=True,
+        )
+    with pytest.raises(APIError, match="RESOURCE_NOT_FOUND"):
+        await update_lesson(
+            db_session,
+            **args,
+            expected_revision=0,
+            lesson_id=uuid4(),
+            title_uk="Lesson",
+            description_uk=None,
+            required=True,
+            estimated_minutes=5,
+        )
+    with pytest.raises(APIError, match="RESOURCE_NOT_FOUND"):
+        await delete_lesson(db_session, **args, expected_revision=0, lesson_id=uuid4())
+    with pytest.raises(APIError, match="RESOURCE_NOT_FOUND"):
+        await reorder_lessons(
+            db_session, **args, expected_revision=0, module_id=uuid4(), ordered_ids=[]
+        )
+    with pytest.raises(APIError, match="VALIDATION_ERROR"):
+        await reorder_lessons(
+            db_session, **args, expected_revision=0, module_id=module_id, ordered_ids=[uuid4()]
+        )
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    created = await create_lesson(
+        db_session,
+        **args,
+        expected_revision=0,
+        module_id=module_id,
+        title_uk="Lesson",
+        description_uk=None,
+        required=True,
+        estimated_minutes=5,
+    )
+    lesson_id, lesson_version_id = created.entity.lesson_id, created.entity.id
+    module = await db_session.get_one(TrainingModuleVersion, module_id)
+    module_en = make_training_module_translation(module, locale="en", title="Menu", status="ready")
+    lesson_en = make_lesson_translation(created.entity, locale="en", title="Lesson", status="ready")
+    block = make_content_block(created.entity)
+    db_session.add_all([module_en, lesson_en, block])
+    await db_session.commit()
+    module_en_id, lesson_en_id = module_en.id, lesson_en.id
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    with pytest.raises(APIError, match="LESSON_NOT_EMPTY"):
+        await delete_lesson(db_session, **args, expected_revision=1, lesson_id=lesson_id)
+    assert await db_session.get(LessonVersion, lesson_version_id) is not None
+    assert (await db_session.get_one(TrainingVersion, args["version_id"])).revision == 1
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    await update_module(
+        db_session,
+        **args,
+        expected_revision=1,
+        module_id=module_id,
+        title_uk="Revised menu",
+        description_uk=None,
+        required=True,
+    )
+    await update_lesson(
+        db_session,
+        **args,
+        expected_revision=2,
+        lesson_id=lesson_id,
+        title_uk="Revised lesson",
+        description_uk=None,
+        required=True,
+        estimated_minutes=6,
+    )
+    assert (await db_session.get_one(TrainingModuleTranslation, module_en_id)).status == "stale"
+    assert (await db_session.get_one(LessonTranslation, lesson_en_id)).status == "stale"
+    assert (await db_session.get_one(TrainingVersion, args["version_id"])).revision == 3
