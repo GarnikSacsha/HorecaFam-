@@ -1,5 +1,63 @@
 # HoReCa Repository Status
 
+## Active local implementation — CRA-125 — 2026-09-07
+
+**Latest local Git state:** Denys authorized all ten selective commits. The nine app/test
+checkpoints are committed as `d24e7a2..b9a66e8`; the final documentation checkpoint records
+their evidence. Every mapped focused suite and Ruff/mypy check passed, with 0 failed/skipped
+tests. Python sources still match the full 809-pass run. The earlier uncommitted/commit-pending
+statements in this dated execution history are superseded. No push or staging deployment occurred.
+
+**Latest result: local implementation and verification complete, ready for acceptance.**
+One fresh full PostgreSQL 16 run: **809 passed, 0 failed, 0 skipped; 1984.30s**.
+Independent gates: statements **11408/12135 = 94.01% PASS**; branches
+**2041/2538 = 80.42% PASS**; unchanged nine-file critical aggregate
+**1293/1443 = 89.60% PASS**. Ruff format/check and strict mypy pass. Full source inventory
+is verified and the app/test source hash stayed unchanged during the run. The lower counts
+and failed branch gates below are dated historical checkpoints, superseded for current
+local evidence by this result. The authorized local commit range is recorded above.
+
+Denys authorized the seven-checkpoint coverage plan and creation of [CRA-125](https://linear.app/craftspacee/issue/CRA-125/close-independent-backend-statement-and-branch-coverage-gates). This supersedes the pending implementation-approval wording in the dated planning record below. Commits and external actions remain unauthorized.
+
+Checkpoint 1 is implemented locally: gate helper plus 16 passing unit tests. Denys then
+authorized the precise menu PATCH correction: invalid merged input now returns the existing
+safe 422 error, with rollback and a successful subsequent PATCH verified. The adjacent menu
+suite passed 69 tests; six further import/publication cases also passed within a 15-test run.
+Coverage tests now also exercise training schema/asset/draft/publication rejection and
+assessment prerequisites. These are focused results, not a new full coverage gate.
+
+Denys approved the subsequent cursor correction and Linear synchronization. Both Admin Attention
+and Retake Requirements lists now reject timezone-less cursor timestamps with 422 INVALID_CURSOR
+before comparison, including empty lists. Four RED cases became GREEN; all four mapped follow-up
+files passed 23 tests with zero failures/skips. Valid next-page traversal remains verified.
+Checkpoint 6 operations/security tests and the first fresh full run are complete locally.
+That full PostgreSQL 16 run passed 711 tests, zero failed/skipped, in 1606.36s:
+statements 11104/12135 = 91.50% PASS; branches 1860/2538 = 73.29% FAIL;
+fixed critical aggregate 1241/1443 = 86.00% PASS. CRA-125 is not accepted.
+
+Subsequent refinement passed 65 focused tests with zero failed/skipped in 197.34s and
+executed 97 destinations missing from that full report. This diagnostic comparison leaves
+74 destinations to the branch threshold; it is not merged full-run acceptance. A later
+publication/assignment package passed 16 tests in 71.52s; its gain is not included above.
+
+Denys authorized the subsequent retake-action correction. An unrelated Interactive or Practice
+Attempt no longer selects `resume_retake` for a Final Exam Requirement: the query now filters
+by the stable target Assessment. Fresh RED: 2 failed, 1 passed; four-file GREEN: 28 passed,
+zero failed/skipped. Frozen and cancelled actions remain correct. A later refinement run
+passed 95 tests, followed by 20 prerequisite/history/MFA checks, 8 takeover checks and the
+Final Exam resume/readback/finish scenario. These are separate focused runs.
+The final full run passed all 809 tests and all three coverage gates with isolated data.
+See the [execution record](docs/testing/coverage-closure-plan.md) for the accepted boundary.
+Ruff format/check (238 files) and strict mypy (217 source files) pass. No commit, push or deployment occurred.
+CRA-122 staging Stage 2 remains separate and open; Linear synchronization is authorized.
+
+The [September 7 audit](docs/testing/repository-audit-2026-09-07.md) records 552 backend tests,
+72 Vitest tests, 42 Playwright executions and 5 artifact/topology tests passing with zero
+failures/skips in those suites. Statements: 89.22%; branches: 67.76%; combined: 85.51%.
+Denys approved independent overall gates of at least 80% statements and at least 80% branches
+on September 7. That original audit passed statements and failed branches; CRA-125 now passes
+both gates as recorded above. See the [coverage closure plan](docs/testing/coverage-closure-plan.md).
+
 **Snapshot date:** 2026-09-04
 **Published product implementation:** CRA-77 Operations and Hardening is accepted and published as
 part of the baseline through `c8a1135`. CRA-119 Deployment and Provider Readiness is accepted, Done,

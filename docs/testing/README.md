@@ -1,5 +1,40 @@
 # Testing Context
 
+## Latest local CRA-125 evidence
+
+Latest fresh full PostgreSQL 16 run: **809 passed, 0 failed, 0 skipped in 1984.30s**.
+Statements **11408/12135 = 94.01% PASS**; branches **2041/2538 = 80.42% PASS**;
+fixed nine-file critical aggregate **1293/1443 = 89.60% PASS**. Independent raw-count
+checks and full source inventory pass, with no historical data merged. Ruff format/check
+(238 files) and strict mypy (217 source files) pass. Three explicitly approved production
+corrections are verified. See the current
+[execution record and corrective map](coverage-closure-plan.md).
+Local implementation and verification are complete. Denys authorized the ten selective local
+commits; the nine app/test checkpoints are committed through `b9a66e8`, with the final documentation
+checkpoint recording their evidence. All mapped focused suites and Ruff/mypy checks passed.
+Python sources still match the 809-pass run. No push or staging acceptance is implied;
+the original audit below retains its historical values.
+
+## Current audit and evidence boundary — 2026-09-07
+
+[Exact September 7 results](repository-audit-2026-09-07.md): 552 backend tests, 72 Vitest tests,
+42 Playwright executions and 5 artifact/topology tests passed with zero failed/skipped tests.
+Ruff, mypy, frontend format/lint/types/build, topology typecheck and Alembic checks passed.
+Published source: `e18af71`; schema head: `0018_job_runtime`.
+
+Overall coverage: **89.22% statements / 67.76% branches / 85.51% combined**. CRA-77 critical set:
+85.19% / 64.89% / 81.22%. Older “86% statement/branch” records describe the combined metric;
+they are not evidence of separate 86% branch coverage. Denys approved independent overall
+thresholds of at least 80% statements and at least 80% branches on September 7 (CRA-13).
+Statements pass; branches fail. The critical aggregate threshold remains at least 80%.
+The independent gate helper is now implemented locally under CRA-125; see the
+[coverage closure plan](coverage-closure-plan.md). The numbers above remain the original audit.
+Preserve historical acceptance and report current metrics separately.
+
+The following stage results retain their original evidence dates. Documentation synchronization
+does not rerun the application suites. Local mocks/signing tests do not prove live staging.
+
+
 Canonical test strategy, stage acceptance criteria, and Definition of Done remain in
 [CRA-13](https://linear.app/craftspacee/issue/CRA-13/define-backend-test-strategy-and-vertical-slice-acceptance-criteria)
 and the active bounded issue. Exact local commands and environment safeguards are

@@ -1,5 +1,40 @@
 # HoReCa Testing and Quality Commands
 
+## Latest local CRA-125 evidence
+
+The latest fresh full PostgreSQL 16 run passed **809 tests, 0 failed, 0 skipped in 1984.30s**.
+Independent gates: statements **11408/12135 = 94.01% PASS**; branches
+**2041/2538 = 80.42% PASS**; fixed critical aggregate **1293/1443 = 89.60% PASS**.
+The helper verifies complete source inventory and unchanged thresholds with raw counts.
+Ruff format/check (238 files) and strict mypy (217 source files) pass. All three authorized
+corrections are GREEN. Denys authorized the ten local commits; the nine app/test checkpoints
+are committed through `b9a66e8`, with the final documentation checkpoint recording their evidence.
+Each mapped focused suite and Ruff/mypy check passed; Python sources still match the 809-pass
+run. No push or staging deployment occurred. The lower audit metrics below remain historical. Follow the
+[current execution record](../docs/testing/coverage-closure-plan.md) for exact evidence.
+
+## Current audit and evidence boundary — 2026-09-07
+
+[Exact September 7 results](../docs/testing/repository-audit-2026-09-07.md): 552 backend tests, 72 Vitest tests,
+42 Playwright executions and 5 artifact/topology tests passed with zero failed/skipped tests.
+Ruff, mypy, frontend format/lint/types/build, topology typecheck and Alembic checks passed.
+Published source: `e18af71`; schema head: `0018_job_runtime`.
+
+Overall coverage: **89.22% statements / 67.76% branches / 85.51% combined**. CRA-77 critical set:
+85.19% / 64.89% / 81.22%. Older “86% statement/branch” records describe the combined metric;
+they are not evidence of separate 86% branch coverage. Denys approved independent overall
+thresholds of at least 80% statements and at least 80% branches on September 7 (CRA-13).
+Statements pass; branches fail. The critical aggregate threshold remains at least 80%.
+CRA-125 implements the approved [coverage closure plan](../docs/testing/coverage-closure-plan.md).
+The new `tests.coverage_gate` helper verifies both raw-count thresholds, the fixed critical
+aggregate and complete application source inventory. Its 16 unit cases pass; the saved audit
+correctly fails the original audit's branch gate. The latest full run above passes all gates.
+Preserve historical acceptance and report current metrics separately.
+
+The following stage results retain their original evidence dates. Documentation synchronization
+does not rerun the application suites. Local mocks/signing tests do not prove live staging.
+
+
 ## Supported baseline
 
 - Python: 3.12 only, as constrained by `backend/pyproject.toml`.
@@ -79,6 +114,18 @@ if ($env:TEST_DATABASE_URL -notmatch "/horeca_test(?:_[a-z0-9]+)*$") {
 Run this snippet from `backend/`. Do not echo the resulting variables.
 
 ## Exact project commands
+
+After a successful fresh full coverage run, generate and evaluate the report from `backend/`.
+The report must come from that same successful run; do not reuse an old JSON after an error.
+Keep generated evidence in the ignored test cache and out of Git:
+
+```powershell
+rtk ..\.venv\Scripts\python.exe -m coverage json -o .pytest_cache/cra125/current.json
+rtk ..\.venv\Scripts\python.exe -m tests.coverage_gate .pytest_cache/cra125/current.json
+```
+
+Exit codes: 0 means all three gates pass; 1 means a threshold fails; 2 means report validation
+failed. Combined `--cov-fail-under` alone cannot enforce the two independent overall gates.
 
 Run from `backend/`:
 
