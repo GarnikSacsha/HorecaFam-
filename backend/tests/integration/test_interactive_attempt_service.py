@@ -1,11 +1,15 @@
 from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import APIError
 from app.models import (
+    AssessmentAttempt,
     AssessmentQuestionPool,
+    AuditEvent,
     OrganizationMembership,
     QuestionOption,
     Session,
@@ -26,6 +30,50 @@ from tests.factories.assessments import (
 from tests.factories.auth import make_session
 from tests.factories.training import make_lesson_completion
 from tests.integration.test_assessment_persistence import _make_context
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("problem", "error"),
+    [
+        ("lesson", "RESOURCE_NOT_FOUND"),
+        ("completion", "INTERACTIVE_TRAINING_UNAVAILABLE"),
+        ("readiness", "ASSESSMENT_NOT_READY"),
+        ("pool", "ASSESSMENT_NOT_READY"),
+    ],
+)
+async def test_interactive_start_rejects_missing_prerequisites_without_attempt(
+    db_session: AsyncSession, problem: str, error: str
+) -> None:
+    context = await _make_context(db_session)
+    membership = await db_session.get_one(OrganizationMembership, context.employee.membership_id)
+    user = await db_session.get_one(User, membership.user_id)
+    session = make_session(user, token_hash="e" * 64, csrf_token_hash="f" * 64)
+    db_session.add(session)
+    if problem != "completion":
+        db_session.add(make_lesson_completion(context.assignment, context.lesson_version, user.id))
+    if problem == "pool":
+        db_session.add(
+            make_assessment_readiness(context.assessment_version, status="ready", eligible_count=5)
+        )
+    await db_session.commit()
+    with pytest.raises(APIError, match=error):
+        await start_or_resume_interactive_attempt(
+            db_session,
+            organization_id=context.assignment.organization_id,
+            location_id=context.assignment.location_id,
+            employee_profile_id=context.employee.id,
+            actor_user_id=user.id,
+            session_id=session.id,
+            lesson_id=uuid4() if problem == "lesson" else context.lesson_version.lesson_id,
+            presentation_locale="uk",
+            idempotency_key="denied-interactive-start",
+            request_id=uuid4(),
+            now=datetime.now(UTC),
+        )
+    await db_session.rollback()
+    for model in (AssessmentAttempt, AuditEvent):
+        assert await db_session.scalar(select(func.count()).select_from(model)) == 0
 
 
 @pytest.mark.integration

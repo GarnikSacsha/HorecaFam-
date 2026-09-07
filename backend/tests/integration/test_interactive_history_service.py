@@ -29,6 +29,51 @@ from tests.factories.interactive_training import (
     InteractiveRuntimeContext,
     arrange_interactive_runtime,
 )
+from tests.factories.training import make_lesson_completion
+from tests.integration.test_assessment_persistence import _make_context
+
+
+@pytest.mark.parametrize(
+    ("state", "availability", "reason"),
+    [
+        ("incomplete", "unavailable", "LESSON_NOT_COMPLETED"),
+        ("missing_readiness", "preparing", "ASSESSMENT_PROCESSING"),
+        ("processing", "preparing", "ASSESSMENT_PROCESSING"),
+        ("blocked", "unavailable", "ASSESSMENT_POOL_INVALID"),
+        ("empty_pool", "unavailable", "ASSESSMENT_POOL_INVALID"),
+    ],
+)
+async def test_empty_history_explains_unavailable_training_without_new_attempts(
+    db_session: AsyncSession, state: str, availability: str, reason: str
+) -> None:
+    context = await _make_context(db_session)
+    if state != "incomplete":
+        db_session.add(
+            make_lesson_completion(context.assignment, context.lesson_version, context.actor.id)
+        )
+    if state in {"processing", "blocked", "empty_pool"}:
+        db_session.add(
+            make_assessment_readiness(
+                context.assessment_version,
+                status="ready" if state == "empty_pool" else state,
+                eligible_count=0,
+            )
+        )
+    await db_session.commit()
+    summary = await get_lesson_interactive_training_summary(
+        db_session,
+        organization_id=context.assignment.organization_id,
+        location_id=context.assignment.location_id,
+        employee_profile_id=context.employee.id,
+        lesson_id=context.lesson_version.lesson_id,
+        session_id=uuid4(),
+    )
+    assert summary.availability == availability and summary.can_start is False
+    assert summary.reason_codes == [reason]
+    assert summary.active_attempt is None
+    assert summary.latest is None and summary.best is None
+    assert summary.history == []
+    assert await db_session.scalar(select(func.count()).select_from(AssessmentAttempt)) == 0
 
 
 async def _add_completed_attempt(
