@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
+    AuditEvent,
     Location,
     Menu,
     MenuItemVersion,
@@ -527,3 +528,281 @@ async def test_category_can_move_only_within_same_draft(db_session: AsyncSession
     assert moved.revision == 4
     assert hierarchy.sections[0].categories == []
     assert [entry.name_uk for entry in hierarchy.sections[1].categories] == ["Барні напої"]
+
+
+@pytest.mark.integration
+async def test_section_edit_reorder_and_rejection_preserve_revision_and_audit(
+    db_session: AsyncSession,
+) -> None:
+    organization, location, user = await seed_identity(db_session)
+    draft = await create_menu_draft(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        actor_user_id=user.id,
+        request_id=uuid4(),
+    )
+    context: dict[str, Any] = {
+        "organization_id": organization.id,
+        "location_id": location.id,
+        "version_id": draft.id,
+        "actor_user_id": user.id,
+        "request_id": uuid4(),
+    }
+    first = await create_section(
+        db_session,
+        **context,
+        expected_revision=0,
+        name_uk="Перший",
+        stable_code="first",
+        position=0,
+    )
+    first_id = first.entity.id
+    second = await create_section(
+        db_session,
+        **context,
+        expected_revision=1,
+        name_uk="Другий",
+        stable_code="second",
+        position=1,
+    )
+    second_id = second.entity.id
+    edited = await update_section(
+        db_session,
+        **context,
+        section_id=second_id,
+        expected_revision=2,
+        name_uk=" Оновлено ",
+        stable_code=None,
+        position=0,
+    )
+    assert edited.revision == 3
+    hierarchy = await get_menu_version_hierarchy(
+        db_session,
+        organization_id=context["organization_id"],
+        location_id=context["location_id"],
+        version_id=context["version_id"],
+    )
+    assert [s.id for s in hierarchy.sections] == [second_id, first_id]
+    assert hierarchy.sections[0].name_uk == "Оновлено"
+    assert hierarchy.sections[0].stable_code is None
+    audit_count = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    cases: list[tuple[dict[str, Any], str]] = [
+        ({"section_id": uuid4(), "name_uk": "Новий"}, "RESOURCE_NOT_FOUND"),
+        ({"position": -1}, "VALIDATION_ERROR"),
+        ({"position": 2}, "VALIDATION_ERROR"),
+        ({"name_uk": "   "}, "VALIDATION_ERROR"),
+        ({"stable_code": "   "}, "VALIDATION_ERROR"),
+    ]
+    for changes, code in cases:
+        values: dict[str, Any] = {"section_id": second_id, **changes}
+        await assert_api_error(
+            code,
+            update_section(
+                db_session,
+                **context,
+                expected_revision=3,
+                **values,
+            ),
+        )
+        unchanged = await get_menu_version_hierarchy(
+            db_session,
+            organization_id=context["organization_id"],
+            location_id=context["location_id"],
+            version_id=context["version_id"],
+        )
+        assert unchanged == hierarchy
+        assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_count
+    assert (
+        await delete_section(
+            db_session,
+            **context,
+            section_id=second_id,
+            expected_revision=3,
+        )
+        == 4
+    )
+    remaining = await get_menu_version_hierarchy(
+        db_session,
+        organization_id=context["organization_id"],
+        location_id=context["location_id"],
+        version_id=context["version_id"],
+    )
+    assert [(s.id, s.position) for s in remaining.sections] == [(first_id, 0)]
+
+
+@pytest.mark.integration
+async def test_category_edit_reorder_and_invalid_target_are_atomic(
+    db_session: AsyncSession,
+) -> None:
+    organization, location, user = await seed_identity(db_session)
+    draft = await create_menu_draft(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        actor_user_id=user.id,
+        request_id=uuid4(),
+    )
+    context: dict[str, Any] = {
+        "organization_id": organization.id,
+        "location_id": location.id,
+        "version_id": draft.id,
+        "actor_user_id": user.id,
+        "request_id": uuid4(),
+    }
+    section = await create_section(
+        db_session,
+        **context,
+        expected_revision=0,
+        name_uk="Розділ",
+        stable_code=None,
+        position=0,
+    )
+    section_id = section.entity.id
+    first = await create_category(
+        db_session,
+        **context,
+        section_id=section_id,
+        expected_revision=1,
+        name_uk="Перша",
+        stable_code=None,
+        position=0,
+    )
+    first_id = first.entity.id
+    second = await create_category(
+        db_session,
+        **context,
+        section_id=section_id,
+        expected_revision=2,
+        name_uk="Друга",
+        stable_code="second",
+        position=1,
+    )
+    second_id = second.entity.id
+    edited = await update_category(
+        db_session,
+        **context,
+        category_id=second_id,
+        expected_revision=3,
+        name_uk=" Оновлено ",
+        stable_code=None,
+        position=0,
+    )
+    assert edited.revision == 4
+    hierarchy = await get_menu_version_hierarchy(
+        db_session,
+        organization_id=context["organization_id"],
+        location_id=context["location_id"],
+        version_id=context["version_id"],
+    )
+    assert [c.id for c in hierarchy.sections[0].categories] == [second_id, first_id]
+    assert hierarchy.sections[0].categories[0].name_uk == "Оновлено"
+    assert hierarchy.sections[0].categories[0].stable_code is None
+    cases: list[tuple[dict[str, Any], str]] = [
+        ({"category_id": uuid4()}, "RESOURCE_NOT_FOUND"),
+        ({"section_id": uuid4()}, "RESOURCE_NOT_FOUND"),
+        ({"position": -1}, "VALIDATION_ERROR"),
+        ({"position": 2}, "VALIDATION_ERROR"),
+        ({"name_uk": "   "}, "VALIDATION_ERROR"),
+        ({"stable_code": "   "}, "VALIDATION_ERROR"),
+    ]
+    for changes, code in cases:
+        values: dict[str, Any] = {"category_id": second_id, **changes}
+        await assert_api_error(
+            code,
+            update_category(
+                db_session,
+                **context,
+                expected_revision=4,
+                **values,
+            ),
+        )
+        unchanged = await get_menu_version_hierarchy(
+            db_session,
+            organization_id=context["organization_id"],
+            location_id=context["location_id"],
+            version_id=context["version_id"],
+        )
+        assert unchanged == hierarchy
+    edited = await update_category(
+        db_session,
+        **context,
+        category_id=second_id,
+        expected_revision=4,
+        name_uk="Назва",
+    )
+    assert edited.revision == 5
+
+
+async def test_invalid_menu_structure_operations_preserve_hierarchy_and_audit(
+    db_session: AsyncSession,
+) -> None:
+    organization, location, user = await seed_identity(db_session)
+    draft = await create_menu_draft(
+        db_session,
+        organization_id=organization.id,
+        location_id=location.id,
+        actor_user_id=user.id,
+        request_id=uuid4(),
+    )
+    args: dict[str, Any] = dict(
+        organization_id=organization.id,
+        location_id=location.id,
+        version_id=draft.id,
+        actor_user_id=user.id,
+        request_id=uuid4(),
+    )
+    section = await create_section(
+        db_session,
+        **args,
+        expected_revision=0,
+        name_uk="Menu",
+        stable_code=None,
+        position=0,
+    )
+    section_id = section.entity.id
+    category = await create_category(
+        db_session,
+        **args,
+        expected_revision=1,
+        section_id=section_id,
+        name_uk="Main",
+        stable_code=None,
+        position=0,
+    )
+    category_id = category.entity.id
+    reads = {key: args[key] for key in ("organization_id", "location_id", "version_id")}
+    before = await get_menu_version_hierarchy(db_session, **reads)
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    cases: list[tuple[Any, dict[str, Any], str]] = [
+        (create_section, dict(name_uk="Late", stable_code=None, position=5), "VALIDATION_ERROR"),
+        (
+            create_category,
+            dict(section_id=uuid4(), name_uk="Missing", stable_code=None, position=0),
+            "RESOURCE_NOT_FOUND",
+        ),
+        (
+            create_category,
+            dict(section_id=section_id, name_uk="Late", stable_code=None, position=5),
+            "VALIDATION_ERROR",
+        ),
+        (reorder_categories, dict(section_id=uuid4(), ordered_ids=[]), "RESOURCE_NOT_FOUND"),
+        (
+            reorder_categories,
+            dict(section_id=section_id, ordered_ids=[category_id, category_id]),
+            "VALIDATION_ERROR",
+        ),
+        (delete_section, dict(section_id=uuid4()), "RESOURCE_NOT_FOUND"),
+        (delete_category, dict(category_id=uuid4()), "RESOURCE_NOT_FOUND"),
+    ]
+    for operation, values, code in cases:
+        await assert_api_error(code, operation(db_session, **args, expected_revision=2, **values))
+        assert await get_menu_version_hierarchy(db_session, **reads) == before
+        assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    renamed = await update_section(
+        db_session, **args, expected_revision=2, section_id=section_id, name_uk="Updated menu"
+    )
+    assert renamed.revision == 3
+    assert (await get_menu_version_hierarchy(db_session, **reads)).sections[
+        0
+    ].name_uk == "Updated menu"

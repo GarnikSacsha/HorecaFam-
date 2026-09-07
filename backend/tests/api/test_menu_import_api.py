@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
-from app.models import MenuImport, MenuVersion, Organization
+from app.models import AuditEvent, MenuImport, MenuVersion, Organization
 from app.schemas.menu import MenuImportCreate
 from app.services.menu_imports import _canonical_payload
 from tests.api.test_menu_admin_api import arrange_admin, mutation_headers
@@ -341,6 +341,100 @@ def test_import_canonical_limits_are_server_authoritative() -> None:
         _canonical_payload(MenuImportCreate.model_validate(oversized))
 
 
+async def test_stale_import_cannot_replace_newly_published_menu(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession
+) -> None:
+    organization_id, location_id, _, csrf = await arrange_admin(auth_client, auth_app, db_session)
+    url, review = await arrange_review_import(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="stale-base",
+    )
+    findings = cast(list[dict[str, object]], review["findings"])
+    resolved = await auth_client.post(
+        f"{url}/{review['id']}/findings/{findings[0]['id']}/resolve",
+        headers=mutation_headers(csrf, key="stale-resolve"),
+        json={"action": "confirm_critical_change", "expected_revision": 0},
+    )
+    assert resolved.status_code == 200
+    versions = f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-versions"
+    draft = await auth_client.post(
+        versions,
+        headers=mutation_headers(csrf, key="new-base"),
+        json={"copy_from_version_id": None},
+    )
+    assert draft.status_code == 201
+    published = await auth_client.post(
+        f"{versions}/{draft.json()['id']}/publish",
+        headers=mutation_headers(csrf, key="publish-new-base"),
+        json={"expected_revision": draft.json()["revision"]},
+    )
+    assert published.status_code == 200
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    confirmed = await auth_client.post(
+        f"{url}/{review['id']}/confirm",
+        headers=mutation_headers(csrf, key="reject-stale-confirm"),
+        json={"expected_revision": 1, "acknowledge_warnings": True},
+    )
+    assert confirmed.status_code == 409
+    assert confirmed.json()["code"] == "STALE_IMPORT_PREVIEW"
+    detail = await auth_client.get(f"{url}/{review['id']}")
+    assert detail.json()["status"] == "stale"
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    assert (
+        await db_session.scalar(
+            select(func.count()).select_from(MenuVersion).where(MenuVersion.status == "draft")
+        )
+        == 0
+    )
+    current = await auth_client.get(f"{versions}/{draft.json()['id']}")
+    assert current.json()["status"] == "published"
+
+
+@pytest.mark.parametrize("operation", ["confirm", "resolve"])
+async def test_import_rejection_preserves_review_and_draft(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession, operation: str
+) -> None:
+    organization_id, location_id, _, csrf = await arrange_admin(auth_client, auth_app, db_session)
+    url, review = await arrange_review_import(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix=f"reject-{operation}",
+    )
+    before = await auth_client.get(f"{url}/{review['id']}")
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    findings = cast(list[dict[str, object]], review["findings"])
+    if operation == "resolve":
+        suffix = f"findings/{uuid4()}/resolve"
+        payload: dict[str, object] = {"action": "confirm_critical_change", "expected_revision": 0}
+        expected = "RESOURCE_NOT_FOUND"
+    else:
+        suffix = "confirm"
+        payload = {"expected_revision": 0, "acknowledge_warnings": True}
+        expected = "IMPORT_NOT_READY"
+    assert findings
+    response = await auth_client.post(
+        f"{url}/{review['id']}/{suffix}",
+        headers=mutation_headers(csrf, key=f"rejected-{operation}"),
+        json=payload,
+    )
+    assert response.status_code == (404 if operation == "resolve" else 409)
+    assert response.json()["code"] == expected
+    after = await auth_client.get(f"{url}/{review['id']}")
+    assert before.json() == after.json()
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    assert (
+        await db_session.scalar(
+            select(func.count()).select_from(MenuVersion).where(MenuVersion.status == "draft")
+        )
+        == 0
+    )
+
+
 async def test_import_openapi_excludes_raw_payload_and_actor_ids(
     auth_client: AsyncClient,
 ) -> None:
@@ -353,3 +447,117 @@ async def test_import_openapi_excludes_raw_payload_and_actor_ids(
     assert "source_payload" not in serialized
     assert "created_by_user_id" not in serialized
     assert "confirmed_by_user_id" not in serialized
+
+
+async def test_import_resolution_rejections_preserve_review_revision(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession
+) -> None:
+    org_id, location_id, _, csrf = await arrange_admin(auth_client, auth_app, db_session)
+    url, review = await arrange_review_import(
+        auth_client,
+        organization_id=org_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="resolution-guards",
+    )
+    findings = cast(list[dict[str, object]], review["findings"])
+    finding_id = findings[0]["id"]
+    base = f"{url}/{review['id']}"
+    before = await auth_client.get(base)
+    count = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    for index, (payload, status, code) in enumerate(
+        [
+            (
+                {"action": "confirm_critical_change", "expected_revision": 99},
+                409,
+                "REVISION_CONFLICT",
+            ),
+            (
+                {"action": "confirm_removal", "expected_revision": 0},
+                422,
+                "IMPORT_FINDING_RESOLUTION_INVALID",
+            ),
+        ]
+    ):
+        denied = await auth_client.post(
+            f"{base}/findings/{finding_id}/resolve",
+            headers=mutation_headers(csrf, key=f"resolution-denied-{index}"),
+            json=payload,
+        )
+        assert denied.status_code == status and denied.json()["code"] == code
+        after = await auth_client.get(base)
+        assert after.json() == before.json()
+        assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == count
+    resolved = await auth_client.post(
+        f"{base}/findings/{finding_id}/resolve",
+        headers=mutation_headers(csrf, key="resolution-accepted"),
+        json={"action": "confirm_critical_change", "expected_revision": 0, "comment": " Reviewed "},
+    )
+    assert resolved.status_code == 200
+    assert resolved.json()["finding"]["resolution_comment"] == "Reviewed"
+    denied = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="stale-confirm"),
+        json={"expected_revision": 0, "acknowledge_warnings": True},
+    )
+    assert denied.status_code == 409 and denied.json()["code"] == "REVISION_CONFLICT"
+    confirmed = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="resolution-confirm"),
+        json={"expected_revision": 1, "acknowledge_warnings": True},
+    )
+    assert confirmed.status_code == 200
+    final = await auth_client.get(base)
+    count = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    terminal_rejections: list[tuple[str, dict[str, object]]] = [
+        (f"{base}/confirm", {"expected_revision": 1, "acknowledge_warnings": True}),
+        (
+            f"{base}/findings/{finding_id}/resolve",
+            {"action": "confirm_critical_change", "expected_revision": 1},
+        ),
+    ]
+    for target, payload in terminal_rejections:
+        denied = await auth_client.post(
+            target, headers=mutation_headers(csrf, key=str(uuid4())), json=payload
+        )
+        assert denied.status_code == 409 and denied.json()["code"] == "IMPORT_NOT_READY"
+        after = await auth_client.get(base)
+        assert after.json() == final.json()
+        assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == count
+
+
+async def test_duplicate_name_warning_requires_explicit_acknowledgement(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession
+) -> None:
+    org_id, location_id, _, csrf = await arrange_admin(auth_client, auth_app, db_session)
+    payload = deepcopy(import_payload())
+    sections = cast(list[dict[str, Any]], payload["sections"])
+    items = cast(list[dict[str, Any]], sections[0]["categories"][0]["items"])
+    duplicate = deepcopy(items[0])
+    duplicate.update(
+        source_key="item-second", source_item_key="item-second", stable_code="second", position=1
+    )
+    items.append(duplicate)
+    url = f"/api/v1/organizations/{org_id}/locations/{location_id}/menu-imports"
+    imported = await auth_client.post(
+        url, headers=mutation_headers(csrf, key="warning-preview"), json=payload
+    )
+    assert imported.status_code == 201 and imported.json()["warning_count"] > 0
+    assert "DUPLICATE_ITEM_NAME" in {item["code"] for item in imported.json()["findings"]}
+    base = f"{url}/{imported.json()['id']}"
+    count = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    denied = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="warning-not-acknowledged"),
+        json={"expected_revision": 0, "acknowledge_warnings": False},
+    )
+    assert denied.status_code == 409 and denied.json()["code"] == "IMPORT_NOT_READY"
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == count
+    assert await db_session.scalar(select(func.count()).select_from(MenuVersion)) == 0
+    accepted = await auth_client.post(
+        f"{base}/confirm",
+        headers=mutation_headers(csrf, key="warning-acknowledged"),
+        json={"expected_revision": 0, "acknowledge_warnings": True},
+    )
+    assert accepted.status_code == 200
+    assert accepted.json()["draft"]["status"] == "draft"

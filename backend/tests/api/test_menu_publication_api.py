@@ -2,12 +2,13 @@ import asyncio
 from typing import cast
 from uuid import UUID
 
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AuditEvent, MenuVersion
+from app.models import AuditEvent, MenuItemVersion, MenuItemVersionTranslation, MenuVersion
 from tests.api.test_menu_admin_api import arrange_admin, mutation_headers
 from tests.api.test_menu_import_api import import_payload
 
@@ -140,6 +141,67 @@ async def test_second_publication_atomically_archives_previous_snapshot(
             select(func.count()).select_from(MenuVersion).where(MenuVersion.status == "published")
         )
         == 1
+    )
+
+
+@pytest.mark.parametrize("problem", ["facts", "translation", "revision"])
+async def test_publication_rejection_preserves_draft_and_audit(
+    auth_client: AsyncClient, auth_app: FastAPI, db_session: AsyncSession, problem: str
+) -> None:
+    organization_id, location_id, _, csrf = await arrange_admin(auth_client, auth_app, db_session)
+    draft = await arrange_ready_draft(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix=f"blocked-{problem}",
+    )
+    version_id = UUID(str(draft["id"]))
+    if problem == "facts":
+        item = await db_session.scalar(
+            select(MenuItemVersion).where(MenuItemVersion.menu_version_id == version_id)
+        )
+        assert item is not None
+        item.component_data_status = "unknown"
+    elif problem == "translation":
+        translation = await db_session.scalar(
+            select(MenuItemVersionTranslation).where(
+                MenuItemVersionTranslation.menu_version_id == version_id,
+                MenuItemVersionTranslation.locale == "uk",
+            )
+        )
+        assert translation is not None
+        await db_session.delete(translation)
+    await db_session.commit()
+    base = (
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}/menu-versions/"
+        f"{version_id}"
+    )
+    before = await auth_client.get(base)
+    readiness = await auth_client.get(f"{base}/readiness")
+    assert readiness.status_code == 200
+    assert readiness.json()["can_publish"] is (problem == "revision")
+    if problem != "revision":
+        expected_blocker = "FACTS_UNCONFIRMED" if problem == "facts" else "UA_CONTENT_NOT_READY"
+        assert expected_blocker in {issue["code"] for issue in readiness.json()["blocking_errors"]}
+    audit_before = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    response = await auth_client.post(
+        f"{base}/publish",
+        headers=mutation_headers(csrf, key=f"deny-{problem}"),
+        json={"expected_revision": 999 if problem == "revision" else draft["revision"]},
+    )
+    assert response.status_code == 409
+    assert response.json()["code"] == (
+        "REVISION_CONFLICT" if problem == "revision" else "MENU_NOT_READY"
+    )
+    after = await auth_client.get(base)
+    assert before.json() == after.json()
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+    assert (
+        await db_session.scalar(
+            select(func.count()).select_from(MenuVersion).where(MenuVersion.status == "published")
+        )
+        == 0
     )
 
 
