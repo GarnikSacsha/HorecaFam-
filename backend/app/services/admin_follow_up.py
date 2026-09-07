@@ -250,6 +250,8 @@ async def list_requirements(
             )
         except (TypeError, ValueError) as exc:
             raise _invalid_cursor() from exc
+        if cursor_key[1].utcoffset() is None:
+            raise _invalid_cursor()
         start = next(
             (
                 index
@@ -351,6 +353,8 @@ async def list_attention(
             )
         except (TypeError, ValueError) as exc:
             raise _invalid_cursor() from exc
+        if cursor_key[1].utcoffset() is None:
+            raise _invalid_cursor()
         start = next(
             (
                 index
