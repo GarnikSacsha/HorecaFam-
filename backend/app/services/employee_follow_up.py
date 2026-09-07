@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
-from app.models import AssessmentAttempt, AttentionCase, RetakeRequirement
+from app.models import AssessmentAttempt, AssessmentVersion, AttentionCase, RetakeRequirement
 from app.schemas.attention import (
     EmployeeAttentionSummary,
     EmployeeRetakeRequirementCollection,
@@ -53,9 +53,14 @@ async def employee_requirement_response(
     active_attempt = None
     if requirement.state == "active":
         active_attempt = await db.scalar(
-            select(AssessmentAttempt.id).where(
+            select(AssessmentAttempt.id)
+            .join(
+                AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id
+            )
+            .where(
                 AssessmentAttempt.employee_profile_id == requirement.employee_profile_id,
                 AssessmentAttempt.training_id == requirement.training_id,
+                AssessmentVersion.assessment_id == requirement.target_assessment_id,
                 AssessmentAttempt.status == "in_progress",
             )
         )
