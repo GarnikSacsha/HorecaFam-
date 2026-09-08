@@ -28,6 +28,7 @@ from app.schemas.assessment import (
     OrderingSubmission,
     SingleChoiceSubmission,
 )
+from app.services.interactive_attempts import _owned_attempt
 
 
 def grade_selected_options(
@@ -250,18 +251,14 @@ async def submit_interactive_answer(
     request_id: UUID,
     now: datetime,
 ) -> InteractiveAnswerResponse:
-    attempt = await db.scalar(
-        select(AssessmentAttempt)
-        .where(
-            AssessmentAttempt.id == attempt_id,
-            AssessmentAttempt.organization_id == organization_id,
-            AssessmentAttempt.location_id == location_id,
-            AssessmentAttempt.employee_profile_id == employee_profile_id,
-        )
-        .with_for_update()
+    attempt = await _owned_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        attempt_id=attempt_id,
+        lock=True,
     )
-    if attempt is None:
-        raise _not_found()
     question = await db.scalar(
         select(AttemptQuestion).where(
             AttemptQuestion.id == attempt_question_id,

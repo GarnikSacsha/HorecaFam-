@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
 from app.models import (
+    Assessment,
     AssessmentAttempt,
     AssessmentQuestionPool,
     AssessmentReadiness,
@@ -157,14 +158,20 @@ async def _owned_attempt(
     attempt_id: UUID,
     lock: bool = False,
 ) -> AssessmentAttempt:
-    query = select(AssessmentAttempt).where(
-        AssessmentAttempt.id == attempt_id,
-        AssessmentAttempt.organization_id == organization_id,
-        AssessmentAttempt.location_id == location_id,
-        AssessmentAttempt.employee_profile_id == employee_profile_id,
+    query = (
+        select(AssessmentAttempt)
+        .join(AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id)
+        .join(Assessment, Assessment.id == AssessmentVersion.assessment_id)
+        .where(
+            AssessmentAttempt.id == attempt_id,
+            AssessmentAttempt.organization_id == organization_id,
+            AssessmentAttempt.location_id == location_id,
+            AssessmentAttempt.employee_profile_id == employee_profile_id,
+            Assessment.assessment_type == "interactive_training",
+        )
     )
     if lock:
-        query = query.with_for_update()
+        query = query.with_for_update(of=AssessmentAttempt)
     attempt = await db.scalar(query)
     if attempt is None:
         raise _not_found()
