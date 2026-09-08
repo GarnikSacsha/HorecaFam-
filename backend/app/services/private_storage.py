@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, Protocol, cast
@@ -20,6 +21,9 @@ class ObjectMetadata:
 
 
 class PrivateStorage(Protocol):
+    async def finalize_upload(
+        self, *, source_key: str, target_key: str, mime_type: str, size_bytes: int, sha256: str
+    ) -> bool: ...
     async def prepare_upload(
         self,
         *,
@@ -36,6 +40,37 @@ class PrivateStorage(Protocol):
 
 
 class Boto3PrivateStorage:
+    async def finalize_upload(
+        self, *, source_key: str, target_key: str, mime_type: str, size_bytes: int, sha256: str
+    ) -> bool:
+        def finalize() -> bool:
+            if not 1 <= size_bytes <= 5 * 1024 * 1024 or source_key == target_key:
+                return False
+            response = self._client.get_object(Bucket=self._bucket, Key=source_key)
+            body = response["Body"]
+            try:
+                if (
+                    response.get("ContentType") != mime_type
+                    or response.get("ContentLength") != size_bytes
+                ):
+                    return False
+                snapshot = body.read(size_bytes + 1)
+                if len(snapshot) != size_bytes or hashlib.sha256(snapshot).hexdigest() != sha256:
+                    return False
+            finally:
+                body.close()
+            # Публікуємо саме перевірені байти; повторний POST змінює лише джерело.
+            self._client.put_object(
+                Bucket=self._bucket,
+                Key=target_key,
+                Body=snapshot,
+                ContentType=mime_type,
+                Metadata={"sha256": sha256},
+            )
+            return True
+
+        return await asyncio.to_thread(finalize)
+
     def __init__(self, *, client: Any, bucket: str) -> None:
         self._client = client
         self._bucket = bucket

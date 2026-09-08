@@ -22,6 +22,13 @@ from tests.factories.identity import make_location, make_organization, make_user
 class FakePrivateStorage:
     metadata: ObjectMetadata | None = None
 
+    async def finalize_upload(
+        self, *, source_key: str, target_key: str, mime_type: str, size_bytes: int, sha256: str
+    ) -> bool:
+        return self.metadata == ObjectMetadata(
+            mime_type=mime_type, size_bytes=size_bytes, sha256=sha256
+        )
+
     def __post_init__(self) -> None:
         self.prepared_keys: list[str] = []
         self.accessed_keys: list[str] = []

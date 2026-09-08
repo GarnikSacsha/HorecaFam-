@@ -99,18 +99,23 @@ async def _upload_target(
     asset: Asset,
     now: datetime,
 ) -> AssetUploadIntent:
+    if asset.status != "pending_upload":
+        raise _asset_not_ready()
+    if asset.upload_expires_at <= now:
+        raise _upload_expired()
+    expires_seconds = max(1, int((asset.upload_expires_at - now).total_seconds()))
     target = await storage.prepare_upload(
         object_key=asset.object_key,
         mime_type=asset.mime_type,
         size_bytes=asset.size_bytes,
         sha256=asset.sha256,
-        expires_seconds=UPLOAD_EXPIRES_SECONDS,
+        expires_seconds=min(UPLOAD_EXPIRES_SECONDS, expires_seconds),
     )
     return AssetUploadIntent(
         asset=asset,
         upload_url=target.url,
         upload_fields=target.fields,
-        expires_at=now + timedelta(seconds=UPLOAD_EXPIRES_SECONDS),
+        expires_at=asset.upload_expires_at,
     )
 
 
@@ -181,7 +186,7 @@ async def prepare_asset_upload(
             organization_id=organization_id,
             location_id=location_id,
             status="pending_upload",
-            object_key=f"training/{organization_id}/{location_id}/{uuid4().hex}",
+            object_key=f"uploads/{organization_id}/{location_id}/{uuid4().hex}",
             original_filename=normalized_name,
             mime_type=mime_type,
             size_bytes=size_bytes,
@@ -275,6 +280,18 @@ async def complete_asset_upload(
             asset.status = "failed"
             await db.commit()
             raise _upload_invalid()
+        final_key = f"training/{organization_id}/{location_id}/{uuid4().hex}"
+        if not await storage.finalize_upload(
+            source_key=asset.object_key,
+            target_key=final_key,
+            mime_type=asset.mime_type,
+            size_bytes=asset.size_bytes,
+            sha256=asset.sha256,
+        ):
+            asset.status = "failed"
+            await db.commit()
+            raise _upload_invalid()
+        asset.object_key = final_key
         asset.status = "ready"
         asset.ready_at = now
         await reserve_idempotency(

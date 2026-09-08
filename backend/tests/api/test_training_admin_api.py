@@ -12,6 +12,11 @@ FIXED_NOW = datetime(2030, 8, 27, 13, 0, tzinfo=UTC)
 
 
 class FakePrivateStorage:
+    async def finalize_upload(
+        self, *, source_key: str, target_key: str, mime_type: str, size_bytes: int, sha256: str
+    ) -> bool:
+        return True
+
     def __init__(self) -> None:
         self.metadata: ObjectMetadata | None = None
 
