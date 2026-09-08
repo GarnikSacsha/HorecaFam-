@@ -128,7 +128,7 @@ async def _accept_invitation(
             raise RuntimeError("Invitation Organization is unavailable")
         user = User(
             email_normalized=invitation.email_normalized,
-            password_hash=passwords.hash(password),
+            password_hash=await passwords.hash_async(password),
             preferred_locale=organization_locale,
             email_verified_at=now,
         )

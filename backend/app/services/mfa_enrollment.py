@@ -5,7 +5,6 @@ from uuid import UUID
 from cryptography.fernet import InvalidToken
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.config import Settings
 from app.core.errors import APIError
@@ -29,6 +28,13 @@ from app.security.mfa import (
 )
 from app.security.passwords import PasswordManager
 from app.security.tokens import hash_secret
+from app.services.auth_security import (
+    check_failure_budget,
+    load_locked_challenge,
+    lock_auth_user,
+    record_failure,
+    require_live_session,
+)
 from app.services.sessions import RECENT_MFA_WINDOW, IssuedSession, create_session
 
 
@@ -83,12 +89,7 @@ async def _load_challenge(
     settings.validate_auth_security()
     if raw_challenge is None:
         raise _challenge_error()
-    challenge = await db.scalar(
-        select(MfaChallenge)
-        .where(MfaChallenge.token_hash == hash_secret(raw_challenge))
-        .options(selectinload(MfaChallenge.user))
-        .with_for_update()
-    )
+    challenge = await load_locked_challenge(db, raw_challenge)
     if (
         challenge is None
         or challenge.used_at is not None
@@ -104,6 +105,7 @@ async def _load_challenge(
     )
     if elevated is None:
         raise _challenge_error()
+    await check_failure_budget(db, user_id=challenge.user_id, action="mfa", now=now)
     return challenge
 
 
@@ -242,10 +244,14 @@ async def confirm_mfa_enrollment(
     )
     if counter is None:
         challenge.failed_attempts += 1
-        await db.commit()
+        budget = await check_failure_budget(db, user_id=challenge.user_id, action="mfa", now=now)
+        await record_failure(db, budget, now)
         raise _code_error()
 
     credential.confirmed_at = now
+    await db.delete(
+        await check_failure_budget(db, user_id=challenge.user_id, action="mfa", now=now)
+    )
     credential.last_used_counter = counter
     challenge.used_at = now
     raw_codes, recovery_records = _new_recovery_records(credential, now=now)
@@ -313,10 +319,14 @@ async def verify_mfa_recovery_code(
     )
     if recovery_code is None:
         challenge.failed_attempts += 1
-        await db.commit()
+        budget = await check_failure_budget(db, user_id=challenge.user_id, action="mfa", now=now)
+        await record_failure(db, budget, now)
         raise _code_error()
 
     recovery_code.used_at = now
+    await db.delete(
+        await check_failure_budget(db, user_id=challenge.user_id, action="mfa", now=now)
+    )
     challenge.used_at = now
     hmac_key = settings.auth_throttle_hmac_key
     if hmac_key is None:
@@ -358,6 +368,8 @@ async def regenerate_mfa_recovery_codes(
     now: datetime,
     request_id: UUID,
 ) -> list[str]:
+    user = await lock_auth_user(db, user.id)
+    await require_live_session(db, current_session, now)
     elevated = await db.scalar(
         select(AdminAccess.id).where(
             AdminAccess.user_id == user.id,
@@ -372,7 +384,11 @@ async def regenerate_mfa_recovery_codes(
             code="RECENT_MFA_REQUIRED",
             message="Потрібне нещодавнє підтвердження MFA.",
         )
-    if user.password_hash is None or not passwords.verify(user.password_hash, current_password):
+    budget = await check_failure_budget(db, user_id=user.id, action="reauth", now=now)
+    if user.password_hash is None or not await passwords.verify_async(
+        user.password_hash, current_password
+    ):
+        await record_failure(db, budget, now)
         raise APIError(
             status_code=401,
             code="CURRENT_PASSWORD_INVALID",
@@ -385,6 +401,7 @@ async def regenerate_mfa_recovery_codes(
         secret = _cipher(settings).decrypt(credential.secret_encrypted)
     except InvalidToken as exception:
         raise _challenge_error() from exception
+    mfa_budget = await check_failure_budget(db, user_id=user.id, action="mfa", now=now)
     counter = TotpVerifier().verify(
         secret,
         totp_code,
@@ -392,7 +409,10 @@ async def regenerate_mfa_recovery_codes(
         last_used_counter=credential.last_used_counter,
     )
     if counter is None:
+        await record_failure(db, mfa_budget, now)
         raise _code_error()
+    await db.delete(budget)
+    await db.delete(mfa_budget)
 
     credential.last_used_counter = counter
     invalidated = list(

@@ -8,7 +8,6 @@ from uuid import UUID
 from cryptography.fernet import InvalidToken
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.config import Settings
 from app.core.email import normalize_email
@@ -24,6 +23,12 @@ from app.models import (
 from app.security.mfa import MfaSecretCipher, TotpVerifier
 from app.security.passwords import PasswordManager
 from app.security.tokens import generate_opaque_token, hash_secret
+from app.services.auth_security import (
+    check_failure_budget,
+    load_locked_challenge,
+    lock_auth_email,
+    record_failure,
+)
 from app.services.sessions import IssuedSession, create_session
 
 LOGIN_WINDOW = timedelta(minutes=15)
@@ -128,17 +133,22 @@ async def authenticate_password(
 ) -> User:
     settings.validate_auth_security()
     normalized_email = normalize_email(email)
+    await lock_auth_email(db, normalized_email, wait=False)
     subject_hash = _rate_subject(normalized_email, settings)
     bucket = await _rate_bucket(db, subject_hash)
     if bucket is not None and bucket.blocked_until is not None and bucket.blocked_until > now:
         raise _rate_limited_error()
 
-    user_query = select(User).where(User.email_normalized == normalized_email)
+    user_query = (
+        select(User)
+        .where(User.email_normalized == normalized_email)
+        .execution_options(populate_existing=True)
+    )
     if lock_user:
         user_query = user_query.with_for_update()
     user = await db.scalar(user_query)
     encoded_hash = user.password_hash if user is not None else None
-    if not passwords.verify_or_dummy(encoded_hash, password):
+    if not await passwords.verify_or_dummy_async(encoded_hash, password):
         blocked = await _register_failure(
             db,
             bucket=bucket,
@@ -154,7 +164,7 @@ async def authenticate_password(
     if bucket is not None:
         await db.delete(bucket)
     if passwords.needs_rehash(user.password_hash):
-        user.password_hash = passwords.hash(password)
+        user.password_hash = await passwords.hash_async(password)
     return user
 
 
@@ -271,12 +281,7 @@ async def verify_mfa(
     settings.validate_auth_security()
     if raw_challenge is None:
         raise _mfa_challenge_error()
-    challenge = await db.scalar(
-        select(MfaChallenge)
-        .where(MfaChallenge.token_hash == hash_secret(raw_challenge))
-        .options(selectinload(MfaChallenge.user))
-        .with_for_update()
-    )
+    challenge = await load_locked_challenge(db, raw_challenge)
     if (
         challenge is None
         or challenge.used_at is not None
@@ -285,6 +290,7 @@ async def verify_mfa(
     ):
         raise _mfa_challenge_error()
 
+    budget = await check_failure_budget(db, user_id=challenge.user_id, action="mfa", now=now)
     credential = await db.scalar(
         select(MfaCredential)
         .where(
@@ -312,13 +318,14 @@ async def verify_mfa(
     )
     if counter is None:
         challenge.failed_attempts += 1
-        await db.commit()
+        await record_failure(db, budget, now)
         raise APIError(
             status_code=401,
             code="MFA_CODE_INVALID",
             message="Неправильний код MFA.",
         )
 
+    await db.delete(budget)
     challenge.used_at = now
     credential.last_used_counter = counter
     hmac_key = settings.auth_throttle_hmac_key

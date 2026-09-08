@@ -49,6 +49,8 @@ class MfaCredentialType(StrEnum):
 
 
 class AuthRateLimitAction(StrEnum):
+    MFA = "mfa"
+    REAUTH = "reauth"
     LOGIN = "login"
     PASSWORD_FORGOT = "password_forgot"
     PASSWORD_RESET = "password_reset"

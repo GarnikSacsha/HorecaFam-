@@ -20,6 +20,14 @@ from app.models import (
 )
 from app.security.passwords import PasswordManager
 from app.security.tokens import hash_secret
+from app.services.auth_security import (
+    check_failure_budget,
+    lock_auth_email,
+    lock_auth_user,
+    record_failure,
+    require_live_session,
+    revoke_mfa_challenges,
+)
 from app.services.password_reset_delivery import (
     PasswordResetTokenManager,
     enqueue_password_reset_email,
@@ -108,6 +116,7 @@ async def request_password_reset(
     settings.validate_auth_security()
     manager = _token_manager(settings)
     normalized_email = normalize_email(email)
+    await lock_auth_email(db, normalized_email)
     await _consume_rate_limit(
         db,
         action="password_forgot",
@@ -177,6 +186,12 @@ async def reset_password(
     settings.validate_auth_security()
     _token_manager(settings)
     token_hash = hash_secret(raw_token)
+    with db.no_autoflush:
+        owner_id = await db.scalar(
+            select(PasswordResetToken.user_id).where(PasswordResetToken.token_hash == token_hash)
+        )
+    if owner_id is not None:
+        await lock_auth_user(db, owner_id)
     bucket = await _consume_rate_limit(
         db,
         action="password_reset",
@@ -188,6 +203,7 @@ async def reset_password(
         .where(PasswordResetToken.token_hash == token_hash)
         .options(selectinload(PasswordResetToken.user))
         .with_for_update()
+        .execution_options(populate_existing=True)
     )
     if (
         token is None
@@ -199,7 +215,8 @@ async def reset_password(
         raise _invalid_reset_token_error()
 
     token.used_at = now
-    token.user.password_hash = passwords.hash(new_password)
+    token.user.password_hash = await passwords.hash_async(new_password)
+    await revoke_mfa_challenges(db, token.user_id, now)
     await db.execute(
         update(PasswordResetToken)
         .where(
@@ -247,6 +264,8 @@ async def change_password(
     now: datetime,
     request_id: UUID,
 ) -> None:
+    user = await lock_auth_user(db, user.id)
+    await require_live_session(db, current_session, now)
     elevated = (
         await db.scalar(
             select(AdminAccess.id).where(
@@ -265,14 +284,20 @@ async def change_password(
             code="RECENT_MFA_REQUIRED",
             message="Потрібне нещодавнє підтвердження MFA.",
         )
-    if user.password_hash is None or not passwords.verify(user.password_hash, current_password):
+    budget = await check_failure_budget(db, user_id=user.id, action="reauth", now=now)
+    if user.password_hash is None or not await passwords.verify_async(
+        user.password_hash, current_password
+    ):
+        await record_failure(db, budget, now)
         raise APIError(
             status_code=401,
             code="CURRENT_PASSWORD_INVALID",
             message="Поточний пароль неправильний.",
         )
 
-    user.password_hash = passwords.hash(new_password)
+    user.password_hash = await passwords.hash_async(new_password)
+    await db.delete(budget)
+    await revoke_mfa_challenges(db, user.id, now)
     revoked = list(
         (
             await db.scalars(

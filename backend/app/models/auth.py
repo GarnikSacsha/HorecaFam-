@@ -291,7 +291,7 @@ class AuthRateLimitBucket(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("action", "subject_hash", name="uq_auth_rate_limit_action_subject"),
         CheckConstraint(
-            "action IN ('login', 'password_forgot', 'password_reset')",
+            "action IN ('login', 'password_forgot', 'password_reset', 'mfa', 'reauth')",
             name="action_allowed",
         ),
         CheckConstraint("length(subject_hash) = 64", name="subject_hash_length"),
