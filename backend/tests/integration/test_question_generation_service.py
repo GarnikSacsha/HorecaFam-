@@ -320,15 +320,29 @@ async def test_generation_is_provenance_bound_idempotent_and_price_independent(
     question_version = await db_session.get(QuestionVersion, approval.question_version_id)
     assert question_version is not None
 
+    reviewed_item_version_id = await db_session.scalar(
+        select(QuestionSourceLink.menu_item_version_id).where(
+            QuestionSourceLink.question_version_id == question_version.id,
+            QuestionSourceLink.source_role == "explanation_source",
+        )
+    )
+    assert reviewed_item_version_id is not None
+
     practice_candidate = await db_session.scalar(
         select(QuestionCandidate)
         .join(
             QuestionGenerationRule,
             QuestionGenerationRule.id == QuestionCandidate.generation_rule_id,
         )
+        .join(
+            QuestionSourceLink,
+            QuestionSourceLink.question_candidate_id == QuestionCandidate.id,
+        )
         .where(
             QuestionCandidate.status == "needs_review",
             QuestionGenerationRule.code == "menu.components",
+            QuestionSourceLink.source_role == "explanation_source",
+            QuestionSourceLink.menu_item_version_id == reviewed_item_version_id,
         )
         .limit(1)
     )

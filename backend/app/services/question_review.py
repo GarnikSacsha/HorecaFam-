@@ -192,7 +192,9 @@ async def ensure_practice_readiness(
                 .where(
                     QuestionCandidate.training_version_id == training_version_id,
                     QuestionVersion.status == "published",
-                    QuestionGenerationRule.code.in_(["menu.components", "menu.allergens"]),
+                    QuestionGenerationRule.code.in_(
+                        ["menu.components", "menu.allergens", "menu.category", "menu.description"]
+                    ),
                 )
             )
         ).all()
