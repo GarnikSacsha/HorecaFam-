@@ -59,7 +59,7 @@ describe("application shells", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the approved four Employee destinations with Learning and Practice enabled", () => {
+  it("shows all four Employee destinations including the read-only Profile", () => {
     render(
       <MemoryRouter>
         <EmployeeShell>
@@ -72,6 +72,10 @@ describe("application shells", () => {
       "ГоловнаНавчанняПрактикаПрофіль",
     );
     expect(screen.queryByRole("link", { name: "Меню" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Профіль" })).toHaveAttribute(
+      "href",
+      "/employee/profile",
+    );
     expect(screen.getByRole("link", { name: "Навчання" })).toHaveAttribute(
       "href",
       "/employee/learning",

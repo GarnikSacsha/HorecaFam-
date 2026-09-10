@@ -16,6 +16,7 @@ import { MfaPage } from "../auth/MfaPage";
 import { MfaRecoveryPage } from "../auth/MfaRecoveryPage";
 import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { PendingPage } from "../employee/PendingPage";
+import { EmployeeProfilePage } from "../employee/EmployeeProfilePage";
 import { ActiveHomePage } from "../employee/ActiveHomePage";
 import { EmployeeMenuPage } from "../employee/EmployeeMenuPage";
 import { EmployeeLearningLessonPage } from "../employee/EmployeeLearningLessonPage";
@@ -192,6 +193,16 @@ export function App() {
               <ProtectedRoute audience="active-employee">
                 <EmployeeShell>
                   <ActiveHomePage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/profile"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeProfilePage />
                 </EmployeeShell>
               </ProtectedRoute>
             }

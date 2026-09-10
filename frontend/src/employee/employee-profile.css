@@ -1,0 +1,77 @@
+.employee-profile-page {
+  --profile-blue: #011ed3;
+  display: grid;
+  gap: 2rem;
+  color: #181816;
+  font-family: "Klaster Sans - Regular", Arial, Helvetica, sans-serif;
+}
+
+.employee-profile-page h1,
+.employee-profile-page h2,
+.employee-profile-page .eyebrow {
+  color: var(--profile-blue);
+}
+
+.employee-profile-page h1 {
+  margin-bottom: 0;
+}
+.employee-profile-page .page-heading-row {
+  align-items: start;
+  flex-wrap: wrap;
+}
+.employee-profile-identity {
+  border-top: 3px solid var(--profile-blue);
+  padding: 2rem 0 0;
+  overflow-wrap: anywhere;
+}
+.employee-profile-identity h2 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+}
+.employee-profile-identity p {
+  margin-bottom: 0;
+}
+.employee-profile-details {
+  margin: 0;
+}
+.employee-profile-details > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 1rem;
+  border-bottom: 1px solid #dcdce3;
+  padding: 1.25rem 0;
+}
+.employee-profile-details dt {
+  color: #545460;
+}
+.employee-profile-details dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.employee-profile-note {
+  margin: 0;
+  max-width: 34rem;
+  color: #545460;
+  line-height: 1.6;
+}
+.employee-profile-page .button {
+  min-height: 44px;
+  border-color: var(--profile-blue);
+  color: var(--profile-blue);
+  background: white;
+}
+.employee-profile-page .button-primary {
+  background: var(--profile-blue);
+  color: white;
+}
+.employee-profile-page .button:focus-visible {
+  outline: 3px solid var(--profile-blue);
+  outline-offset: 4px;
+}
+@media (max-width: 420px) {
+  .employee-profile-details > div {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+}
