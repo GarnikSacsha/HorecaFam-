@@ -11,14 +11,17 @@ from app.models import (
     AssessmentAttempt,
     AttemptDeviceLease,
     AuditEvent,
+    AuthRateLimitBucket,
     BackgroundJob,
     EmailDelivery,
+    InvitationRateLimitBucket,
     JobAttempt,
     MfaChallenge,
     MfaRecoveryCode,
     PasswordResetToken,
     Session,
 )
+from app.services.rate_limit_storage import retire_rate_buckets
 
 CronJobTask = Literal[
     "attempt-expiry",
@@ -275,6 +278,12 @@ async def cleanup_security_records(
         ),
         "mfa_recovery_codes": await _delete_selected_ids(
             db, model=MfaRecoveryCode, ids=recovery_ids
+        ),
+        "auth_rate_limit_buckets": await retire_rate_buckets(
+            db, model=AuthRateLimitBucket, cutoff_at=cutoff_at, batch_size=batch_size
+        ),
+        "invitation_rate_limit_buckets": await retire_rate_buckets(
+            db, model=InvitationRateLimitBucket, cutoff_at=cutoff_at, batch_size=batch_size
         ),
     }
     await db.flush()

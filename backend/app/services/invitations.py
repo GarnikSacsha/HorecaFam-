@@ -25,6 +25,7 @@ from app.services.idempotency import (
     reserve_idempotency,
 )
 from app.services.invitation_delivery import enqueue_invitation_email
+from app.services.rate_limit_storage import reserve_public_bucket
 
 INVITATION_LIFETIME = timedelta(hours=72)
 INVITATION_RATE_WINDOW = timedelta(minutes=15)
@@ -72,6 +73,8 @@ async def consume_invitation_rate_limit(
         .with_for_update()
     )
     if bucket is None:
+        if action == "validate":
+            await reserve_public_bucket(db, model=InvitationRateLimitBucket, now=now)
         bucket = InvitationRateLimitBucket(
             action=action,
             subject_hash=subject_hash,

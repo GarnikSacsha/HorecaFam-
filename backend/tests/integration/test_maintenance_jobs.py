@@ -148,6 +148,8 @@ async def test_security_cleanup_obeys_terminal_grace_and_preserves_live_records(
         "mfa_challenges": 1,
         "password_reset_tokens": 1,
         "mfa_recovery_codes": 0,
+        "auth_rate_limit_buckets": 0,
+        "invitation_rate_limit_buckets": 0,
     }
     assert await db_session.get(Session, old_session.id) is None
     assert await db_session.get(MfaChallenge, old_challenge.id) is None

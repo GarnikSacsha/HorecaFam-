@@ -29,6 +29,7 @@ from app.services.auth_security import (
     lock_auth_email,
     record_failure,
 )
+from app.services.rate_limit_storage import reserve_public_bucket
 from app.services.sessions import IssuedSession, create_session
 
 LOGIN_WINDOW = timedelta(minutes=15)
@@ -86,6 +87,7 @@ async def _register_failure(
     now: datetime,
 ) -> bool:
     if bucket is None:
+        await reserve_public_bucket(db, model=AuthRateLimitBucket, now=now)
         bucket = AuthRateLimitBucket(
             action="login",
             subject_hash=subject_hash,

@@ -32,6 +32,7 @@ from app.services.password_reset_delivery import (
     PasswordResetTokenManager,
     enqueue_password_reset_email,
 )
+from app.services.rate_limit_storage import lock_rate_subject, reserve_public_bucket
 from app.services.sessions import RECENT_MFA_WINDOW
 
 PASSWORD_RESET_LIFETIME = timedelta(minutes=30)
@@ -66,6 +67,7 @@ async def _consume_rate_limit(
     subject_hash: str,
     now: datetime,
 ) -> AuthRateLimitBucket:
+    await lock_rate_subject(db, f"password-rate:{action}:{subject_hash}")
     bucket = await db.scalar(
         select(AuthRateLimitBucket)
         .where(
@@ -75,6 +77,7 @@ async def _consume_rate_limit(
         .with_for_update()
     )
     if bucket is None:
+        await reserve_public_bucket(db, model=AuthRateLimitBucket, now=now)
         bucket = AuthRateLimitBucket(
             action=action,
             subject_hash=subject_hash,
