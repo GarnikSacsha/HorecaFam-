@@ -104,7 +104,7 @@ test("profile route preserves anonymous, Pending, Disabled and Admin routing", a
     ["anonymous", "/login"],
     ["pending", "/employee/pending"],
     ["disabled", "/access-disabled"],
-    ["admin", "/admin/employees"],
+    ["admin", "/admin/dashboard"],
   ]) {
     await page.unroute("**/api/v1/**");
     await page.route("**/api/v1/**", (route) => {

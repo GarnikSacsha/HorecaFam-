@@ -9,7 +9,7 @@ type ActiveSession = NonNullable<ReturnType<typeof useSession>["session"]>;
 function sessionDestination(session: ActiveSession): string {
   if (session.platform_operator && session.session.mfa_verified) return "/operator/jobs";
   const adminAccess = session.organization_access.find((access) => access.is_organization_admin);
-  if (adminAccess && session.session.mfa_verified) return "/admin/employees";
+  if (adminAccess && session.session.mfa_verified) return "/admin/dashboard";
   const employeeAccess = session.organization_access.find((access) => access.is_employee);
   if (employeeAccess?.membership_status === "pending") return "/employee/pending";
   if (employeeAccess?.membership_status === "active") return "/employee";

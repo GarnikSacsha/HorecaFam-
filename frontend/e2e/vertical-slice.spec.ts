@@ -65,6 +65,8 @@ async function loginAsAdmin(page: Page) {
   await page.getByRole("button", { name: "Увійти" }).click();
   await page.getByLabel("Код підтвердження").fill("123456");
   await page.getByRole("button", { name: "Підтвердити" }).click();
+  await expect(page.getByRole("heading", { name: "Огляд команди", level: 1 })).toBeVisible();
+  await page.goto("/admin/employees");
   await expect(page.getByRole("heading", { name: "Працівники", level: 1 })).toBeVisible();
 }
 

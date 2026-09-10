@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 const links = [
+  { to: "/admin/dashboard", label: "Огляд" },
   { to: "/admin/employees", label: "Працівники" },
   { to: "/admin/menu", label: "Меню" },
   { to: "/admin/content", label: "Навчальні матеріали" },

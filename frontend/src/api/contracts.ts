@@ -1402,3 +1402,11 @@ export interface LessonInteractiveTrainingSummary {
   best: InteractiveResultSummary | null;
   history: InteractiveResultSummary[];
 }
+export interface DashboardResponse {
+  organization_id: string;
+  location_id: string | null;
+  employees: { total: number; active: number; pending: number; paused: number; disabled: number };
+  training: { assigned: number; in_progress: number; completed: number };
+  final_exam: { certified: number; needs_exam: number; retake: number; overdue_retake: number };
+  attention: { unresolved: number; critical: number };
+}

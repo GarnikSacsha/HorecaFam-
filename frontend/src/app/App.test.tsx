@@ -74,7 +74,7 @@ describe("App", () => {
     });
     vi.spyOn(apiClient, "request").mockRejectedValue({ status: 503 });
     render(<App />);
-    await waitFor(() => expect(window.location.pathname).toBe("/admin/employees"));
+    await waitFor(() => expect(window.location.pathname).toBe("/admin/dashboard"));
     expect(screen.queryByText("Гостинність починається з тебе")).not.toBeInTheDocument();
   });
 });

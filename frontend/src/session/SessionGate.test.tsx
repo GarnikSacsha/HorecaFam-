@@ -41,13 +41,13 @@ function clientWithSession(session: SessionResponse | null): ApiClient {
 }
 
 describe("session routing", () => {
-  it("routes an MFA-verified Admin from the server session to Employees", async () => {
+  it("routes an MFA-verified Admin from the server session to Dashboard", async () => {
     render(
       <SessionProvider client={clientWithSession(adminSession)}>
         <MemoryRouter initialEntries={["/"]}>
           <Routes>
             <Route path="/" element={<HomeRedirect />} />
-            <Route path="/admin/employees" element={<p>Команда</p>} />
+            <Route path="/admin/dashboard" element={<p>Команда</p>} />
           </Routes>
         </MemoryRouter>
       </SessionProvider>,
