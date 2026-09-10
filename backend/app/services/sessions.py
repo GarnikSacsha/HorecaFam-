@@ -56,18 +56,44 @@ async def revoke_user_sessions(
     user_id: UUID,
     now: datetime,
     reason: str,
+    except_session_id: UUID | None = None,
 ) -> int:
     """Відкликає всі чинні сесії користувача всередині транзакції доменної дії."""
 
+    statement = update(Session).where(Session.user_id == user_id, Session.revoked_at.is_(None))
+    if except_session_id is not None:
+        statement = statement.where(Session.id != except_session_id)
     revoked = list(
         await db.scalars(
-            update(Session)
-            .where(Session.user_id == user_id, Session.revoked_at.is_(None))
-            .values(revoked_at=now, revoke_reason=reason)
-            .returning(Session.id)
+            statement.values(revoked_at=now, revoke_reason=reason).returning(Session.id)
         )
     )
     return len(revoked)
+
+
+async def revoke_other_sessions(
+    db: AsyncSession, *, session: Session, now: datetime, request_id: UUID
+) -> None:
+    revoked_count = await revoke_user_sessions(
+        db,
+        user_id=session.user_id,
+        now=now,
+        reason="logout_other_devices",
+        except_session_id=session.id,
+    )
+    db.add(
+        AuditEvent(
+            actor_user_id=session.user_id,
+            actor_type="user",
+            action="other_sessions_revoked",
+            target_type="user",
+            target_id=session.user_id,
+            request_id=request_id,
+            new_values={"revoked_count": revoked_count},
+            outcome="success",
+        )
+    )
+    await db.commit()
 
 
 def derive_csrf_token(raw_session_token: str, hmac_key: SecretStr) -> str:

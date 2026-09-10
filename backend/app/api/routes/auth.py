@@ -48,9 +48,24 @@ from app.services.password_recovery import (
     request_password_reset,
     reset_password,
 )
-from app.services.sessions import build_session_response, revoke_session
+from app.services.sessions import build_session_response, revoke_other_sessions, revoke_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/logout-all", status_code=204)
+async def logout_other_devices_route(
+    request: Request,
+    current: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    clock = cast(Clock, request.app.state.clock)
+    await revoke_other_sessions(
+        db,
+        session=current.record,
+        now=clock(),
+        request_id=UUID(get_request_id()),
+    )
 
 
 @router.post("/mfa/enrollment/start", response_model=MfaEnrollmentStartResponse)
