@@ -1,5 +1,18 @@
 # Testing Context
 
+## Local implementation commits complete — 2026-09-10
+
+The six CRA-131/147/149/150/151/170 maps are committed locally under Denys's explicit
+authorization. See the [commit ledger, verification and next staging steps](demo-candidate-2026-09-10.md).
+The final source snapshot matches all 354 recorded candidate hashes: full backend 865 passed;
+final frontend 89 Vitest and 69 Playwright passed; all final successful runs have zero
+failures/errors/skips. Focused staged checkpoints and quality checks also passed.
+Earlier uncommitted/no-authorization statements below are historical and superseded for
+this mapped series. Feature acceptance, publication and staging delivery remain separate.
+No push, Linear write or deployment occurred; the selected staging SHA remains `fafec73`.
+Unrelated local documentation, preparation drafts, Photos and runtime outputs are preserved.
+
+
 ## Latest local CRA-125 evidence
 
 Latest fresh full PostgreSQL 16 run: **809 passed, 0 failed, 0 skipped in 1984.30s**.
