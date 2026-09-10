@@ -288,7 +288,7 @@ test("admin invitation, pending setup, activation and active employee home", asy
   await page.getByRole("button", { name: "Надіслати запрошення" }).click();
   await expect(page.getByRole("status")).toContainText("new@example.com");
 
-  await page.getByRole("button", { name: "Вийти" }).click();
+  await page.getByRole("button", { name: "Вийти", exact: true }).click();
   await page.goto("/invite?token=invitation-safe");
   await expect(page.getByRole("heading", { name: organization.name })).toBeVisible();
   await page.getByLabel("Створіть пароль").fill("strong-password");
@@ -298,7 +298,7 @@ test("admin invitation, pending setup, activation and active employee home", asy
   await expect(page.getByText("Очікує налаштування адміністратором")).toBeVisible();
   await expect(page.getByRole("button", { name: /активувати/i })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Вийти" }).click();
+  await page.getByRole("button", { name: "Вийти", exact: true }).click();
   await loginAsAdmin(page);
   await page
     .getByRole("link", { name: /Відкрити/ })
@@ -318,7 +318,7 @@ test("admin invitation, pending setup, activation and active employee home", asy
   await dialog.getByRole("button", { name: "Підтвердити активацію" }).click();
   await expect(page.getByRole("status")).toHaveText("Працівника активовано");
 
-  await page.getByRole("button", { name: "Вийти" }).click();
+  await page.getByRole("button", { name: "Вийти", exact: true }).click();
   await page.getByLabel("Робоча електронна пошта").fill("employee@example.com");
   await page.getByLabel("Пароль").fill("strong-password");
   await page.getByRole("button", { name: "Увійти" }).click();
