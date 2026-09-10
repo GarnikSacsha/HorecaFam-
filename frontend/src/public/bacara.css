@@ -1,0 +1,668 @@
+.bacara-public,
+.bacara-login.auth-page {
+  --bacara-blue: #011ed3;
+  --bacara-ink: #151b28;
+  --bacara-muted: #555d6b;
+  --bacara-line: #dce0e8;
+  font-family: "Klaster Sans - Regular", Arial, Helvetica, sans-serif;
+  color: var(--bacara-ink);
+  background: #fff;
+}
+
+html:has(.bacara-public) {
+  scroll-behavior: smooth;
+  background: #fff;
+}
+
+.bacara-container {
+  width: min(100% - 96px, 1280px);
+  margin-inline: auto;
+}
+.bacara-public h1,
+.bacara-public h2,
+.bacara-public h3 {
+  font-family: "Klaster Sans - Bold", Arial, Helvetica, sans-serif;
+  font-weight: 700;
+}
+.bacara-public h1,
+.bacara-public h2 {
+  color: var(--bacara-blue);
+  text-wrap: balance;
+}
+.bacara-public p {
+  line-height: 1.65;
+}
+.bacara-public figure {
+  margin: 0;
+}
+.bacara-public img {
+  display: block;
+  max-width: 100%;
+}
+.bacara-public a {
+  text-decoration: none;
+}
+.bacara-public a:focus-visible,
+.bacara-login a:focus-visible {
+  outline: 3px solid var(--bacara-blue);
+  outline-offset: 6px;
+}
+.bacara-public section[id] {
+  scroll-margin-top: 30px;
+}
+.bacara-public h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.7rem);
+  line-height: 1.06;
+  letter-spacing: -0.045em;
+}
+.bacara-public h3 {
+  margin: 0 0 14px;
+  font-size: 1.4rem;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.bacara-kicker {
+  margin: 0 0 26px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.bacara-skip {
+  position: absolute;
+  z-index: 10;
+  left: 20px;
+  top: -100px;
+  padding: 14px 20px;
+  color: #fff;
+  background: var(--bacara-blue);
+}
+.bacara-skip:focus {
+  top: 12px;
+}
+.bacara-logo {
+  display: block;
+  width: 98px;
+  height: auto;
+}
+.bacara-header {
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 36px;
+  border-bottom: 1px solid var(--bacara-line);
+}
+.bacara-navigation {
+  display: flex;
+  align-items: center;
+  gap: 38px;
+}
+.bacara-navigation a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--bacara-ink);
+  font-size: 0.875rem;
+}
+.bacara-navigation a:hover {
+  color: var(--bacara-blue);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.bacara-login-link {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 46px;
+  padding: 10px 22px;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--bacara-blue);
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background-color 160ms;
+}
+.bacara-login-link:hover {
+  background: #00169e;
+}
+.bacara-login-link span {
+  font-size: 1.25rem;
+}
+.bacara-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 70px;
+  align-items: stretch;
+  padding-block: 58px 76px;
+}
+.bacara-hero-copy {
+  display: flex;
+  flex-direction: column;
+  padding-top: 18px;
+}
+.bacara-hero .bacara-kicker {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--bacara-blue);
+}
+.bacara-dot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.bacara-hero h1 {
+  max-width: 10ch;
+  margin: 8px 0 34px;
+  font-size: clamp(3.3rem, 6.4vw, 6.1rem);
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+  text-wrap: initial;
+}
+.bacara-hero h1 span {
+  display: block;
+}
+.bacara-hero .bacara-lead {
+  margin-bottom: 20px;
+  font-size: 1.23rem;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+}
+.bacara-hero-note {
+  max-width: 31ch;
+  margin-bottom: 38px;
+  color: var(--bacara-muted);
+  font-size: 0.93rem;
+}
+.bacara-hero-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 360px;
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--bacara-line);
+  font-size: 0.72rem;
+}
+.bacara-hero-foot > span:last-child {
+  color: var(--bacara-blue);
+  font-size: 1.55rem;
+}
+.bacara-hero-figure {
+  align-self: center;
+}
+.bacara-hero-figure > img {
+  width: 100%;
+  height: auto;
+}
+.bacara-hero-figure figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bacara-blue);
+  color: #fff;
+  font-size: 0.75rem;
+}
+.bacara-hero-figure figcaption span:last-child {
+  font-size: 1.3rem;
+}
+.bacara-story {
+  padding-block: 74px 94px;
+  border-top: 1px solid var(--bacara-line);
+}
+.bacara-section-heading {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 80px;
+  align-items: end;
+  margin-bottom: 48px;
+}
+.bacara-section-heading > p {
+  max-width: 44ch;
+  margin-bottom: 0;
+  color: var(--bacara-muted);
+  font-size: 1.03rem;
+}
+.bacara-photo-pair {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+}
+.bacara-photo-frame {
+  overflow: hidden;
+  height: 480px;
+  background: #f7f7f7;
+}
+.bacara-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bacara-food-frame img {
+  object-position: center 44%;
+}
+.bacara-bakery-frame img {
+  object-position: center 46%;
+}
+.bacara-photo-pair figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 15px;
+  font-size: 0.72rem;
+  color: var(--bacara-muted);
+}
+.bacara-photo-pair figcaption span:first-child {
+  color: var(--bacara-blue);
+}
+.bacara-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  margin-top: 58px;
+}
+.bacara-values article {
+  border-top: 1px solid var(--bacara-line);
+  padding-top: 22px;
+}
+.bacara-values h3 {
+  font-size: 1.1rem;
+}
+.bacara-values p {
+  margin: 0;
+  color: var(--bacara-muted);
+  font-size: 0.92rem;
+}
+.bacara-resources {
+  background: #f7f7f7;
+  padding-block: 90px;
+}
+.bacara-resources-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 100px;
+}
+.bacara-section-note {
+  max-width: 32ch;
+  margin-top: 25px;
+  color: var(--bacara-muted);
+  font-size: 0.94rem;
+}
+.bacara-resource-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bacara-resource-list li {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 22px;
+  padding-block: 26px;
+  border-top: 1px solid #d4d8e0;
+}
+.bacara-resource-list li:last-child {
+  border-bottom: 1px solid #d4d8e0;
+}
+.bacara-resource-number {
+  padding-top: 4px;
+  color: var(--bacara-blue);
+  font-size: 0.72rem;
+}
+.bacara-resource-list p {
+  max-width: 47ch;
+  margin: 0;
+  color: var(--bacara-muted);
+  font-size: 0.92rem;
+}
+.bacara-audience {
+  padding-block: 100px;
+}
+.bacara-audience-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--bacara-line);
+  border-bottom: 1px solid var(--bacara-line);
+}
+.bacara-audience-grid article {
+  padding: 36px 48px 38px 0;
+}
+.bacara-audience-grid article + article {
+  border-left: 1px solid var(--bacara-line);
+  padding-left: 48px;
+}
+.bacara-audience-grid .bacara-kicker {
+  color: var(--bacara-blue);
+  margin-bottom: 20px;
+}
+.bacara-audience-grid h3 {
+  font-size: 1.75rem;
+}
+.bacara-audience-grid p:last-child {
+  max-width: 43ch;
+  margin-bottom: 0;
+  color: var(--bacara-muted);
+  font-size: 0.95rem;
+}
+.bacara-team {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 85px;
+  padding-bottom: 100px;
+}
+.bacara-team figure img {
+  width: 100%;
+  height: auto;
+}
+.bacara-team figcaption {
+  margin-top: 14px;
+  color: var(--bacara-muted);
+  font-size: 0.75rem;
+}
+.bacara-team h2 {
+  font-size: clamp(2.2rem, 3.8vw, 3.5rem);
+  margin-bottom: 28px;
+}
+.bacara-team p:not(.bacara-kicker) {
+  max-width: 41ch;
+  color: var(--bacara-muted);
+  font-size: 1rem;
+}
+.bacara-final {
+  padding-block: 86px;
+  text-align: center;
+  color: #fff;
+  background: var(--bacara-blue);
+}
+.bacara-final h2 {
+  color: #fff;
+  font-size: clamp(2.2rem, 4.5vw, 4.25rem);
+}
+.bacara-final-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 48px;
+  min-height: 56px;
+  padding: 15px 23px;
+  margin-top: 34px;
+  border-radius: 3px;
+  color: var(--bacara-blue);
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: background-color 160ms;
+}
+.bacara-final-link:hover {
+  background: #e9edff;
+}
+.bacara-final-link span {
+  font-size: 1.35rem;
+}
+.bacara-final a:focus-visible {
+  outline-color: #fff;
+}
+.bacara-access-note {
+  margin: 22px 0 0;
+  font-size: 0.78rem;
+  color: #dfe4ff;
+}
+.bacara-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding-block: 28px;
+  font-size: 0.75rem;
+}
+.bacara-footer span:first-child {
+  font-weight: 700;
+  color: var(--bacara-blue);
+}
+.bacara-footer span:last-child {
+  color: var(--bacara-muted);
+}
+.bacara-login .auth-panel {
+  border-color: var(--bacara-line);
+  border-radius: 3px;
+}
+.bacara-login .bacara-logo {
+  width: 110px;
+  margin-bottom: 35px;
+}
+.bacara-login h1 {
+  color: var(--bacara-blue);
+}
+.bacara-login .button-primary {
+  background: var(--bacara-blue);
+  border-radius: 3px;
+}
+.bacara-login .button-primary:hover {
+  background: #00169e;
+}
+.bacara-login .bacara-back {
+  display: inline-block;
+  min-height: 44px;
+  margin-top: 22px;
+  padding-block: 12px;
+  color: var(--bacara-blue);
+  font-size: 0.85rem;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 1000px) {
+  .bacara-container {
+    width: calc(100% - 56px);
+  }
+  .bacara-hero {
+    gap: 38px;
+    grid-template-columns: 1.1fr 1fr;
+  }
+  .bacara-hero h1 {
+    font-size: clamp(3.3rem, 6.5vw, 5rem);
+  }
+  .bacara-section-heading {
+    gap: 38px;
+  }
+  .bacara-resources-grid {
+    gap: 42px;
+  }
+  .bacara-photo-frame {
+    height: 390px;
+  }
+  .bacara-team {
+    gap: 42px;
+  }
+}
+
+@media (max-width: 700px) {
+  .bacara-container {
+    width: calc(100% - 40px);
+  }
+  .bacara-header {
+    min-height: 104px;
+    grid-template-columns: 1fr auto;
+    gap: 8px 20px;
+    padding-block: 13px 6px;
+  }
+  .bacara-logo {
+    width: 72px;
+  }
+  .bacara-navigation {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    gap: 40px;
+  }
+  .bacara-navigation a {
+    font-size: 0.8rem;
+    min-height: 44px;
+  }
+  .bacara-login-link {
+    grid-row: 1;
+    grid-column: 2;
+    padding-inline: 18px;
+    min-height: 44px;
+  }
+  .bacara-hero {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding-block: 32px 48px;
+  }
+  .bacara-hero-copy {
+    padding-top: 0;
+  }
+  .bacara-hero .bacara-kicker {
+    margin-bottom: 20px;
+    font-size: 0.63rem;
+  }
+  .bacara-hero h1 {
+    font-size: clamp(3.1rem, 12.4vw, 5.2rem);
+    max-width: 11ch;
+    margin-block: 0 24px;
+  }
+  .bacara-hero .bacara-lead {
+    font-size: 1.08rem;
+    margin-bottom: 15px;
+  }
+  .bacara-hero-note {
+    max-width: 35ch;
+    font-size: 0.88rem;
+    margin-bottom: 0;
+  }
+  .bacara-hero-foot {
+    margin-top: 24px;
+    max-width: none;
+    padding-top: 14px;
+  }
+  .bacara-hero-figure {
+    width: 100%;
+    max-width: 460px;
+    justify-self: center;
+  }
+  .bacara-hero-figure figcaption {
+    padding: 13px 16px;
+  }
+  .bacara-story {
+    padding-block: 45px 52px;
+  }
+  .bacara-kicker {
+    font-size: 0.64rem;
+    margin-bottom: 20px;
+  }
+  .bacara-section-heading {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 30px;
+  }
+  .bacara-section-heading > p {
+    font-size: 0.95rem;
+  }
+  .bacara-photo-pair {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .bacara-photo-frame {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+  .bacara-photo-pair figcaption {
+    font-size: 0.65rem;
+  }
+  .bacara-values {
+    grid-template-columns: 1fr;
+    gap: 23px;
+    margin-top: 35px;
+  }
+  .bacara-values article {
+    padding-top: 18px;
+  }
+  .bacara-values h3 {
+    margin-bottom: 8px;
+  }
+  .bacara-resources {
+    padding-block: 50px;
+  }
+  .bacara-resources-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .bacara-section-note {
+    max-width: 38ch;
+  }
+  .bacara-resource-list li {
+    gap: 14px;
+    padding-block: 23px;
+  }
+  .bacara-resource-list h3 {
+    font-size: 1.2rem;
+  }
+  .bacara-resource-list p {
+    font-size: 0.88rem;
+  }
+  .bacara-audience {
+    padding-block: 52px;
+  }
+  .bacara-audience-grid {
+    grid-template-columns: 1fr;
+  }
+  .bacara-audience-grid article {
+    padding: 25px 0;
+  }
+  .bacara-audience-grid article + article {
+    padding: 25px 0;
+    border-left: 0;
+    border-top: 1px solid var(--bacara-line);
+  }
+  .bacara-audience-grid h3 {
+    font-size: 1.5rem;
+  }
+  .bacara-team {
+    grid-template-columns: 1fr;
+    gap: 34px;
+    padding-bottom: 52px;
+  }
+  .bacara-team p:not(.bacara-kicker) {
+    font-size: 0.95rem;
+  }
+  .bacara-final {
+    padding-block: 52px;
+  }
+  .bacara-final h2 {
+    font-size: clamp(2rem, 8.8vw, 3rem);
+  }
+  .bacara-final-link {
+    gap: 25px;
+    font-size: 0.84rem;
+  }
+  .bacara-access-note {
+    font-size: 0.72rem;
+  }
+  .bacara-footer {
+    padding-block: 24px;
+    font-size: 0.65rem;
+  }
+  .bacara-footer span:last-child {
+    max-width: 20ch;
+    text-align: right;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.bacara-public) {
+    scroll-behavior: auto;
+  }
+  .bacara-public *,
+  .bacara-login * {
+    transition: none;
+  }
+}

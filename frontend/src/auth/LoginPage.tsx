@@ -10,6 +10,7 @@ import type {
 import { useSession } from "../session/SessionContext";
 import { ErrorSummary } from "../ui/ErrorSummary";
 import { fieldError, formErrors } from "../ui/formErrors";
+import { BacaraLogo } from "../public/PublicStartPage";
 
 function isMfaRequired(
   response: SessionResponse | MfaRequiredResponse | MfaEnrollmentRequiredResponse,
@@ -63,9 +64,9 @@ export function LoginPage() {
   const passwordError = fieldError(errors, "password");
 
   return (
-    <main aria-label="Bacara Academy" className="auth-page">
+    <main aria-label="Bacara Academy" className="auth-page bacara-login">
       <section className="auth-panel" aria-labelledby="login-title">
-        <p className="brand-mark">Bacara Academy</p>
+        <BacaraLogo />
         <p className="eyebrow">Доступ до навчання</p>
         <h1 id="login-title">Увійдіть до свого простору</h1>
         <p className="form-intro">Використайте робочу адресу, на яку вас запросив адміністратор.</p>
@@ -116,6 +117,9 @@ export function LoginPage() {
             Забули пароль?
           </Link>
         </form>
+        <Link className="bacara-back" to="/">
+          ← На головну
+        </Link>
       </section>
     </main>
   );

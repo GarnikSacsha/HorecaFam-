@@ -30,8 +30,9 @@ import { OperatorJobsPage } from "../operator/OperatorJobsPage";
 import { OperatorShell } from "../operator/OperatorShell";
 import { AdminShell } from "../shells/AdminShell";
 import { EmployeeShell } from "../shells/EmployeeShell";
-import { HomeRedirect, ProtectedRoute } from "../session/SessionGate";
+import { ProtectedRoute } from "../session/SessionGate";
 import { SessionProvider } from "../session/SessionContext";
+import { PublicStartPage } from "../public/PublicStartPage";
 
 function Placeholder({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
@@ -47,7 +48,7 @@ export function App() {
     <BrowserRouter>
       <SessionProvider>
         <Routes>
-          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/" element={<PublicStartPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
