@@ -55,6 +55,11 @@ responsive presentation, and the frontend-to-contract request boundary.
 
 ## Implemented boundary
 
+- CRA-131 local editorial candidate: anonymous `/` shows the Bacara public introduction even
+  while session discovery is pending or unavailable. Authenticated entry retains role routing.
+  Native section anchors lead to resources/audience; login remains the existing invitation-only
+  flow. Visual acceptance is pending. See
+  [`public-start-editorial.md`](../docs/testing/public-start-editorial.md) for assets and evidence.
 - Admin login with server-selected MFA continuation.
 - New-account invitation acceptance and Pending Employee state.
 - Admin Employees list and invitation creation.
