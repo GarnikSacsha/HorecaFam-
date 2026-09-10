@@ -298,6 +298,15 @@ async def change_password(
     user.password_hash = await passwords.hash_async(new_password)
     await db.delete(budget)
     await revoke_mfa_challenges(db, user.id, now)
+    await db.execute(
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
     revoked = list(
         (
             await db.scalars(

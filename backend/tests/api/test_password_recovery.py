@@ -1,4 +1,6 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -7,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.errors import APIError
 from app.models import (
     AdminAccess,
     AuditEvent,
@@ -18,6 +21,8 @@ from app.models import (
 )
 from app.security.passwords import PasswordManager
 from app.security.tokens import generate_opaque_token, hash_secret
+from app.services.auth_security import lock_auth_user
+from app.services.password_recovery import change_password, reset_password
 from app.services.password_reset_delivery import PasswordResetTokenManager
 from app.services.sessions import derive_csrf_token
 from tests.factories.auth import make_session
@@ -294,6 +299,159 @@ async def test_password_change_revokes_other_sessions_but_preserves_current(
     assert refreshed_other is not None and refreshed_other.revoke_reason == "password_change"
     assert refreshed_user is not None and refreshed_user.password_hash is not None
     assert PasswordManager().verify(refreshed_user.password_hash, "new-password")
+
+
+@pytest.mark.parametrize("current_password", ["old-password", "incorrect-password"])
+async def test_password_change_invalidates_only_its_successful_prior_reset_authority(
+    current_password: str,
+    auth_client: AsyncClient,
+    auth_settings: Settings,
+    db_session: AsyncSession,
+) -> None:
+    user = make_user(
+        email_normalized="change-reset@example.com",
+        password_hash=PasswordManager().hash("old-password"),
+    )
+    db_session.add(user)
+    await db_session.commit()
+    user_id = user.id
+    email = user.email_normalized
+    login = await auth_client.post(
+        "/api/v1/auth/login", json={"email": email, "password": "old-password"}
+    )
+    assert login.status_code == 200
+    current_id = login.json()["session"]["id"]
+    token, raw_token = await _request_reset_and_derive_token(
+        auth_client, db_session, auth_settings, email=email
+    )
+    token_id = token.id
+    other_user = make_user(email_normalized="other-reset-owner@example.com")
+    db_session.add(other_user)
+    await db_session.flush()
+    other_token = PasswordResetToken(
+        user_id=other_user.id,
+        token_hash="9" * 64,
+        expires_at=datetime.now(UTC) + timedelta(minutes=30),
+    )
+    db_session.add(other_token)
+    await db_session.commit()
+    other_token_id = other_token.id
+    changed = await auth_client.post(
+        "/api/v1/auth/password/change",
+        headers={"Origin": "https://frontend.test", "X-CSRF-Token": login.json()["csrf_token"]},
+        json={"current_password": current_password, "new_password": "changed-password"},
+    )
+    successful = current_password == "old-password"
+    assert changed.status_code == (204 if successful else 401)
+    stale = await auth_client.post(
+        "/api/v1/auth/password/reset",
+        json={"token": raw_token, "new_password": "captured-link-password"},
+    )
+    assert stale.status_code == (400 if successful else 204)
+    db_session.expire_all()
+    stored = await db_session.get_one(User, user_id)
+    prior = await db_session.get_one(PasswordResetToken, token_id)
+    other_prior = await db_session.get_one(PasswordResetToken, other_token_id)
+    assert other_prior.revoked_at is None and other_prior.used_at is None
+    current = await db_session.get_one(Session, current_id)
+    assert stored.password_hash is not None
+    if successful:
+        assert stale.json()["code"] == "PASSWORD_RESET_TOKEN_INVALID"
+        assert prior.revoked_at is not None and prior.used_at is None
+        assert current.revoked_at is None
+        assert PasswordManager().verify(stored.password_hash, "changed-password")
+        _, fresh_raw = await _request_reset_and_derive_token(
+            auth_client, db_session, auth_settings, email=email
+        )
+        fresh = await auth_client.post(
+            "/api/v1/auth/password/reset",
+            json={"token": fresh_raw, "new_password": "fresh-recovery-password"},
+        )
+        assert fresh.status_code == 204
+        await db_session.refresh(stored)
+        await db_session.refresh(current)
+        assert PasswordManager().verify(stored.password_hash, "fresh-recovery-password")
+        assert current.revoke_reason == "password_reset"
+    else:
+        assert prior.revoked_at is None and prior.used_at is not None
+        assert PasswordManager().verify(stored.password_hash, "captured-link-password")
+
+
+@pytest.mark.parametrize("first", ["change", "reset"])
+async def test_password_change_and_reset_serialize_in_both_orders(
+    first: str,
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    auth_settings: Settings,
+    db_session: AsyncSession,
+) -> None:
+    now = datetime.now(UTC)
+    auth_app.state.clock = lambda: now
+    user = make_user(
+        email_normalized="ordered-reset@example.com",
+        password_hash=PasswordManager().hash("old-password"),
+    )
+    db_session.add(user)
+    await db_session.commit()
+    user_id = user.id
+    login = await auth_client.post(
+        "/api/v1/auth/login", json={"email": user.email_normalized, "password": "old-password"}
+    )
+    assert login.status_code == 200
+    current_id = UUID(login.json()["session"]["id"])
+    _, raw = await _request_reset_and_derive_token(
+        auth_client, db_session, auth_settings, email=user.email_normalized
+    )
+    await db_session.rollback()
+
+    async def perform(db: AsyncSession, operation: str) -> None:
+        if operation == "reset":
+            await reset_password(
+                db,
+                raw_token=raw,
+                new_password="reset-password",
+                settings=auth_settings,
+                passwords=auth_app.state.password_manager,
+                now=now,
+                request_id=uuid4(),
+            )
+        else:
+            stored_user = await db.get_one(User, user_id)
+            current = await db.get_one(Session, current_id)
+            await change_password(
+                db,
+                current_session=current,
+                user=stored_user,
+                current_password="old-password",
+                new_password="changed-password",
+                passwords=auth_app.state.password_manager,
+                now=now,
+                request_id=uuid4(),
+            )
+
+    async def compete() -> str:
+        async with auth_app.state.session_factory() as db:
+            try:
+                await perform(db, "reset" if first == "change" else "change")
+            except APIError as error:
+                await db.rollback()
+                return error.code
+            return "unexpected_success"
+
+    async with auth_app.state.session_factory() as owner:
+        await lock_auth_user(owner, user_id)
+        waiter = asyncio.create_task(compete())
+        await asyncio.sleep(0.05)
+        assert not waiter.done()
+        await perform(owner, first)
+    assert await asyncio.wait_for(waiter, 5) == (
+        "PASSWORD_RESET_TOKEN_INVALID" if first == "change" else "AUTHENTICATION_REQUIRED"
+    )
+    stored = await db_session.get_one(User, user_id)
+    assert stored.password_hash is not None
+    assert PasswordManager().verify(
+        stored.password_hash, "changed-password" if first == "change" else "reset-password"
+    )
 
 
 async def test_password_change_requires_csrf(
