@@ -1,5 +1,15 @@
 # HoReCa Repository Status
 
+## CRA-171 local account provisioning — 2026-09-11
+
+Protected one-time operator and separate Organization Admin setup is implemented locally.
+See [scope, exact commands, RED/GREEN evidence and execution boundary](docs/testing/account-provisioning.md).
+Final focused real-PostgreSQL/CLI/bootstrap/MFA gate: 29 passed, 0 failed/errors/skipped.
+Ruff format/check and strict mypy pass. No public API, schema or dependency change.
+One selective local commit is authorized; no non-test accounts, email, push or deployment.
+CRA-171 remains pending owner acceptance.
+The 865-test coverage snapshot below predates this new operation and has not been rerun for it.
+
 ## Local implementation commits complete — 2026-09-10
 
 The six CRA-131/147/149/150/151/170 maps are committed locally under Denys's explicit

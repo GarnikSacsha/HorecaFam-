@@ -1,5 +1,8 @@
 # Testing Context
 
+CRA-171: [one-time account provisioning](account-provisioning.md), 29 focused tests passed;
+no non-test account creation or full coverage rerun.
+
 ## Local implementation commits complete — 2026-09-10
 
 The six CRA-131/147/149/150/151/170 maps are committed locally under Denys's explicit
