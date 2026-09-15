@@ -35,6 +35,7 @@ from app.schemas.training import (
     TrainingLessonMutationResponse,
     TrainingLessonPatch,
     TrainingLessonResponse,
+    TrainingMenuDependencyBind,
     TrainingModuleMutationResponse,
     TrainingModulePatch,
     TrainingModuleResponse,
@@ -75,6 +76,7 @@ from app.services.training_content import (
     update_content_block,
 )
 from app.services.training_drafts import (
+    bind_training_menu_dependency,
     create_lesson,
     create_training_draft_idempotent,
     delete_lesson,
@@ -379,6 +381,35 @@ async def training_version_audience_read_route(
         organization_id=organization_id,
         location_id=location_id,
         version_id=version_id,
+    )
+
+
+@router.put(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/menu-dependency",
+    response_model=TrainingVersionDetail,
+)
+async def training_menu_dependency_bind_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: TrainingMenuDependencyBind,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingVersionDetail:
+    await bind_training_menu_dependency(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+        menu_version_id=payload.menu_version_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        expected_revision=payload.expected_revision,
+    )
+    return await get_training_version_detail(
+        db, organization_id=organization_id, location_id=location_id, version_id=version_id
     )
 
 

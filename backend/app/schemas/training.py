@@ -307,6 +307,11 @@ class TrainingVersionDetail(TrainingVersionSummary):
     menu_version_id: UUID | None
 
 
+class TrainingMenuDependencyBind(StrictTrainingSchema):
+    expected_revision: int = Field(ge=0)
+    menu_version_id: UUID
+
+
 class TrainingVersionCollection(StrictTrainingSchema):
     published: TrainingVersionSummary | None
     draft: TrainingVersionSummary | None

@@ -457,6 +457,75 @@ async def create_training_draft(
         raise
 
 
+async def bind_training_menu_dependency(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    menu_version_id: UUID,
+    actor_user_id: UUID,
+    request_id: UUID,
+    expected_revision: int,
+) -> TrainingVersion:
+    try:
+        version = await _lock_draft(
+            db,
+            organization_id=organization_id,
+            location_id=location_id,
+            version_id=version_id,
+            expected_revision=expected_revision,
+        )
+        if await db.scalar(
+            select(TrainingVersionMenuDependency.id).where(
+                TrainingVersionMenuDependency.training_version_id == version.id
+            )
+        ):
+            raise _error(409, "MENU_DEPENDENCY_EXISTS", "Чернетка вже прив'язана до версії меню.")
+        # Блокування версії меню серіалізує прив'язування з її архівацією під час публікації.
+        menu_version = await db.scalar(
+            select(MenuVersion)
+            .join(Menu, Menu.id == MenuVersion.menu_id)
+            .where(
+                MenuVersion.id == menu_version_id,
+                Menu.organization_id == organization_id,
+                Menu.location_id == location_id,
+            )
+            .with_for_update(of=MenuVersion)
+        )
+        if menu_version is None:
+            raise _resource_not_found()
+        if menu_version.status != "published":
+            raise _error(
+                409, "MENU_DEPENDENCY_INVALID", "Оберіть поточну опубліковану версію меню."
+            )
+        db.add(
+            TrainingVersionMenuDependency(
+                id=uuid4(), training_version_id=version.id, menu_version_id=menu_version.id
+            )
+        )
+        version.revision += 1
+        db.add(
+            AuditEvent(
+                organization_id=organization_id,
+                actor_user_id=actor_user_id,
+                actor_type="user",
+                action="training_menu_dependency_bound",
+                target_type="training_version",
+                target_id=version.id,
+                old_values={"menu_version_id": None},
+                new_values={"menu_version_id": str(menu_version.id), "revision": version.revision},
+                request_id=request_id,
+                outcome="success",
+            )
+        )
+        await db.commit()
+        return version
+    except Exception:
+        await db.rollback()
+        raise
+
+
 async def create_training_draft_idempotent(
     db: AsyncSession,
     *,
