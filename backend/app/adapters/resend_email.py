@@ -76,10 +76,10 @@ class ResendEmailAdapter:
         invitation_link = escape(url, quote=True)
         provider_message_id = await self._send(
             to=message.email,
-            subject="Р’Р°СЃ Р·Р°РїСЂРѕС€РµРЅРѕ РґРѕ Bacara Academy",
+            subject="Вас запрошено до Bacara Academy",
             html=(
-                "<p>Р’Р°СЃ Р·Р°РїСЂРѕС€РµРЅРѕ РґРѕ Bacara Academy.</p>"
-                f'<p><a href="{invitation_link}">РџСЂРёР№РЅСЏС‚Рё Р·Р°РїСЂРѕС€РµРЅРЅСЏ</a></p>'
+                "<p>Вас запрошено до Bacara Academy.</p>"
+                f'<p><a href="{invitation_link}">Прийняти запрошення</a></p>'
             ),
             idempotency_key=message.idempotency_key,
         )
@@ -92,10 +92,10 @@ class ResendEmailAdapter:
         url = f"{self._public_app_url}/reset-password?token={quote(message.token, safe='')}"
         provider_message_id = await self._send(
             to=message.email,
-            subject="Р’С–РґРЅРѕРІР»РµРЅРЅСЏ РїР°СЂРѕР»СЏ Bacara Academy",
+            subject="Відновлення пароля Bacara Academy",
             html=(
-                "<p>РњРё РѕС‚СЂРёРјР°Р»Рё Р·Р°РїРёС‚ РЅР° РІС–РґРЅРѕРІР»РµРЅРЅСЏ РїР°СЂРѕР»СЏ.</p>"
-                f'<p><a href="{escape(url, quote=True)}">Р’С–РґРЅРѕРІРёС‚Рё РїР°СЂРѕР»СЊ</a></p>'
+                "<p>Ми отримали запит на відновлення пароля.</p>"
+                f'<p><a href="{escape(url, quote=True)}">Відновити пароль</a></p>'
             ),
             idempotency_key=message.idempotency_key,
         )

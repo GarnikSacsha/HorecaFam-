@@ -75,6 +75,12 @@ async def test_resend_adapter_sends_invitation_with_job_idempotency() -> None:
     assert api_key == "provider-secret"
     assert idempotency_key == "invitation:8fa01b96:v2"
     assert params["to"] == ["employee@example.com"]
+    assert params["subject"] == "Вас запрошено до Bacara Academy"
+    assert params["html"] == (
+        "<p>Вас запрошено до Bacara Academy.</p>"
+        '<p><a href="https://academy.example.com/invite?token=token%2B%2F%3Dvalue">'
+        "Прийняти запрошення</a></p>"
+    )
     assert "https://academy.example.com/invite?token=token%2B%2F%3Dvalue" in str(params["html"])
 
 
@@ -99,6 +105,12 @@ async def test_resend_adapter_sends_password_reset_with_job_idempotency() -> Non
     assert result.provider == "resend"
     assert result.provider_message_id == "email-1"
     assert sender.calls[0][2] == "password-reset:token-id"
+    assert sender.calls[0][1]["subject"] == "Відновлення пароля Bacara Academy"
+    assert sender.calls[0][1]["html"] == (
+        "<p>Ми отримали запит на відновлення пароля.</p>"
+        '<p><a href="https://academy.example.com/reset-password?token=reset-token">'
+        "Відновити пароль</a></p>"
+    )
     assert "https://academy.example.com/reset-password?token=reset-token" in str(
         sender.calls[0][1]["html"]
     )
