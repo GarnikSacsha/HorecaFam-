@@ -196,6 +196,12 @@ export interface OperationalRoleSummary {
   status: "active" | "archived";
 }
 
+export interface TrainingAudienceResponse {
+  training_version_id: string;
+  revision: number;
+  operational_role_ids: string[];
+}
+
 export interface EmployeeSummary {
   id: string;
   organization_id: string;

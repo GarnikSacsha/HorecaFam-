@@ -39,9 +39,11 @@ function assertProtectedMutation(request: Request) {
 
 test("admin publishes Training and employee reads the current editorial reference", async ({
   page,
-}) => {
+}, testInfo) => {
   let currentUser: CurrentUser = "admin";
   let published = false;
+  let audienceRevision = 4;
+  let audienceRoles: string[] = [];
   const publishedAt = "2030-08-28T08:00:00Z";
   const summary = (status: "draft" | "published") => ({
     id: versionId,
@@ -118,6 +120,39 @@ test("admin publishes Training and employee reads the current editorial referenc
       return;
     }
     const versionsPath = `/organizations/${organizationId}/locations/${locationId}/training-versions`;
+    if (method === "GET" && pathname === `/organizations/${organizationId}/operational-roles`) {
+      await route.fulfill({
+        json: [
+          {
+            id: "role-1",
+            organization_id: organizationId,
+            code: "waiter",
+            name_uk: "Офіціант",
+            status: "active",
+          },
+        ],
+      });
+      return;
+    }
+    if (pathname === `${versionsPath}/${versionId}/audiences`) {
+      if (method === "PUT") {
+        expect(request.headers()["x-csrf-token"]).toBe("csrf-safe");
+        expect(request.postDataJSON()).toEqual({
+          expected_revision: 4,
+          operational_role_ids: ["role-1"],
+        });
+        audienceRoles = ["role-1"];
+        audienceRevision = 5;
+      } else expect(method).toBe("GET");
+      await route.fulfill({
+        json: {
+          training_version_id: versionId,
+          revision: audienceRevision,
+          operational_role_ids: audienceRoles,
+        },
+      });
+      return;
+    }
     if (method === "GET" && pathname === versionsPath) {
       await route.fulfill({
         json: {
@@ -139,8 +174,8 @@ test("admin publishes Training and employee reads the current editorial referenc
           training_version_id: versionId,
           organization_id: organizationId,
           location_id: locationId,
-          revision: 4,
-          can_publish: true,
+          revision: audienceRevision,
+          can_publish: audienceRoles.length > 0,
           blocking_errors: [],
           warnings: [
             {
@@ -165,7 +200,7 @@ test("admin publishes Training and employee reads the current editorial referenc
     }
     if (method === "POST" && pathname === `${versionsPath}/${versionId}/publish`) {
       assertProtectedMutation(request);
-      expect(request.postDataJSON()).toEqual({ expected_revision: 4 });
+      expect(request.postDataJSON()).toEqual({ expected_revision: 5 });
       published = true;
       await route.fulfill({
         json: {
@@ -389,6 +424,13 @@ test("admin publishes Training and employee reads the current editorial referenc
   });
 
   await page.goto("/admin/content");
+  await expect(page.getByRole("button", { name: "Опублікувати навчання" })).toBeDisabled();
+  await page.getByLabel("Офіціант", { exact: true }).check();
+  await page.getByRole("button", { name: "Зберегти аудиторію" }).click();
+  await expect(page.getByText("Аудиторію збережено.")).toBeVisible();
+  await page.getByRole("region", { name: "Аудиторія навчання" }).screenshot({
+    path: testInfo.outputPath("audience.png"),
+  });
   await expect(page.getByRole("heading", { name: "Навчальні матеріали", level: 1 })).toBeVisible();
   await expect(page.getByText("Англійський переклад ще не готовий.")).toBeVisible();
   await page.getByRole("button", { name: "Опублікувати навчання" }).click();

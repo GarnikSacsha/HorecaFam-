@@ -17,6 +17,7 @@ import { useSession } from "../session/SessionContext";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusPill } from "../ui/States";
 import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
+import { AdminTrainingAudiencePanel } from "./AdminTrainingAudiencePanel";
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 
@@ -526,6 +527,7 @@ export function AdminTrainingPage() {
           <label htmlFor="training-location">Локація</label>
           <select
             id="training-location"
+            disabled={busy}
             value={locationId}
             onChange={(event) => {
               setLocationId(event.target.value);
@@ -566,6 +568,22 @@ export function AdminTrainingPage() {
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {!loading && draft && organizationId ? (
+        <AdminTrainingAudiencePanel
+          key={`${organizationId}:${locationId}:${draft.id}`}
+          organizationId={organizationId}
+          locationId={locationId}
+          versionId={draft.id}
+          busy={busy}
+          onBusyChange={setBusy}
+          onSaved={async (revision) => {
+            setDraft((current) => (current ? { ...current, revision } : current));
+            setReadiness(null);
+            setReadiness(await client.request<TrainingReadinessResponse>(`${draftBase}/readiness`));
+          }}
+        />
       ) : null}
 
       {loading ? (

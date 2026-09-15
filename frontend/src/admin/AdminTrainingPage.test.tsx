@@ -129,6 +129,13 @@ function trainingClient(
     getSession: () => Promise.resolve(session),
     request: <T,>(path: string, options?: RequestOptions) => {
       requests.push({ path, options });
+      if (path.endsWith("/operational-roles")) return Promise.resolve([] as T);
+      if (path.endsWith("/audiences"))
+        return Promise.resolve({
+          training_version_id: detail.id,
+          revision: detail.revision,
+          operational_role_ids: [],
+        } as T);
       if (path.endsWith("/locations"))
         return Promise.resolve([
           {
