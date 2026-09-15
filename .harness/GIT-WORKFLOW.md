@@ -1,24 +1,6 @@
 # HoReCa Git Workflow
 
-## Current baseline state
-
-The repository is on `main`, with upstream tracking to the approved HoReCa GitHub repository.
-The accepted published implementation history resolves as
-`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. It includes the complete
-accepted product and documentation history through CRA-77 plus the accepted seven-checkpoint
-CRA-119 Deployment and Provider Readiness range `b1d145b..2644b79`. That publication was an
-ordinary fast-forward with no merge commit or history rewrite. Local `main` contains the
-documentation-only CRA-121 Stage 1 synchronization checkpoint above that published endpoint.
-CRA-121 provisioning is accepted and Done. CRA-122 is the active deployment task, with Stage 1
-complete and Stage 2 planning in progress. The application artifact remains `2644b796`; local
-documentation checkpoints are not deployment artifacts. No later push, source binding,
-provider/resource mutation, deployment, secret entry, or non-test data action is implied.
-CRA-42 is unrelated Backlog work.
-
-HoReCa's project-local `.harness/` is intentional tracked repository documentation adapted from
-the pinned global Denys Agent Harness. The global harness itself is not vendored, committed, or
-pushed from this repository. `Photos/` remains deferred CRA-19 project material: it is untracked,
-unstaged, and outside the published backend/docs baseline.
+Current source, publication and delivery evidence lives in [STATUS](../STATUS.md). This file defines the working rules, not a release ledger. [Historical snapshots](../docs/history/harness-checkpoints-through-2026-09-15.md) are retained for evidence only.
 
 ## Mandatory rules
 
@@ -97,21 +79,14 @@ corrective commit so the earlier state remains reachable and auditable.
 An unaccepted local checkpoint may still be corrected only within the current explicit authority;
 never infer history-rewrite permission from permission to commit.
 
-## Published baseline boundary
+## Protected material and publication boundary
 
-The initial published backend/docs baseline contains the 43 paths accepted in the five-commit
-CRA-23 map, plus the later documentation-only repository-state synchronization checkpoint. The
-baseline intentionally excludes:
-
-1. `Photos/`, which contains CRA-19 homepage project assets and remains untouched, unignored, and
-   unstaged unless a separate approved map explicitly includes those assets;
-2. local artifacts such as `.venv`, `.pydeps`, `.env*`, caches, coverage files, installers, and
-   acceptance helpers, which are never baseline content.
-
-Publication of any checkpoint does not authorize the next implementation stage. Every subsequent
-change still requires an active bounded Linear issue, an agreed commit map, and the applicable
-local-commit and remote-action approvals. The accepted historical checkpoints through CRA-75 are
-recorded in Linear and the repository evidence index. CRA-77 is accepted and published as part of
-the baseline through `c8a1135`; CRA-119 is accepted, Done, and published through `2644b796`.
-CRA-122 is the active deployment task. Every later push, PR, merge, history rewrite, provider,
-resource, secret, deployment, and non-test data action remains separately gated.
+- `Photos/` is protected CRA-19 material. Do not modify, move, ignore, stage or publish it unless
+  the approved bounded asset map explicitly includes it.
+- `.venv`, `.env*`, caches, installers, runtime output and local acceptance helpers are not
+  publication content. Preserve unrelated changes in every worktree.
+- A deployed source packet and a Git commit may differ. Compare the exact manifest before
+  choosing a release candidate; preserve already deployed fixes during reconciliation.
+- Publication does not authorize the next stage. Follow the active bounded Linear issue,
+  agreed map and existing explicit authorization; push, PR, merge, history rewrite, provider,
+  deployment and non-test data operations retain their separate gates.

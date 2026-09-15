@@ -1,5 +1,48 @@
 # HoReCa Repository Status
 
+## Current checkpoint — 2026-09-15
+
+Denys authorized the audit follow-up: reconcile already deployed CRA-172 into the main checkout
+and clean local context routing, then explicitly authorized the three selective local commits.
+The source checkpoints are `6c29708` (backend) and `19e7f19` (UI and evidence); this documentation
+checkpoint is the third approved boundary. No push, Linear write, deployment, provider send,
+migration or non-test data operation occurred in this follow-up.
+
+| Boundary | Verified state |
+| --- | --- |
+| Local Git | Source checkpoint `main@19e7f19` follows `d88cb61` with two recovery commits; this documentation commit follows it. GitHub was directly checked at `fafec73`; no push in this series |
+| Local source | Six CRA-172 recovery files are committed through `19e7f19` and match the sealed CRA-202 delivery packet, including the preserved audience editor |
+| API/web delivery | September 15 report and CRA-202 record SUCCESS: API `e70807b3-36c7-4cc1-bc00-462dc7c56806`, web `d2424c99-eaed-4251-a1cb-355521a10e1a`; this is recorded delivery evidence, not a fresh provider check |
+| Deployed source | 380-file `d88cb61` export plus the six-file CRA-172 overlay; local recovery source is now committed, but a new deployment candidate still needs exact manifest verification and approval |
+| Worker | Last recorded deployment `aad4336b-ebdf-413b-a1e3-4a4bf46dfc76` from `0956e7b`; not redeployed with September 15 email-copy fixes |
+| Resend | DNS connected according to Denys on September 15; sender, invitation expiry/job state and successful real delivery still require verification |
+| Data and storage | Existing provisioning/migrations/grants and September 13 scoped CORS are recorded completed; do not repeat them from old checklists. Content publication, Employee acceptance and real upload remain unproven here |
+
+Fresh reconciliation: **51 PostgreSQL tests, 17 UI tests and 3 browser tests passed**, with zero
+failures/skips in final GREEN runs. Backend RED was the intended 404; UI RED was the absent
+recovery button. Full backend coverage and full browser regression were not rerun.
+Exact files, static checks and limits: [source reconciliation](docs/testing/training-source-reconciliation.md).
+The [audience report](docs/testing/training-audience-editor.md) records earlier implementation
+checks; overlapping test counts must not be summed.
+
+### Next bounded steps
+
+1. Reconcile canonical Linear navigation with the current delivery facts through an authorized external update.
+2. Verify worker sender/source and invitation/job state; prepare a concrete worker release and one controlled
+   mail/Employee acceptance path. DNS verification alone is not email-delivery evidence.
+3. Complete reviewed Menu/Training content publication and the real Admin → Employee → Results journey,
+   followed by Alexandra's acceptance. Real writes, sends and deployment remain separate operations.
+
+CRA-122 and the relevant acceptance issues remain open. Linear START HERE/CRA-122 still contain
+older delivery summaries; CRA-202 has the newer September 15 execution record. Read the latest dated
+evidence and accepted decision before acting; this local update does not change product contracts.
+Worktree 54bf, Photos, runtime artifacts and unrelated uncommitted changes are preserved.
+
+
+<details>
+<summary>Historical checkpoints — not current instructions</summary>
+
+
 ## CRA-171 local account provisioning — 2026-09-11
 
 Protected one-time operator and separate Organization Admin setup is implemented locally.
@@ -554,3 +597,5 @@ reported as passing.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.
+
+</details>

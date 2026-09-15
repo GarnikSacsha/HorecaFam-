@@ -1,5 +1,50 @@
 # Testing Context
 
+## Current verification routing
+
+Current source/runtime/acceptance: [STATUS](../../STATUS.md).
+Commands, database safety and independent coverage gates: [.harness/TESTING](../../.harness/TESTING.md).
+
+- [September 15 source reconciliation](training-source-reconciliation.md): 51 PostgreSQL,
+  17 component and 3 browser tests passed in final GREEN runs; scoped static/build checks.
+- [Training audience editor](training-audience-editor.md): earlier scoped implementation evidence.
+- [September 10 full candidate gate](demo-candidate-2026-09-10.md): historical full coverage,
+  predating subsequent changes. Do not label it current coverage.
+- [Account provisioning](account-provisioning.md): operation contract; existing staging setup is
+  recorded in STATUS and must not be repeated from an old acceptance checklist.
+
+Counts overlap. Local/mock tests do not establish hosted user acceptance or provider delivery.
+
+## Current test layout
+
+- `backend/tests/api`: application factory, health/errors, auth/session/CSRF/logout/MFA/RBAC,
+  invitation lifecycle, Admin Menu/import/publication, Employee published-Menu behavior, Admin
+  Training/publication/Assignment/Rollout, and Employee assignment-aware Training/Completion
+  behavior through the ASGI path with real PostgreSQL state.
+- `backend/tests/unit`: required configuration, fail-closed test database rules, canonical email
+  normalization, and deterministic versioned invitation tokens.
+- `backend/tests/integration`: live async SQLAlchemy/asyncpg round-trip, persistence constraints,
+  idempotency concurrency, transactional invitation delivery, Menu draft/facts/publication, and
+  Training draft/content/assets/publication plus Assignment/Completion/Rollout state against
+  PostgreSQL 16.
+- `backend/tests/migration`: Alembic head/schema/drift checks and the prohibition on runtime
+  `create_all`.
+- `backend/tests/factories` and `backend/tests/conftest.py`: deterministic identity objects and
+  guarded real-PostgreSQL cleanup fixtures.
+
+## Isolation rules
+
+- Use real PostgreSQL 16, never SQLite, for persistence/migration behavior.
+- Use only `APP_ENV=test` and a database named `horeca_test` or an approved worker derivative.
+- Keep test credentials in ignored local configuration and never print them.
+- Tests must be deterministic and independent of execution order.
+- Report PostgreSQL skips explicitly; a no-skip gate requires the dedicated database boundary.
+
+
+<details>
+<summary>Historical checkpoints — not current instructions</summary>
+
+
 CRA-171: [one-time account provisioning](account-provisioning.md), 29 focused tests passed;
 no non-test account creation or full coverage rerun.
 
@@ -353,3 +398,5 @@ from application/container/email acceptance. See [the deployment plan](../deploy
 
 [Local evidence](caddy-delivery-cra-123.md): real image build RED/GREEN, 9 final Caddy HTTP tests,
 72 Vitest tests and 5 static artifact/topology tests pass. Acceptance/publication is pending.
+
+</details>

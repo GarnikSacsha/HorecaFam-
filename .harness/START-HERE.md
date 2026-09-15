@@ -37,3 +37,10 @@ work. Do not assume that nested instructions were discovered automatically.
 
 When a repository summary conflicts with Linear, stop, identify the exact conflict, and update
 neither contract nor implementation until Denys approves the resolution.
+
+## Current state and history
+
+Use the leading current checkpoint in `STATUS.md`; expand historical checkpoints only when
+their evidence is relevant. Keep Git/runtime/test-result ledgers out of harness policy files.
+Harness specifies the working method, Linear the accepted product contracts, and code/tests/runtime
+the observed implementation. A dated historical instruction is not a fresh action authorization.

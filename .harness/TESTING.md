@@ -1,39 +1,9 @@
 # HoReCa Testing and Quality Commands
 
-## Latest local CRA-125 evidence
-
-The latest fresh full PostgreSQL 16 run passed **809 tests, 0 failed, 0 skipped in 1984.30s**.
-Independent gates: statements **11408/12135 = 94.01% PASS**; branches
-**2041/2538 = 80.42% PASS**; fixed critical aggregate **1293/1443 = 89.60% PASS**.
-The helper verifies complete source inventory and unchanged thresholds with raw counts.
-Ruff format/check (238 files) and strict mypy (217 source files) pass. All three authorized
-corrections are GREEN. Denys authorized the ten local commits; the nine app/test checkpoints
-are committed through `b9a66e8`, with the final documentation checkpoint recording their evidence.
-Each mapped focused suite and Ruff/mypy check passed; Python sources still match the 809-pass
-run. No push or staging deployment occurred. The lower audit metrics below remain historical. Follow the
-[current execution record](../docs/testing/coverage-closure-plan.md) for exact evidence.
-
-## Current audit and evidence boundary — 2026-09-07
-
-[Exact September 7 results](../docs/testing/repository-audit-2026-09-07.md): 552 backend tests, 72 Vitest tests,
-42 Playwright executions and 5 artifact/topology tests passed with zero failed/skipped tests.
-Ruff, mypy, frontend format/lint/types/build, topology typecheck and Alembic checks passed.
-Published source: `e18af71`; schema head: `0018_job_runtime`.
-
-Overall coverage: **89.22% statements / 67.76% branches / 85.51% combined**. CRA-77 critical set:
-85.19% / 64.89% / 81.22%. Older “86% statement/branch” records describe the combined metric;
-they are not evidence of separate 86% branch coverage. Denys approved independent overall
-thresholds of at least 80% statements and at least 80% branches on September 7 (CRA-13).
-Statements pass; branches fail. The critical aggregate threshold remains at least 80%.
-CRA-125 implements the approved [coverage closure plan](../docs/testing/coverage-closure-plan.md).
-The new `tests.coverage_gate` helper verifies both raw-count thresholds, the fixed critical
-aggregate and complete application source inventory. Its 16 unit cases pass; the saved audit
-correctly fails the original audit's branch gate. The latest full run above passes all gates.
-Preserve historical acceptance and report current metrics separately.
-
-The following stage results retain their original evidence dates. Documentation synchronization
-does not rerun the application suites. Local mocks/signing tests do not prove live staging.
-
+This file owns supported test boundaries, commands and gates. Current results live in
+[the testing index](../docs/testing/README.md) and [STATUS](../STATUS.md).
+[Historical harness snapshots](../docs/history/harness-checkpoints-through-2026-09-15.md)
+are evidence, not commands to repeat.
 
 ## Supported baseline
 
@@ -44,30 +14,13 @@ does not rerun the application suites. Local mocks/signing tests do not prove li
 - Test environment: `APP_ENV=test` and a dedicated database named `horeca_test` or an approved
   worker-scoped derivative.
 
-The published repository includes the accepted CRA-48 corrective record after `3b95b3c`.
-CRA-43 runtime acceptance evidence remains anchored to its implementation endpoint `fa30a1f`.
-CRA-47 planning and CRA-48 documentation are Done. CRA-49 is accepted and fast-forward published
-through corrective checkpoint `8028d6e`; its evidence is recorded in
-[`../docs/testing/menu-slice-2-acceptance.md`](../docs/testing/menu-slice-2-acceptance.md).
-CRA-53 planning and CRA-54 implementation are accepted and Done. CRA-54 is published through
-`d955f6a`; its evidence is recorded in
-[`../docs/testing/training-slice-3-acceptance.md`](../docs/testing/training-slice-3-acceptance.md).
-CRA-55 documentation synchronization and CRA-56 Slice 4 planning are Done. CRA-57 is accepted,
-Done, and fast-forward published through `d4e0184`; its evidence is recorded in
-[`../docs/testing/training-assignment-slice-4-acceptance.md`](../docs/testing/training-assignment-slice-4-acceptance.md).
-CRA-60 planning and CRA-61 Interactive Training are accepted and Done. CRA-61 evidence is recorded in
-[`../docs/testing/interactive-training-slice-5-acceptance.md`](../docs/testing/interactive-training-slice-5-acceptance.md).
-CRA-63 Practice planning and CRA-64 implementation are accepted and Done. CRA-64's exact evidence
-is recorded in
-[`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
-CRA-65 synchronization is published through `4164b9c`. CRA-66 Final Exam planning and CRA-67
-implementation are accepted and Done; exact CRA-67 evidence is recorded in
-[`../docs/testing/final-exam-slice-7-acceptance.md`](../docs/testing/final-exam-slice-7-acceptance.md).
-CRA-68 is Done and published through `9ef9fe1`. CRA-69 Slice 8 planning and CRA-71 Attention and
-Retakes are accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at `5352f89`, CRA-71
-as `62a80a0..054d731`, and the CRA-72 documentation checkpoint through `4019262`. CRA-75 owns the
-publication-state documentation checkpoint. Exact accepted evidence is recorded in
-[`../docs/testing/attention-retakes-slice-8-acceptance.md`](../docs/testing/attention-retakes-slice-8-acceptance.md).
+## Independent coverage gates
+
+Overall statement coverage and overall branch coverage must each be at least 80%.
+The fixed critical aggregate must be at least 80%; preserve its accepted file set.
+Use `tests.coverage_gate` for raw-count and complete source-inventory validation.
+Combined coverage alone cannot satisfy separate statement and branch gates.
+Coverage uses the configured `greenlet` tracer for SQLAlchemy async execution.
 
 ## Environment setup
 
@@ -153,83 +106,7 @@ rtk ..\.venv\Scripts\python.exe -m pytest tests/api/test_invitations_create_vali
 The full gate is not green when required PostgreSQL tests are skipped. Report passed, failed, and
 skipped counts explicitly.
 
-## Accepted Stage 0 evidence
-
-CRA-20 was accepted on 2026-08-26 with Python 3.12.10 and native PostgreSQL 16.15:
-
-- 22 passed, 0 failed, 0 skipped;
-- 95% Stage 0 statement/branch coverage;
-- live async SQLAlchemy/asyncpg round-trip;
-- fresh database upgraded to Alembic head `0001_stage0`;
-- Ruff format, Ruff check, and mypy passed.
-
-This is historical accepted evidence, not a substitute for rerunning checks after behavior changes.
-See [`../docs/testing/README.md`](../docs/testing/README.md) and the canonical CRA-20 evidence in
-Linear.
-
-## Accepted Stage 1 evidence
-
-CRA-28 was accepted with a local Python 3.12.10/PostgreSQL 16.15 gate reporting 47 passed,
-0 failed, 0 skipped, 97% coverage, Alembic head
-`0002_identity_persistence`, and no metadata drift. Rerun the complete gate before relying on this
-snapshot or preparing any authorized commit.
-
-## Accepted CRA-30 Stage 2 evidence
-
-The accepted CRA-30 checkpoint uses the same Python 3.12.10 and native PostgreSQL 16.15 boundary.
-Its final complete gate reports 92 passed, 0 failed, 0 skipped, 94% overall statement/branch
-coverage, 92% critical auth coverage, Alembic head `0003_auth_security`, and no metadata drift.
-Canonical evidence remains in Linear.
-
-## Accepted CRA-32 Stage 3 evidence
-
-The accepted CRA-32 invitation checkpoint uses Python 3.12.10 and native PostgreSQL 16.15. Its
-complete gate reports 156 passed, 0 failed, 0 skipped, 94% overall statement/branch coverage, 90%
-aggregate critical invitation coverage, Alembic head `0005_invitation_email_outbox`, and no
-metadata drift. Canonical evidence remains in Linear.
-
-## Accepted CRA-34 Stage 4 evidence
-
-The accepted invitation-acceptance checkpoint uses the same Python 3.12.10 and native PostgreSQL 16.15
-boundary. Its final gate reports 180 passed, 0 failed, 0 skipped, 94% overall statement/branch
-coverage, 93% aggregate critical acceptance coverage, Alembic head
-`0005_invitation_email_outbox`, and no metadata drift. Focused API acceptance reports 12 passed.
-CRA-34 is Done and its four commits are published through `9fd2130`. Canonical evidence remains in
-Linear.
-
-## Accepted CRA-36 Stage 5 evidence
-
-The accepted Pending/Admin Profile Setup checkpoint uses Python 3.12.10 and native PostgreSQL 16.
-Its complete gate reports 195 passed, 0 failed, 0 skipped, 94% overall branch coverage, and 92%
-aggregate critical Stage 5 coverage. Focused Stage 5 API/integration reports 15 passed. Alembic
-remains at `0005_invitation_email_outbox`; the empty-database migration test, current head check,
-and metadata no-drift check pass. Canonical acceptance and publication evidence remains in Linear.
-
-## Accepted CRA-38 Stage 6 evidence
-
-The Explicit Activation candidate uses Python 3.12.10 and native PostgreSQL 16. Its complete gate
-reports 211 passed, 0 failed, 0 skipped, 94% overall branch coverage, and 92% coverage for
-`app/services/employees.py`. Focused Stage 6 API/integration/security checks cover the exact
-response, preconditions, CSRF/MFA/RBAC, tenant isolation, idempotency replay and key reuse,
-same-key/different-key concurrency, rollback, applicability, active access, OpenAPI, no new Session,
-and the live Stage 4→5→6 chain. Alembic remains at `0005_invitation_email_outbox`; the
-empty-database migration test, current head check, and metadata no-drift check pass. CRA-38 is
-accepted, Done, and published as part of the backend baseline through `abad74e`.
-
-## Accepted CRA-40 Stage 7 evidence
-
-The Full Regression and Acceptance Gate candidate uses Python 3.12.10 and native PostgreSQL 16.
-Its complete gate reports 213 passed, 0 failed, 0 skipped, 94.05% exact overall statement/branch
-coverage, and 91.80% aggregate coverage across the declared 17-file critical first-slice set.
-The new acceptance file reports 2 passed; the adjacent auth/invitation/employee security and
-integration suite reports 85 passed. Ruff format/check and strict mypy pass. Alembic remains at
-`0005_invitation_email_outbox`; empty-database migration coverage, current-head verification, and
-metadata no-drift all pass. The OpenAPI inventory contains 17 paths, all eight required first-slice
-paths, and none of the forbidden internal secret fields. Canonical command and matrix evidence is
-recorded in [`../docs/testing/vertical-slice-1-acceptance.md`](../docs/testing/vertical-slice-1-acceptance.md).
-CRA-40 is accepted, Done, and published through `abad74e`.
-
-## Accepted CRA-43 frontend commands and evidence
+## Frontend commands
 
 Use Node.js 24 and pnpm 11. Run from `frontend/`:
 
@@ -244,129 +121,13 @@ rtk pnpm exec playwright install chromium
 rtk pnpm test:e2e
 ```
 
-CRA-43 is accepted, Done, and published through `fa30a1f`. Its component gate contains 13 tests
-across nine files. The browser gate executes one
-complete route-mocked business path in three projects: 1440×1000 Admin desktop, 768×1024 compact,
-and 375×812 employee mobile. Exact scope, RED/GREEN evidence, and limitations are recorded in
-[`../docs/testing/frontend-vertical-slice-1-acceptance.md`](../docs/testing/frontend-vertical-slice-1-acceptance.md).
+## Evidence discipline
 
-Coverage enables the standard `greenlet` concurrency tracer because SQLAlchemy's async adapter
-crosses greenlet contexts. Without it, executed post-database branches are under-reported.
-
-## Accepted CRA-49 evidence
-
-The corrective accepted 2026-08-28 gate reports 270 passed, 0 failed, 0 skipped with 89% overall
-statement/branch coverage on Python 3.12.10 and native PostgreSQL 16. Denys accepted the precise
-coverage closure as at least 80% overall coverage with branch tracking, complete mandatory-scenario
-mapping, and explicit concurrency/security proof; no undeclared critical file set is selected
-retroactively. Ruff format/check, strict
-mypy, Alembic head `0007_menu_import_review`, current-head validation, migration round-trips, and
-metadata no-drift all pass. The frontend reports 19 Vitest tests and 6 Playwright tests passing,
-with Prettier, ESLint, TypeScript, and production build green. The ten-part implementation ends at
-`22927f7`; the corrective acceptance tail is published through `8028d6e`.
-
-## Accepted CRA-54 evidence
-
-The accepted 2026-08-28 gate reports 318 passed, 0 failed, 0 skipped with 88% overall
-statement/branch coverage and 80% aggregate coverage across the predeclared seven-file critical
-Training set on Python 3.12.10 and native PostgreSQL 16. Ruff format/check and strict mypy pass.
-Alembic head is `0008_training_content`; empty-database upgrade, the Training migration round-trip,
-current-head validation, and metadata no-drift pass. The frontend reports 27 Vitest tests and
-9 Playwright tests passing, with Prettier, ESLint, TypeScript, and production build green.
-
-Denys accepted the candidate and authorized fast-forward publication of its nine checkpoints to
-`origin/main` through `d955f6a`. Railway/provider smoke, deployment, PR, merge, and production
-configuration were not performed.
-
-## Accepted CRA-57 evidence
-
-The 2026-08-29 local gate reports 363 passed, 0 failed, 0 skipped with 88% overall
-statement/branch coverage and 87% aggregate coverage across the seven Slice 4 service files on
-Python 3.12.10 and native PostgreSQL 16. Ruff format/check and strict mypy pass. Alembic head is
-`0009_assignment_completion_rollout`; current-head, empty-database/round-trip coverage and
-metadata no-drift pass. The frontend reports 35 Vitest tests and 12 Playwright executions with
-Prettier, ESLint, TypeScript, and production build green.
-
-Denys accepted the implementation and authorized ordinary fast-forward publication of the nine
-checkpoint range `5823a0e..d4e0184`. The range is published without history rewriting. No PR,
-merge, provider, deployment, production configuration, or production-data action was performed.
-
-## Accepted CRA-61 evidence
-
-The 2026-08-29 local gate reports 424 passed, 0 failed, 0 skipped with 88% overall
-statement/branch coverage and 86% aggregate coverage across the predeclared five critical Slice 5
-services on Python 3.12.10 and native PostgreSQL 16. Ruff format/check and strict mypy pass.
-Alembic head is `0013_question_templates`; 13 migration tests, clean upgrade, current-head validation
-and metadata no-drift pass. The frontend reports 45 Vitest tests and 15 Playwright executions,
-with Prettier, ESLint, TypeScript and production build green.
-
-Denys accepted this evidence and the remaining source-bound generation limitation. CRA-62 governs
-repository publication and exact remote evidence. No PR, merge, provider, or deployment action is
-authorized by the acceptance.
-
-## Accepted CRA-64 Practice evidence
-
-The accepted 2026-08-31 eight-checkpoint range adds the ten-Question Practice boundary, final-only
-feedback,
-durable Final Exam eligibility, Admin readiness and Employee/browser flows. The mandatory
-forty-scenario matrix and actual gate results are recorded in
-[`../docs/testing/practice-slice-6-acceptance.md`](../docs/testing/practice-slice-6-acceptance.md).
-CRA-64 is Done and CRA-65 synchronization is published through `4164b9c`. Later push, PR, merge,
-provider and deployment gates remain separate.
-
-## Accepted CRA-67 Final Exam evidence
-
-The accepted eight-checkpoint range adds balanced 20-question Final Exam readiness and immutable
-Attempts, seven-day effective inactivity, feedback-free Answers, explicit finish, exact 70%
-passing, critical-error evidence, certification/history, canonical Admin Results and responsive
-Employee/Admin flows. The full real-PostgreSQL regression reports 445 passed, 0 failed, 0 skipped
-at 85% overall coverage; the new focused real-database acceptance test separately reports 1
-passed. Ruff, strict mypy, Prettier, ESLint, TypeScript and production build pass. Full Vitest
-reports 57 passed and full Playwright reports 21 passed; final focused reruns report 2 component
-tests and 3 browser executions passed. Alembic remains at `0014_practice_persistence`, with
-upgrade/current-head/no-drift checks green. CRA-67 and CRA-68 are Done, and the accepted repository
-baseline is published through `9ef9fe1`. These results remain historical accepted evidence.
-
-The accepted CRA-71 implementation reports 463 backend tests passed at 86%
-statement/branch coverage; Ruff,
-strict mypy, Alembic upgrade/current/no-drift at `0015_attention_retakes`, Prettier, ESLint,
-TypeScript and production build passed. Full Vitest reports 58 passed and full Playwright reports 27
-passed across desktop, compact and mobile. Denys accepted this evidence and the exact
-eight-checkpoint range; CRA-74 ordinary fast-forward published it through `4019262`.
-
-## CRA-77 accepted and published Operations and Hardening gate
-
-The authorized thirteen-checkpoint local range `974feeb..ef74be4` was independently revalidated on
-Python 3.12.10 and dedicated PostgreSQL 16. The exact full backend command reports 530 passed,
-0 failed, 0 skipped in 1334.59s,
-86% overall statement/branch coverage and 81% aggregate coverage across the predeclared nine-file
-critical set. Ruff format/check and strict mypy pass. Alembic upgrade, current-head and no-drift
-pass at `0018_job_runtime`.
-
-Frontend Prettier, ESLint, TypeScript and production build pass. Full Vitest reports 72 passed and
-full Playwright reports 42 passed. Browser accessibility-tree, keyboard, contrast and reduced-motion
-review also passes within its documented proxy boundary. Exact evidence and limitations are in
-[`../docs/testing/operations-hardening-slice-9-acceptance.md`](../docs/testing/operations-hardening-slice-9-acceptance.md).
-
-The bootstrap command is dry-run-first. Any non-test `--apply`, provider call, deployment, restore
-or load test remains separately gated; never infer those permissions from the local test result.
-
-CRA-77 is accepted and published as part of the repository baseline through `c8a1135`.
-
-## CRA-119 accepted and published deployment readiness gate
-
-The accepted seven-checkpoint range `b1d145b..2644b79` reports 544 backend tests passed,
-0 failed, and 0 skipped at 86% statement/branch coverage. Ruff format/check, strict mypy,
-Alembic current/no-drift at `0018_job_runtime`, frontend format/lint/types/build, 72 Vitest tests,
-two frontend deployment-artifact tests, Railway topology typecheck, and three static topology tests
-passed. Docker image/container smoke was not executed because the local Linux engine was
-unavailable. The range is accepted, Done, and published through `2644b796`.
-
-CRA-121 provisioning is accepted and Done, with provider evidence recorded in Linear and Resend
-setup deferred. CRA-122 is active with Stage 1 complete and Stage 2 planning in progress. Local
-checks alone do not prove real email, deployed API/worker/cron, migration, backup/restore,
-load, or venue UAT. Use the [Stage 2 plan](../docs/deployment/staging-cra-122.md) before external work.
-
-CRA-123's [local container evidence](../docs/testing/caddy-delivery-cra-123.md) records the Docker
-builds and 9 passing real Caddy HTTP tests, with exact reproduction commands and limitations.
-This is a locally verified candidate, not an accepted deployment or published replacement SHA.
+- Run the smallest relevant suite and proportionate adjacent checks for the actual changed source.
+- Record passed, failed and skipped counts; filtered RED cases are not a complete acceptance gate.
+- Report setup failures and timeouts separately. A passing isolated retry does not erase a failed
+  combined run. Do not weaken assertions or increase limits merely to obtain GREEN.
+- Browser mock API checks do not prove authenticated staging, real email, storage or data writes.
+- Dependencies and browser installation commands below the environment setup boundary require
+  the existing project authorization; do not reinstall an already working environment for routine checks.
+- Full coverage must come from the same successful full run; never reuse an old report after errors.

@@ -1,5 +1,26 @@
 # HoReCa Project Context
 
+## Current context routing
+
+Use [STATUS](STATUS.md) for the single current source/runtime/acceptance checkpoint.
+Use [AGENTS](AGENTS.md) and [.harness/START-HERE](.harness/START-HERE.md) for working rules;
+Linear remains canonical for product, API, data, RBAC and accepted scope.
+
+The existing system contains auth/MFA/invitations, Menu and Training authoring/publication,
+assignments, Interactive/Practice/Final Exam, Admin Results and operational tooling.
+The immediate outcome is a complete two-person Bacara demo; implementation, delivery and owner
+acceptance are separate. September 15 source reconciliation preserves both menu-dependency
+recovery and the Training audience editor in the main checkout.
+
+Repository: [backend](backend), [frontend](frontend), [architecture](docs/architecture),
+[testing](docs/testing), [decisions](docs/decisions).
+Read [backend/AGENTS](backend/AGENTS.md) before backend work. Preserve Photos and other worktrees.
+The detailed construction history below is retained for provenance, not as a next-task list.
+
+<details>
+<summary>Historical checkpoints — not current instructions</summary>
+
+
 ## Local implementation commits complete — 2026-09-10
 
 The six CRA-131/147/149/150/151/170 maps are committed locally under Denys's explicit
@@ -239,3 +260,5 @@ authenticated visual implementation require their own bounded map. No runtime re
 Work proceeds by one bounded vertical stage at a time. Passing one stage permits only the next
 explicitly approved planning or baseline action. See [`STATUS.md`](STATUS.md) for the current
 checkpoint and next allowed step.
+
+</details>

@@ -1,5 +1,46 @@
 # HoReCaFam
 
+HoReCa Training Platform for Bacara: Admin content and employee learning.
+
+Current progress, source versions and next acceptance steps: [STATUS](STATUS.md).
+The main checkout now includes the recovery source already delivered beside the audience editor;
+see [reconciliation evidence](docs/testing/training-source-reconciliation.md).
+
+## Start here
+
+- Agents: read [`AGENTS.md`](AGENTS.md) and [`.harness/START-HERE.md`](.harness/START-HERE.md).
+- Current checkpoint: [`STATUS.md`](STATUS.md).
+- Durable project context: [`CONTEXT.md`](CONTEXT.md).
+- Canonical product source:
+  [START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
+
+Linear remains canonical for product, API, data, RBAC, test-stage, scope, and approval decisions.
+Repository documentation summarizes verified local state and routes agents to those sources.
+
+## Repository map
+
+- [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed runtime;
+  the current published source head is `0019_auth_security_budgets`.
+- [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
+  Playwright, including local CRA-77 security, lifecycle, audit and operator interfaces.
+- [`docs/architecture/`](docs/architecture): verified implementation architecture.
+- [`docs/decisions/`](docs/decisions): repository-local engineering decision index.
+- [`docs/testing/`](docs/testing): test structure and accepted evidence.
+- `Photos/`: project assets for
+  [CRA-19 Bacara Welcome / homepage](https://linear.app/craftspacee/issue/CRA-19/design-bacara-welcome-brand-intro-responsive-mockups),
+  deferred from the initial backend/docs baseline. Moving, renaming, optimizing, staging, or
+  publishing them requires a separate bounded CRA-19 implementation/asset commit map.
+
+
+## Working commands
+
+Use [.harness/TESTING.md](.harness/TESTING.md) for the supported runtime, safe test environment
+and exact commands. The dated construction and delivery notes below are historical only.
+
+<details>
+<summary>Historical checkpoints — not current instructions</summary>
+
+
 Repository for the HoReCa Training Platform. The accepted published implementation baseline is
 `origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. It includes the accepted
 CRA-77 Operations and Hardening range at Alembic head `0018_job_runtime` and the accepted
@@ -116,3 +157,5 @@ durable Job worker, Caddy SPA/API proxy, managed PostgreSQL reference, private o
 configuration, and Resend delivery. Its final local gate reports 544 backend tests and 72 Vitest
 tests with no failures or skips. Docker image smoke, Railway plan/apply, provider calls, backup/
 restore, staging load, and venue UAT remain external gates.
+
+</details>
