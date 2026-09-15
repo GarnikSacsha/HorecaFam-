@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { createIdempotencyKey } from "../api/client";
 import type {
@@ -107,6 +107,12 @@ export function AdminMenuPage() {
   const [locationId, setLocationId] = useState("");
   const [versions, setVersions] = useState<MenuVersionCollection | null>(null);
   const [draft, setDraft] = useState<MenuVersionDetail | null>(null);
+  const [published, setPublished] = useState<MenuVersionDetail | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const generation = useRef(0);
+  const pagePending = useRef(false);
   const [items, setItems] = useState<MenuItemResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -119,15 +125,26 @@ export function AdminMenuPage() {
   const [itemPrice, setItemPrice] = useState("");
 
   const refreshDraft = useCallback(
-    async (selectedLocationId: string, versionId: string) => {
+    async (
+      selectedLocationId: string,
+      versionId: string,
+      expectedGeneration = ++generation.current,
+    ) => {
       if (!organizationId) return;
       const base = `/organizations/${organizationId}/locations/${selectedLocationId}/menu-versions/${versionId}`;
       const [detail, itemList] = await Promise.all([
         client.request<MenuVersionDetail>(base),
         client.request<MenuItemListResponse>(`${base}/items?limit=100`),
       ]);
-      setDraft(detail);
+      if (expectedGeneration !== generation.current) return;
+      if (detail.revision !== itemList.revision) throw new Error("Menu revision changed");
+      setDraft(detail.status === "draft" ? detail : null);
+      setPublished(detail.status === "published" ? detail : null);
       setItems(itemList.items);
+      setNextCursor(itemList.next_cursor);
+      setPageError(null);
+      setLoadingMore(false);
+      pagePending.current = false;
     },
     [client, organizationId],
   );
@@ -135,26 +152,72 @@ export function AdminMenuPage() {
   const loadWorkspace = useCallback(
     async (selectedLocationId: string) => {
       if (!organizationId || !selectedLocationId) return;
+      const requestGeneration = ++generation.current;
       setLoading(true);
       setError(null);
+      setDraft(null);
+      setPublished(null);
+      setItems([]);
+      setNextCursor(null);
+      setPageError(null);
+      setLoadingMore(false);
+      pagePending.current = false;
       try {
         const collection = await client.request<MenuVersionCollection>(
           `/organizations/${organizationId}/locations/${selectedLocationId}/menu-versions`,
         );
+        if (requestGeneration !== generation.current) return;
         setVersions(collection);
-        if (collection.draft) await refreshDraft(selectedLocationId, collection.draft.id);
+        const version = collection.draft ?? collection.current_published;
+        if (version) await refreshDraft(selectedLocationId, version.id, requestGeneration);
         else {
           setDraft(null);
           setItems([]);
         }
       } catch {
-        setError("Не вдалося завантажити меню локації.");
+        if (requestGeneration === generation.current)
+          setError("Не вдалося завантажити меню локації.");
       } finally {
-        setLoading(false);
+        if (requestGeneration === generation.current) setLoading(false);
       }
     },
     [client, organizationId, refreshDraft],
   );
+
+  const loadMore = async () => {
+    const version = draft ?? published;
+    if (!version || !organizationId || !nextCursor || pagePending.current || loading || busy)
+      return;
+    const requestGeneration = generation.current;
+    const cursor = nextCursor;
+    pagePending.current = true;
+    setLoadingMore(true);
+    setPageError(null);
+    try {
+      const params = new URLSearchParams({ limit: "100", cursor });
+      const page = await client.request<MenuItemListResponse>(
+        `/organizations/${organizationId}/locations/${locationId}/menu-versions/${version.id}/items?${params}`,
+      );
+      if (requestGeneration !== generation.current) return;
+      if (page.revision !== version.revision || page.next_cursor === cursor) {
+        setNextCursor(null);
+        setPageError("Меню змінилося. Оновіть меню перед продовженням.");
+        return;
+      }
+      setItems((current) => [
+        ...new Map([...current, ...page.items].map((item) => [item.item_id, item])).values(),
+      ]);
+      setNextCursor(page.next_cursor);
+    } catch {
+      if (requestGeneration === generation.current)
+        setPageError("Не вдалося завантажити наступні позиції. Спробуйте ще раз.");
+    } finally {
+      if (requestGeneration === generation.current) {
+        setLoadingMore(false);
+        pagePending.current = false;
+      }
+    }
+  };
 
   useEffect(() => {
     if (status !== "authenticated" || !organizationId) return;
@@ -243,6 +306,7 @@ export function AdminMenuPage() {
           <select
             id="menu-location"
             value={locationId}
+            disabled={busy}
             onChange={(event) => {
               setLocationId(event.target.value);
               void loadWorkspace(event.target.value);
@@ -272,17 +336,44 @@ export function AdminMenuPage() {
       {loading ? (
         <p aria-live="polite">Завантажуємо меню…</p>
       ) : !draft ? (
-        <div className="empty-state">
-          <h2>Чернетки немає</h2>
-          <p>Створіть її з поточної опублікованої версії або почніть перше меню.</p>
-          <button
-            className="button button-primary"
-            type="button"
-            onClick={() => void createDraft()}
-          >
-            Створити чернетку
-          </button>
-        </div>
+        <>
+          {published ? (
+            <div className="menu-editor" aria-label="Опубліковане меню">
+              <h2>Опубліковане меню · v{published.version_number}</h2>
+              {published.sections.map((section) => (
+                <section className="menu-section-block" key={section.id}>
+                  <h3>{section.name_uk}</h3>
+                  {section.categories.map((category) => (
+                    <div className="menu-category-block" key={category.id}>
+                      <h4>{category.name_uk}</h4>
+                      {itemByCategory(category.id).map((item) => (
+                        <article className="menu-item-card" key={item.item_id}>
+                          <div>
+                            <strong>{item.name_uk}</strong>
+                            <p>{item.description_uk || "Опис ще не додано"}</p>
+                          </div>
+                          <span>{formatPrice(item.price_minor)}</span>
+                        </article>
+                      ))}
+                    </div>
+                  ))}
+                </section>
+              ))}
+            </div>
+          ) : null}
+          <div className="empty-state">
+            <h2>Чернетки немає</h2>
+            <p>Створіть її з поточної опублікованої версії або почніть перше меню.</p>
+            <button
+              className="button button-primary"
+              type="button"
+              disabled={busy}
+              onClick={() => void createDraft()}
+            >
+              Створити чернетку
+            </button>
+          </div>
+        </>
       ) : (
         <>
           <div className="menu-editor-grid">
@@ -391,7 +482,10 @@ export function AdminMenuPage() {
                       onSubmit={(event) => {
                         event.preventDefault();
                         if (!session) return;
-                        const count = itemByCategory(itemCategoryId).length;
+                        const count =
+                          draft.sections
+                            .flatMap((section) => section.categories)
+                            .find((category) => category.id === itemCategoryId)?.item_count ?? 0;
                         void mutate(() =>
                           client.request(`${basePath}/items`, {
                             method: "POST",
@@ -585,6 +679,36 @@ export function AdminMenuPage() {
           ) : null}
         </>
       )}
+      {!loading && (draft || published) ? (
+        <div className="compact-actions">
+          <p aria-live="polite">Завантажено позицій: {items.length}</p>
+          {pageError ? (
+            <p className="inline-error" role="alert">
+              {pageError}
+            </p>
+          ) : null}
+          {nextCursor ? (
+            <button
+              className="button button-quiet"
+              type="button"
+              disabled={loadingMore || busy}
+              onClick={() => void loadMore()}
+            >
+              {loadingMore ? "Завантажуємо…" : "Показати ще"}
+            </button>
+          ) : null}
+          {pageError && !nextCursor ? (
+            <button
+              className="button button-quiet"
+              type="button"
+              disabled={busy}
+              onClick={() => void loadWorkspace(locationId)}
+            >
+              Оновити меню
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

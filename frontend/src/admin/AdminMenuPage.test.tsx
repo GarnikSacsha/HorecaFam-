@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -144,6 +144,197 @@ function menuClient(requests: Array<{ path: string; options?: RequestOptions }>)
 }
 
 describe("Admin Menu workspace", () => {
+  it("rejects a next page from a changed revision and offers a fresh read", async () => {
+    const original = menuClient([]);
+    const client: ApiClient = {
+      ...original,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (!path.includes("/items?")) return original.request<T>(path, options);
+        return Promise.resolve(
+          path.includes("cursor=")
+            ? ({
+                ...itemList,
+                revision: 3,
+                items: [{ ...itemList.items[0], item_id: "other", name_uk: "Чужа ревізія" }],
+              } as T)
+            : ({ ...itemList, next_cursor: "next" } as T),
+        );
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Борщ");
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Меню змінилося");
+    expect(screen.queryByText("Чужа ревізія")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Оновити меню" }));
+    await screen.findByRole("button", { name: "Показати ще" });
+  });
+
+  it("ignores a late page from the previous location", async () => {
+    const original = menuClient([]);
+    let resolvePage!: (value: MenuItemListResponse) => void;
+    const delayed = new Promise<MenuItemListResponse>((resolve) => {
+      resolvePage = resolve;
+    });
+    const client: ApiClient = {
+      ...original,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.endsWith("/locations"))
+          return Promise.resolve(
+            ["location-1", "location-2"].map((id) => ({
+              id,
+              organization_id: "organization-1",
+              name: id,
+              status: "active",
+              address: null,
+              timezone: "Europe/Kyiv",
+            })) as T,
+          );
+        if (path.includes("cursor=")) return delayed as Promise<T>;
+        if (path.includes("/items?"))
+          return Promise.resolve(
+            path.includes("location-2")
+              ? ({ ...itemList, items: [{ ...itemList.items[0], name_uk: "Інша локація" }] } as T)
+              : ({ ...itemList, next_cursor: "next" } as T),
+          );
+        return original.request<T>(path, options);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Борщ");
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    await user.selectOptions(screen.getByLabelText("Локація"), "location-2");
+    await screen.findByText("Інша локація");
+    await act(async () => {
+      resolvePage({
+        ...itemList,
+        items: [{ ...itemList.items[0], item_id: "late", name_uk: "Запізніла" }],
+      });
+      await delayed;
+    });
+    expect(screen.queryByText("Запізніла")).not.toBeInTheDocument();
+    expect(screen.queryByText("Борщ")).not.toBeInTheDocument();
+  });
+  it("loads all 308 items through opaque cursors without duplicating a repeated item", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const original = menuClient(requests);
+    const allItems = Array.from({ length: 308 }, (_, index) => ({
+      ...itemList.items[0],
+      item_id: `many-${index}`,
+      name_uk: `Позиція ${index + 1}`,
+      position: index,
+    }));
+    const client: ApiClient = {
+      ...original,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (!path.includes("/items?")) return original.request<T>(path, options);
+        requests.push({ path, options });
+        const cursor = new URL(path, "https://example.test").searchParams.get("cursor");
+        const offset = cursor ? Number(cursor.split(":")[1]) : 0;
+        return Promise.resolve({
+          revision: 2,
+          items: allItems.slice(Math.max(0, offset - 1), offset + 100),
+          next_cursor: offset + 100 < 308 ? `opaque:${offset + 100}` : null,
+        } as T);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Позиція 100");
+    expect(screen.queryByText("Позиція 101")).not.toBeInTheDocument();
+    for (const last of [200, 300, 308]) {
+      await user.click(screen.getByRole("button", { name: "Показати ще" }));
+      await screen.findByText(`Позиція ${last}`);
+    }
+    expect(screen.getAllByText(/^Позиція \d+$/)).toHaveLength(308);
+    expect(screen.queryByRole("button", { name: "Показати ще" })).not.toBeInTheDocument();
+    expect(requests.some(({ path }) => path.includes("cursor=opaque%3A100"))).toBe(true);
+  });
+
+  it("reads Published items without a Draft or any edit controls or mutations", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const original = menuClient(requests);
+    const client: ApiClient = {
+      ...original,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        requests.push({ path, options });
+        if (path.endsWith("/menu-versions"))
+          return Promise.resolve({ ...collection, draft: null } as T);
+        if (path.endsWith("/published-1"))
+          return Promise.resolve({ ...detail, id: "published-1", status: "published" } as T);
+        return original.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    expect(await screen.findByText("Борщ")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Редагувати" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Додати", { selector: "summary" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Перемістити/ })).not.toBeInTheDocument();
+    expect(requests.every(({ options }) => !options?.method)).toBe(true);
+  });
+
+  it("preserves the first page on a page failure and retries the same cursor", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const original = menuClient(requests);
+    let attempts = 0;
+    const client: ApiClient = {
+      ...original,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (!path.includes("/items?")) return original.request<T>(path, options);
+        if (path.includes("cursor=")) {
+          attempts += 1;
+          if (attempts === 1) return Promise.reject(new Error("offline"));
+          return Promise.resolve({
+            ...itemList,
+            items: [{ ...itemList.items[0], item_id: "last", name_uk: "Остання" }],
+          } as T);
+        }
+        return Promise.resolve({ ...itemList, next_cursor: "next" } as T);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Борщ");
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    await screen.findByRole("alert");
+    expect(screen.getByText("Борщ")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    await screen.findByText("Остання");
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    expect(attempts).toBe(2);
+  });
   it("renders hierarchy and keeps manual edit and reorder as revision-guarded actions", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const user = userEvent.setup();

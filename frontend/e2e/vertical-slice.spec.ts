@@ -543,7 +543,11 @@ test("admin JSON review confirm and atomic menu publication", async ({ page }) =
       return;
     }
     if (method === "GET" && pathname === `${versionsPath}/menu-version-1`) {
-      await route.fulfill({ json: draft() });
+      await route.fulfill({
+        json: published
+          ? { ...draft(), status: "published", published_at: "2026-08-27T03:00:00Z" }
+          : draft(),
+      });
       return;
     }
     if (method === "GET" && pathname === `${versionsPath}/menu-version-1/items`) {
