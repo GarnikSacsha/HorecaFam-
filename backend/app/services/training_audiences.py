@@ -20,6 +20,38 @@ def _revision_conflict() -> APIError:
     )
 
 
+async def get_training_audience(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+) -> TrainingAudienceResponse:
+    # Одна SQL-вибірка зберігає узгодженість ревізії та повного набору ролей.
+    rows = (
+        await db.execute(
+            select(TrainingVersion.revision, TrainingVersionAudience.operational_role_id)
+            .outerjoin(
+                TrainingVersionAudience,
+                TrainingVersionAudience.training_version_id == TrainingVersion.id,
+            )
+            .where(
+                TrainingVersion.id == version_id,
+                TrainingVersion.organization_id == organization_id,
+                TrainingVersion.location_id == location_id,
+            )
+            .order_by(TrainingVersionAudience.operational_role_id)
+        )
+    ).all()
+    if not rows:
+        raise _not_found()
+    return TrainingAudienceResponse(
+        training_version_id=version_id,
+        revision=rows[0].revision,
+        operational_role_ids=[row.operational_role_id for row in rows if row.operational_role_id],
+    )
+
+
 async def update_training_audience(
     db: AsyncSession,
     *,

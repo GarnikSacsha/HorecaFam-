@@ -66,7 +66,7 @@ from app.services.training_assets import (
     get_admin_asset_access,
     prepare_asset_upload,
 )
-from app.services.training_audiences import update_training_audience
+from app.services.training_audiences import get_training_audience, update_training_audience
 from app.services.training_completion import complete_employee_training_lesson
 from app.services.training_content import (
     create_content_block,
@@ -355,6 +355,26 @@ async def training_version_detail_route(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TrainingVersionDetail:
     return await get_training_version_detail(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/audiences",
+    response_model=TrainingAudienceResponse,
+)
+async def training_version_audience_read_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingAudienceResponse:
+    return await get_training_audience(
         db,
         organization_id=organization_id,
         location_id=location_id,
