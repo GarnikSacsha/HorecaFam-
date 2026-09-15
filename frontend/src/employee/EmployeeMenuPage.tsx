@@ -147,22 +147,33 @@ export function EmployeeMenuPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const generation = useRef(0);
+  const pagePending = useRef(false);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const linkedItemOpenedRef = useRef(false);
 
   const loadMenu = useCallback(async () => {
+    const requestGeneration = ++generation.current;
     setLoading(true);
     setError(null);
+    setPageError(null);
+    setLoadingMore(false);
+    pagePending.current = false;
+    setResponse((current) => (current ? { ...current, items: [], next_cursor: null } : null));
     const params = new URLSearchParams({ limit: "50" });
     if (query) params.set("q", query);
     if (sectionId) params.set("section_id", sectionId);
     if (categoryId) params.set("category_id", categoryId);
     try {
-      setResponse(await client.request<EmployeeMenuResponse>(`/me/menu?${params}`));
+      const result = await client.request<EmployeeMenuResponse>(`/me/menu?${params}`);
+      if (requestGeneration === generation.current) setResponse(result);
     } catch {
-      setError("Не вдалося завантажити меню. Спробуйте ще раз.");
+      if (requestGeneration === generation.current)
+        setError("Не вдалося завантажити меню. Спробуйте ще раз.");
     } finally {
-      setLoading(false);
+      if (requestGeneration === generation.current) setLoading(false);
     }
   }, [categoryId, client, query, sectionId]);
 
@@ -170,7 +181,54 @@ export function EmployeeMenuPage() {
     // Menu results are a server snapshot and state changes only after its response.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadMenu();
+    return () => {
+      generation.current += 1;
+    };
   }, [loadMenu]);
+
+  const loadMore = async () => {
+    if (!response?.menu || !response.next_cursor || loading || pagePending.current) return;
+    const requestGeneration = generation.current;
+    const cursor = response.next_cursor;
+    const versionId = response.menu.menu_version_id;
+    pagePending.current = true;
+    setLoadingMore(true);
+    setPageError(null);
+    const params = new URLSearchParams({ limit: "50", cursor });
+    if (query) params.set("q", query);
+    if (sectionId) params.set("section_id", sectionId);
+    if (categoryId) params.set("category_id", categoryId);
+    try {
+      const page = await client.request<EmployeeMenuResponse>(`/me/menu?${params}`);
+      if (requestGeneration !== generation.current) return;
+      if (page.menu?.menu_version_id !== versionId || page.next_cursor === cursor) {
+        setResponse((current) => (current ? { ...current, next_cursor: null } : null));
+        setPageError("Меню змінилося. Оновіть меню перед продовженням.");
+        return;
+      }
+      setResponse((current) =>
+        current
+          ? {
+              ...current,
+              next_cursor: page.next_cursor,
+              items: [
+                ...new Map(
+                  [...current.items, ...page.items].map((item) => [item.item_id, item]),
+                ).values(),
+              ],
+            }
+          : null,
+      );
+    } catch {
+      if (requestGeneration === generation.current)
+        setPageError("Не вдалося завантажити наступні позиції. Спробуйте ще раз.");
+    } finally {
+      if (requestGeneration === generation.current) {
+        pagePending.current = false;
+        setLoadingMore(false);
+      }
+    }
+  };
 
   const closeDetail = useCallback(() => {
     setDetailOpen(false);
@@ -324,6 +382,31 @@ export function EmployeeMenuPage() {
       ) : null}
       {detailOpen ? (
         <MenuDetail item={selected} loading={detailLoading} onClose={closeDetail} />
+      ) : null}
+      {!loading && response?.menu ? (
+        <div className="compact-actions">
+          <p aria-live="polite">Завантажено позицій: {response.items.length}</p>
+          {pageError ? (
+            <p className="inline-error" role="alert">
+              {pageError}
+            </p>
+          ) : null}
+          {response.next_cursor ? (
+            <button
+              className="button button-quiet"
+              type="button"
+              disabled={loadingMore}
+              onClick={() => void loadMore()}
+            >
+              {loadingMore ? "Завантажуємо…" : "Показати ще"}
+            </button>
+          ) : null}
+          {pageError && !response.next_cursor ? (
+            <button className="button button-quiet" type="button" onClick={() => void loadMenu()}>
+              Оновити меню
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

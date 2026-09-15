@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -70,6 +70,124 @@ const detail: EmployeeMenuItemDetail = {
 };
 
 describe("Employee published Menu", () => {
+  it("loads all 308 items and retries a failed page without losing or duplicating items", async () => {
+    const allItems = Array.from({ length: 308 }, (_, index) => ({
+      ...menu.items[0],
+      item_id: `item-${index}`,
+      name: `Позиція ${index + 1}`,
+    }));
+    let failed = false;
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) => {
+        const cursor = new URL(path, "https://example.test").searchParams.get("cursor");
+        if (cursor && !failed) {
+          failed = true;
+          return Promise.reject(new Error("offline"));
+        }
+        const offset = cursor ? Number(cursor.split(":")[1]) : 0;
+        return Promise.resolve({
+          ...menu,
+          items: allItems.slice(Math.max(0, offset - 1), offset + 50),
+          next_cursor: offset + 50 < 308 ? `opaque:${offset + 50}` : null,
+        } as T);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <EmployeeMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Позиція 50");
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    await screen.findByRole("alert");
+    expect(screen.getByText("Позиція 1")).toBeInTheDocument();
+    for (const last of [100, 150, 200, 250, 300, 308]) {
+      await user.click(screen.getByText("Показати ще", { selector: "button" }));
+      await screen.findByText(`Позиція ${last}`);
+    }
+    expect(screen.getAllByText(/^Позиція \d+$/)).toHaveLength(308);
+    expect(screen.queryByRole("button", { name: "Показати ще" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("discards a late page when search changes and resets the cursor", async () => {
+    let resolvePage!: (value: EmployeeMenuResponse) => void;
+    const delayed = new Promise<EmployeeMenuResponse>((resolve) => {
+      resolvePage = resolve;
+    });
+    const requests: string[] = [];
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) => {
+        requests.push(path);
+        const params = new URL(path, "https://example.test").searchParams;
+        if (params.get("q"))
+          return Promise.resolve({
+            ...menu,
+            items: [{ ...menu.items[0], item_id: "search", name: "Знайдено" }],
+          } as T);
+        if (params.has("cursor")) return delayed as Promise<T>;
+        return Promise.resolve({ ...menu, next_cursor: "opaque:50" } as T);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <EmployeeMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Борщ");
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    await user.type(screen.getByLabelText("Пошук у меню"), "нове");
+    await user.click(screen.getByRole("button", { name: "Знайти" }));
+    await screen.findByText("Знайдено");
+    await act(async () => {
+      resolvePage({ ...menu, items: [{ ...menu.items[0], item_id: "late", name: "Запізніла" }] });
+      await delayed;
+    });
+    expect(screen.queryByText("Запізніла")).not.toBeInTheDocument();
+    expect(screen.queryByText("Борщ")).not.toBeInTheDocument();
+    expect(
+      requests.filter((path) => path.includes("q=")).every((path) => !path.includes("cursor=")),
+    ).toBe(true);
+  });
+
+  it("requires a fresh read when the Published version changes between pages", async () => {
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) => {
+        return Promise.resolve(
+          path.includes("cursor=")
+            ? ({
+                ...menu,
+                menu: { ...menu.menu, menu_version_id: "new-version" },
+                items: [{ ...menu.items[0], item_id: "new", name: "Нова версія" }],
+              } as T)
+            : ({ ...menu, next_cursor: "next" } as T),
+        );
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <EmployeeMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByText("Борщ");
+    await user.click(screen.getByRole("button", { name: "Показати ще" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Меню змінилося");
+    expect(screen.queryByText("Нова версія")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Показати ще" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Оновити меню" })).toBeInTheDocument();
+  });
   it("searches and filters the current published version and opens safe item facts", async () => {
     const requests: string[] = [];
     const client: ApiClient = {
