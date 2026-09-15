@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
@@ -192,6 +192,112 @@ function trainingClient(
 }
 
 describe("Admin Training workspace", () => {
+  it.each([
+    ["missing", "Спочатку опублікуйте меню цієї локації, потім повторіть прив’язування."],
+    ["stale", "Чернетку вже змінили в іншій сесії. Локальний текст збережено на екрані."],
+    ["network", "Зміни не збережено. Перевірте дані та повторіть дію."],
+    ["bound", "Прив’язка або опубліковане меню змінилися. Оновіть дані перед повторною дією."],
+  ])("keeps recovery actionable after %s", async (failure, message) => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const fallback = trainingClient(requests);
+    const mutation = vi.fn();
+    const client: ApiClient = {
+      ...fallback,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.endsWith("/menu-versions"))
+          return Promise.resolve({
+            current_published: failure === "missing" ? null : { id: "current-menu" },
+          } as T);
+        if (path.endsWith("/menu-dependency")) {
+          mutation();
+          return Promise.reject(
+            failure === "network"
+              ? new Error("offline")
+              : new ApiError(409, {
+                  code: failure === "bound" ? "MENU_DEPENDENCY_EXISTS" : "REVISION_CONFLICT",
+                  message: "Змінено.",
+                }),
+          );
+        }
+        if (!options?.method && path.endsWith("/training-version-1"))
+          return Promise.resolve({ ...detail, menu_version_id: null } as T);
+        return fallback.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await userEvent
+      .setup()
+      .click(await screen.findByRole("button", { name: "Прив’язати опубліковане меню" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByRole("button", { name: "Прив’язати опубліковане меню" })).toBeEnabled();
+    expect(mutation).toHaveBeenCalledTimes(failure === "missing" ? 0 : 1);
+    if (failure === "stale" || failure === "bound")
+      expect(screen.getByRole("button", { name: "Оновити дані" })).toBeInTheDocument();
+  });
+
+  it("binds an unlinked draft only on request and refreshes its revision", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const fallback = trainingClient(requests);
+    let bound = false;
+    let finishBinding!: () => void;
+    const binding = new Promise<void>((resolve) => {
+      finishBinding = resolve;
+    });
+    const client: ApiClient = {
+      ...fallback,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.endsWith("/menu-versions"))
+          return Promise.resolve({ current_published: { id: "current-menu" } } as T);
+        if (path.endsWith("/menu-dependency")) {
+          requests.push({ path, options });
+          return binding.then(() => {
+            bound = true;
+            return { ...detail, menu_version_id: "current-menu", revision: 5 } as T;
+          });
+        }
+        if (!options?.method && path.endsWith("/training-version-1")) {
+          return Promise.resolve({
+            ...detail,
+            menu_version_id: bound ? "current-menu" : null,
+            revision: bound ? 5 : 4,
+          } as T);
+        }
+        return fallback.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    const button = await screen.findByRole("button", { name: "Прив’язати опубліковане меню" });
+    expect(requests.filter(({ options }) => options?.method)).toHaveLength(0);
+    await userEvent.setup().click(button);
+    expect(screen.getByRole("button", { name: "Зачекайте…" })).toBeDisabled();
+    expect(screen.getByLabelText("Локація")).toBeDisabled();
+    await act(async () => {
+      finishBinding();
+      await binding;
+    });
+    expect(requests.find(({ path }) => path.endsWith("/menu-dependency"))?.options).toEqual({
+      method: "PUT",
+      body: { expected_revision: 4, menu_version_id: "current-menu" },
+      csrfToken: "csrf-safe",
+    });
+    expect(await screen.findByText("Збережено")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Прив’язати опубліковане меню" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("edits the fixed module, reorders lessons and publishes the readiness revision", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const user = userEvent.setup();

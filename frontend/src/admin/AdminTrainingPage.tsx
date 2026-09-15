@@ -4,6 +4,7 @@ import { ApiError, createIdempotencyKey } from "../api/client";
 import type {
   AssetUploadIntentResponse,
   LocationSummary,
+  MenuVersionCollection,
   TrainingAssetResponse,
   TrainingContentBlockType,
   TrainingLessonResponse,
@@ -261,6 +262,15 @@ export function AdminTrainingPage() {
       if (caught instanceof ApiError && caught.code === "REVISION_CONFLICT") {
         setSaveState("conflict");
         setError("Чернетку вже змінили в іншій сесії. Локальний текст збережено на екрані.");
+      } else if (caught instanceof ApiError && caught.code === "MENU_NOT_PUBLISHED") {
+        setSaveState("error");
+        setError("Спочатку опублікуйте меню цієї локації, потім повторіть прив’язування.");
+      } else if (
+        caught instanceof ApiError &&
+        ["MENU_DEPENDENCY_EXISTS", "MENU_DEPENDENCY_INVALID"].includes(caught.code)
+      ) {
+        setSaveState("conflict");
+        setError("Прив’язка або опубліковане меню змінилися. Оновіть дані перед повторною дією.");
       } else {
         setSaveState("error");
         setError("Зміни не збережено. Перевірте дані та повторіть дію.");
@@ -291,6 +301,26 @@ export function AdminTrainingPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const bindMenu = () => {
+    if (!draft || draft.menu_version_id !== null || !session || busy) return;
+    void mutate(async () => {
+      const menus = await client.request<MenuVersionCollection>(
+        `/organizations/${organizationId}/locations/${locationId}/menu-versions`,
+      );
+      if (!menus.current_published) {
+        throw new ApiError(409, {
+          code: "MENU_NOT_PUBLISHED",
+          message: "Меню ще не опубліковано.",
+        });
+      }
+      await client.request<TrainingVersionDetail>(`${draftBase}/menu-dependency`, {
+        method: "PUT",
+        body: { expected_revision: draft.revision, menu_version_id: menus.current_published.id },
+        csrfToken: session.csrf_token,
+      });
+    });
   };
 
   const saveModule = () => {
@@ -527,8 +557,8 @@ export function AdminTrainingPage() {
           <label htmlFor="training-location">Локація</label>
           <select
             id="training-location"
-            disabled={busy}
             value={locationId}
+            disabled={busy || loading}
             onChange={(event) => {
               setLocationId(event.target.value);
               setRolloutId(null);
@@ -584,6 +614,23 @@ export function AdminTrainingPage() {
             setReadiness(await client.request<TrainingReadinessResponse>(`${draftBase}/readiness`));
           }}
         />
+      ) : null}
+
+      {!loading && draft?.status === "draft" && draft.menu_version_id === null ? (
+        <div className="empty-state">
+          <p>
+            Щоб додавати картки позицій і опублікувати навчання, прив’яжіть опубліковане меню цієї
+            локації.
+          </p>
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={bindMenu}
+            disabled={busy}
+          >
+            {busy ? "Зачекайте…" : "Прив’язати опубліковане меню"}
+          </button>
+        </div>
       ) : null}
 
       {loading ? (
