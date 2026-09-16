@@ -9,6 +9,7 @@ from app.core.clock import utc_now
 from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.observability import configure_observability
+from app.core.request_body import RequestBodyLimitMiddleware
 from app.core.request_id import RequestIDMiddleware
 from app.db.session import create_engine, create_session_factory
 from app.security.passwords import PasswordManager
@@ -33,6 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.private_storage = None
     application.state.engine = create_engine(resolved_settings)
     application.state.session_factory = create_session_factory(application.state.engine)
+    application.add_middleware(RequestBodyLimitMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=resolved_settings.cors_allowed_origins,
