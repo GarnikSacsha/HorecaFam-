@@ -81,4 +81,11 @@ Commands were run from `frontend/` using the repository toolchain.
 
 Browser tests mock the API. No real backend authentication, PostgreSQL, container or deployed
 provider acceptance is claimed. Local preview: `rtk pnpm dev`, <http://127.0.0.1:5173/>.
-CRA-131 remains In Progress pending visual acceptance.
+At the original verification checkpoint CRA-131 remained In Progress pending visual acceptance.
+
+## Owner visual acceptance — 2026-09-11
+
+Denys accepted the current visual iteration. Copy refinement and additional animation are deferred.
+CRA-131 is Done. Local checkpoints `4dce657` and `5217293` are included in `ede4281`;
+GitHub remains `fafec73`. The September 10 shared 89 Vitest/69 Playwright successful results
+remain dated evidence. No new browser run or asset publication is implied.

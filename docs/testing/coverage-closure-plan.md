@@ -1,5 +1,42 @@
 # Backend coverage closure plan — 2026-09-07
 
+## Current disposition — 2026-09-16
+
+CRA-125 and CRA-126 are accepted and Done; their publication is already complete. The historical
+candidate/acceptance proposals below must not be repeated. Current source and delivery routing
+is in [STATUS](../../STATUS.md). This reconciliation does not refresh full backend coverage or
+merge historical reports. See [the September 16 checks](reconciliation-2026-09-16.md).
+
+## Historical disposition — 2026-09-08, before acceptance
+
+CRA-125 is implemented and published as ten commits `d24e7a2..2275cee`; formal acceptance
+remains open. Its 809-test evidence below is unchanged. Later CRA-126 is published through
+`fafec73ad7f3438e1b545acea7cde3018b7f2fbf` with 832 passing tests and migration `0019_auth_security_budgets`.
+Its separate coverage is 93.86% statements / 80.19% branches / 89.67% critical aggregate;
+see [the CRA-126 report](security-fixes-cra-126.md). Do not merge the two reports.
+The last accepted staging candidate remains `2275cee`; replacing it with `fafec73`
+requires an explicit decision in CRA-122. Earlier local-only and no-push claims below are
+dated execution history, not current authority. This synchronization adds no test run or commit.
+
+## Published checkpoint — 2026-09-07
+
+Denys explicitly authorized publication of the completed ten-commit range. Ordinary fast-forward
+push advanced the existing `origin/main` from `e18af71f89d587b1cb6b472cf189e67dfa8102a0` to
+`2275cee1ae46da708f33a032229e708c73a966c8`. Independent `git ls-remote --heads origin refs/heads/main`
+readback confirmed the exact new SHA; local main and its upstream match. The ten mapped commits
+contain 32 app/test paths and five documents. The index is empty; unrelated working changes and
+protected assets remain outside the publication. No force push or history rewrite occurred.
+
+This publication does not rerun or change the 809-pass full gate, the nine passing pre-commit
+suites or their documented limits. The prior no-push statements below retain their checkpoint
+dates. Formal Linear acceptance is unchanged. See the Stage 2 preparation record for the proposed
+new candidate and remaining provider/configuration boundaries.
+
+Follow-up documentation map, uncommitted: publication evidence in this file and STATUS.md;
+then the scoped candidate/preflight update in `docs/deployment/staging-cra-122.md`. Verify exact
+Git refs, preserved index/worktree scope and documentation links. No additional commit or push
+is included in this follow-up map.
+
 ## Latest Git checkpoint — authorized local commit map
 
 Denys explicitly authorized all ten selective local commits. Checkpoints 1–9 have been created

@@ -3,8 +3,9 @@
 HoReCa Training Platform for Bacara: Admin content and employee learning.
 
 Current progress, source versions and next acceptance steps: [STATUS](STATUS.md).
-The main checkout now includes the recovery source already delivered beside the audience editor;
-see [reconciliation evidence](docs/testing/training-source-reconciliation.md).
+The staging demo has one active Employee; Menu and Training are still empty unpublished drafts.
+The September 16 reconciliation separates delivered CRA-233 from local-only CRA-234 fixes;
+see [source, checks and commit boundaries](docs/testing/reconciliation-2026-09-16.md).
 
 ## Start here
 
@@ -41,23 +42,78 @@ and exact commands. The dated construction and delivery notes below are historic
 <summary>Historical checkpoints — not current instructions</summary>
 
 
-Repository for the HoReCa Training Platform. The accepted published implementation baseline is
-`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`. It includes the accepted
-CRA-77 Operations and Hardening range at Alembic head `0018_job_runtime` and the accepted
-seven-checkpoint CRA-119 Deployment and Provider Readiness range. Exact evidence and remaining
-pilot gates are in
-[`docs/testing/operations-hardening-slice-9-acceptance.md`](docs/testing/operations-hardening-slice-9-acceptance.md)
-and
-[`docs/testing/deployment-provider-readiness-cra-119.md`](docs/testing/deployment-provider-readiness-cra-119.md).
-CRA-121 provisioning is accepted and Done. CRA-122 Deploy and Accept Staging is the active bounded
-deployment task: Stage 1 read-only preflight is complete; Stage 2 planning is in progress.
-Local history includes documentation checkpoint `78952feb`, CRA-123 correction `ec27d19`,
-and Stage 2 plan `93c815f` above the published application artifact. These are not pushed.
-The latest provider evidence (2026-09-03) records isolated staging resources with PostgreSQL online
-and application services offline without source bindings. The next reviewed deliverable is the
-[Stage 2 deployment plan](docs/deployment/staging-cra-122.md). Provider state must be rechecked
-before action. Commits, push, source binding, secrets, migration, deployment and non-test data
-remain separately gated; CRA-42 is unrelated Backlog work.
+## Current staging state — after API rollout, 2026-09-11
+
+Follow the [verified staging checkpoint](STATUS.md#verified-staging-checkpoint--2026-09-11-after-api-rollout).
+CRA-171 is committed at `0956e7b`; migration and runtime grants completed in the preceding task,
+and API/web are running. Worker, account setup and authenticated acceptance remain open.
+The earlier snapshot below is historical and must not drive repeated migration or setup actions.
+
+## Earlier current checkpoint — 2026-09-11, before migration/API rollout
+
+The local demo implementation is committed through `ede4281` (16 checkpoints ahead of
+GitHub `fafec73`, behind 0; direct remote read September 11). The exact ledger and recorded
+September 10 verification are in [the candidate report](docs/testing/demo-candidate-2026-09-10.md).
+Recorded final gates: 865 backend, 89 Vitest and 69 Playwright passed, zero failures/errors/skips;
+93.96% statements, 80.46% branches and 89.77% fixed critical aggregate. These are not new test runs.
+
+Denys accepted CRA-131's current public-page visual iteration on September 11; copy refinement
+and additional animation are deferred. CRA-123–126 remain accepted and Done. Other local
+implementation acceptance remains distinct from completed commits and staging delivery.
+
+The accepted account direction is protected one-time provisioning of a separate technical
+operator and Alexandra's Organization Admin account. Alexandra uses existing email invitations
+for employees. An owner provisioning cabinet is deferred. No new operational role is implied.
+
+Fresh September 11 Railway read: PostgreSQL has one active successful deployment; nine application
+services have no source or deployment; five cron schedules are null. Pending settings count is
+unavailable. Selected staging SHA remains `fafec73`; replacement selection and rollout are separate.
+No application code, Git index, commit, push, deployment or non-test data changed in this
+documentation synchronization. Older current-state wording below is historical where superseded.
+
+## Current local checkpoint — 2026-09-09
+
+Public entry, Employee profile, expanded Practice, other-device logout and Admin Dashboard
+are local implementation candidates. See [STATUS](STATUS.md) for their acceptance boundaries,
+[current verification](docs/testing/README.md) for final test evidence, and the
+[staging runbook](docs/deployment/staging-acceptance-cra-122.md) for remaining delivery/account gates.
+The selected staging SHA below predates these uncommitted changes. Linear START HERE and the
+two-person demo document are synchronized to this checkpoint; no release is implied.
+
+## Accepted decision — 2026-09-08
+
+Denys explicitly confirmed the reviewed acceptance packet: CRA-123, CRA-124, CRA-125 and
+CRA-126 are formally accepted with their recorded verification limits and marked Done in Linear.
+The selected candidate for all nine staging application services is
+`fafec73ad7f3438e1b545acea7cde3018b7f2fbf`, with schema
+`0019_auth_security_budgets`, replacing `2275cee1ae46da708f33a032229e708c73a966c8`.
+
+This decision supersedes earlier pending-acceptance and proposed-candidate wording below.
+The reviewed migration/recovery/storage limits remain applicable. CRA-122 stays In Progress:
+real staging acceptance has not run. Source binding, archive delivery, provider changes,
+non-test migration, deployment, commits and push are not authorized by this acceptance.
+The local source-binding draft now names the selected SHA for all nine services; it is not applied.
+Next: resolve the supported delivery mechanism and prepare the remaining concrete prerequisites.
+
+Repository for the HoReCa Training Platform.
+
+Published `main` is `fafec73ad7f3438e1b545acea7cde3018b7f2fbf` (CRA-123/124/125/126 included).
+The direct GitHub ref, local main and origin/main match. CRA-126 records 832 backend tests
+passed with zero failures/errors/skips; independent statements 93.86%, branches 80.19% and
+critical aggregate 89.67% pass. Source migration head: `0019_auth_security_budgets`.
+Formal acceptance of CRA-123/124/125/126 remains open.
+
+CRA-122 owns current synchronization and staging preparation. The last accepted staging SHA
+is `2275cee1ae46da708f33a032229e708c73a966c8`; `fafec73` is only a proposed replacement.
+Build/start settings and cron suspension were recorded as applied on September 7; source binding
+and application rollout remain unperformed in the latest evidence. Autodeploy suppression at
+binding time, migration/rollback and real provider acceptance are still open. No live provider
+check or application suite was rerun by this synchronization.
+
+Use [STATUS.md](STATUS.md) for the current checkpoint and dated evidence, and the
+[staging preparation](docs/deployment/staging-cra-122.md) for exact remaining gates.
+CRA-19 remains a separate visual track. Commit, push, deployment and non-test data are not
+authorized by documentation synchronization.
 
 ## Start here
 
@@ -73,7 +129,7 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed runtime;
-  the locally accepted CRA-77 range is at head `0018_job_runtime`.
+  the current published source head is `0019_auth_security_budgets`.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
   Playwright, including local CRA-77 security, lifecycle, audit and operator interfaces.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.

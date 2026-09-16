@@ -1,5 +1,12 @@
 # Two-person demo candidate verification — 2026-09-10
 
+## Historical candidate boundary
+
+This report preserves September 10 verification through `ede4281`. CRA-171 was subsequently
+implemented and committed at `0956e7b`, then used for migration/API delivery. Its former
+implementation-next-step proposal below is complete. Follow [current staging state](../../STATUS.md)
+for remaining work; this report does not prove full coverage for the later provisioning module.
+
 ## Completed local commit execution — 2026-09-10
 
 Denys explicitly authorized the mapped local commits. All six implementation maps below

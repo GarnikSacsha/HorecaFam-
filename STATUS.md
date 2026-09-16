@@ -1,5 +1,53 @@
 # HoReCa Repository Status
 
+## Current product and source checkpoint — 2026-09-16
+
+Denys authorized the audit reconciliation, Linear updates and six selective local commits.
+The complete map, current verification and exclusions are in
+[September 16 reconciliation](docs/testing/reconciliation-2026-09-16.md).
+
+| Boundary | Current evidence |
+| --- | --- |
+| Product access | Authenticated Admin UI shows one active Employee, zero pending activation and zero assignments/certifications. Do not repeat provisioning, activation or invitation resend |
+| Content | Menu Draft v1 has zero items; Training Draft v1 has zero lessons, no selected Waiter audience and no Published Menu binding. Question generation remains blocked by unpublished sources |
+| Delivered application | September 15 CRA-233 report records successful API/web rollout and one Delivered invitation; worker uses the verified-domain sender. This is dated provider evidence, not a new provider inventory |
+| CRA-233 source | Backend `80c0996` and UI `58ad81f` locally committed; sealed 384-file deployment packet reverified with no hash mismatches or extras |
+| CRA-234 source | Recovery `3b3c79a` and body boundary `0f767a6` locally committed. These corrections are absent from the deployed CRA-233 packet and require separate delivery |
+| GitHub and Harness | Direct GitHub main remains `fafec73`; no push. Global Harness remains clean at pinned `3eaa9586b4e09e70399c2600aa1808b18449a15d`; no rule or pin update |
+| Acceptance | CRA-122 and open feature issues retain their existing status. Accepted CRA-123/125/126 gates are historical acceptance, not a new full regression or pilot approval |
+
+Next product work is reviewed Menu publication, Waiter audience and exact Menu binding,
+four lessons, reviewed Published questions with 5/10/20 readiness, then assignment and the
+existing Employee journey through Results. The prepared offline content is input material,
+not proof of server readiness. Content writes, CRA-234 rollout and GitHub push remain separate.
+Real uploads/recovery-provider checks, cron acceptance, load, isolated restore, accessibility
+and Alexandra's UAT remain wider pilot gates.
+
+The September 15 worker/source/pending-invitation summaries are retained below as dated history.
+Linear receives a brief reconciliation update; automatic approval rejected the detailed external
+metadata update. This repository ledger retains the full evidence without changing contracts.
+Photos, outputs, other worktrees and the pre-existing metadata-only question-generation mark
+are preserved. No production code was edited during this synchronization.
+
+<details>
+<summary>Historical checkpoints — not current instructions</summary>
+
+## Latest delivery — CRA-233, 2026-09-15
+
+Denys approved the sealed invitation list/resend candidate deployment and one controlled send.
+API `e3297673-0ae5-428a-b94a-085c0d80a2fc` and web
+`7875de0b-c9b8-4f09-b812-14f72874e560` are SUCCESS. The prior worker update
+`7eba759c-d82c-46f8-8067-c4d77d7a1d6b` uses the verified-domain sender.
+The existing expired invitation was resent through the authenticated Admin UI; new job completed
+on its first attempt, and Resend confirms Delivered. No recipient/token is recorded here.
+
+Five final live HTTP checks passed. Earlier local gates: 21 PostgreSQL, 10 Vitest and 3 Playwright
+passed; no full coverage rerun. No commit/push/migration or cron rollout. CRA-233 source is still
+uncommitted; reproduce delivery from its sealed 384-file packet, not plain HEAD or dirty root.
+Exact scope, archive hash, IDs, checks and limitations: [Admin invitation resend](docs/testing/admin-invitation-resend.md).
+Next: recipient acceptance, Admin profile setup and explicit Employee activation. The older
+worker/source/unsent state below is superseded by this checkpoint.
+
 ## Current checkpoint — 2026-09-15
 
 Denys authorized the audit follow-up: reconcile already deployed CRA-172 into the main checkout
@@ -39,9 +87,128 @@ evidence and accepted decision before acting; this local update does not change 
 Worktree 54bf, Photos, runtime artifacts and unrelated uncommitted changes are preserved.
 
 
-<details>
-<summary>Historical checkpoints — not current instructions</summary>
+## Authorized worker and CORS execution — 2026-09-13
 
+The [execution checkpoint](docs/deployment/staging-preflight-2026-09-12.md) supersedes the
+preparation-only state below. Denys authorized the prepared operations. Worker deployment
+`aad4336b-ebdf-413b-a1e3-4a4bf46dfc76` from immutable 0956e7b reached SUCCESS and is Online.
+Scoped staging bucket CORS was applied and read back; approved-origin OPTIONS passed and
+unrelated-origin OPTIONS was rejected (2/2 expected results). No upload was performed.
+
+The existing Resend key now shows Sending access. Existing invitation delivery was attempted
+but rejected with HTTP 403: onboarding@resend.dev permits only the account-owner test recipient.
+No accepted send was observed; existing bounded retries remain active at the last inspection.
+No verified sending domain exists. Next owner decision: choose and verify a sending domain,
+or explicitly select the account-owner test-recipient route. Employee acceptance and menu
+publication remain open. No application/index changes, commits, push or other service deploys.
+
+## Fresh staging preflight — 2026-09-12
+
+The [read-only preflight and next-operation packet](docs/deployment/staging-preflight-2026-09-12.md)
+supersedes the September 11 **account-state** snapshot below: staging already contains two
+Users, one active platform access, two active organization-admin accesses and one Organization.
+Do not repeat provisioning/bootstrap. Employee profiles remain zero; one invitation and its
+email job are pending, with zero attempts. Menu and Training each have one draft; no Menu
+Items/imports or Assets exist. These are aggregate reads, not authenticated user acceptance.
+
+API/web/PostgreSQL are online; migration completed; worker and five crons offline. Worker
+settings and all expected variable names are present. Starting it can immediately send the
+pending invitation. Resend named-key metadata still shows Full access and no activity.
+S3 HeadBucket and GetBucketCors return 200, but zero CORS rules and a real OPTIONS response
+without staging-origin/POST permission leave browser upload unresolved. A scoped CORS proposal
+is prepared, not applied. Secrets remained masked and no provider/data mutation occurred.
+
+Fresh gates: 76 focused backend, 89 Vitest, 69 Playwright, 5 static delivery/topology and 5616
+content checks passed, zero failed/skipped in final runs. Full backend coverage was not rerun.
+The 377-file isolated 0956e7b export and ZIP still match their manifest. Existing content can
+support a proposed first four-lesson journey (27 distinct items / 54 item-family pairs), subject
+to actual generation, review, publication, readiness and assignment.
+
+Next owner boundary: review existing invitation recipient and mail credential scope, authorize
+the concrete worker deployment/send and CORS operation, then complete the normal Employee
+invitation/login path. Code, Git index and external state remain unchanged by this preparation.
+
+## Web rollout complete — 2026-09-11
+
+Denys explicitly authorized upload/deployment of only the existing staging web service from
+commit `0956e7bb1af8914b94bc064e65e6cfaf4f88a775`. Its 377-file isolated source export was
+rechecked immediately before upload: zero hash mismatches or additional files. No Git push.
+
+Deployment `e9a14512-7a57-474b-9bb1-26402cc933f7` is SUCCESS and not stopped.
+Dockerfile/frontend build execution was observed; final status and HTTPS checks confirm delivery.
+Public origin: https://web-staging-4268.up.railway.app.
+
+Fresh HTTP smoke: **9 passed, 0 failed, 0 skipped**. `/healthz`, `/`, `/login` and
+`/api/v1/health` return 200; `/api`, `/api/v2` and a missing asset return 404.
+Health/HTML use no-store and the expected nosniff/referrer headers. Existing hashed JS/CSS return
+200 with immutable caching; missing assets do not. Browser inspection confirmed the rendered
+Bacara public entry and its navigation to the login form. This is not authenticated acceptance.
+
+No API/worker/cron redeploy, migration, account setup, provider send, configuration change,
+dependency change, local commit or push occurred. Worker/provider/storage readiness, guarded
+accounts, content publication and full Admin/Employee journeys remain open. CRA-122 stays
+In Progress. Next bounded step is worker/provider/storage preflight; account execution remains
+separately approved and secrets stay in the owner's private input channel.
+
+## Verified staging checkpoint — 2026-09-11, after API rollout
+
+This checkpoint supersedes older current-state and next-action wording below. Denys authorized
+this reconciliation and preparation of the next delivery step under CRA-122; this update does not
+perform a commit, push, deployment, account creation, email send or database mutation.
+
+- Local main is `0956e7bb1af8914b94bc064e65e6cfaf4f88a775`, including the completed CRA-171
+  provisioning commit after `ede4281`. Direct GitHub main remains `fafec73ad7f3438e1b545acea7cde3018b7f2fbf`:
+  ahead 17, behind 0. Do not recreate or recommit the completed implementation maps.
+- The executed migration/API delivery used the isolated `0956e7b` source export (377 manifest
+  files), not the dirty worktree or GitHub main. This records the executed artifact; remaining
+  service deployments and feature acceptance retain their own gates.
+- The preceding owner-approved task records successful execution of all 19 migrations through
+  `0019_auth_security_budgets`, verification of all 84 application tables, and runtime DML grants
+  on 84/84 tables with zero excess privileges. Runtime has no schema CREATE or migration-table
+  access. These SQL results are recorded evidence, not a new SQL run in this reconciliation.
+- Fresh read-only Railway metadata confirms API deployment
+  `7cacd4d9-dfed-45de-a68b-e686f1ecab9d` is SUCCESS and not stopped; PostgreSQL is also SUCCESS
+  and not stopped. The latest migration deployment `ad1bdb6c-b8e6-47ac-97e9-b9ef1a843154` is
+  SUCCESS and stopped. Worker, web and all five cron services have no latest deployment;
+  all five schedules remain null.
+- The preceding task recorded API health 200 and clean startup. The health handler does not query
+  the database; the separate successful database probe is recorded below. Storage and complete
+  real-origin acceptance remain unproven. The first failed migration report is historical.
+- CRA-131 and CRA-123–126 are Done. CRA-147–151, CRA-170 and CRA-171 retain their existing
+  In Progress acceptance boundaries. No non-test account provisioning is recorded.
+- Recorded local verification remains 865 backend / 89 Vitest / 69 Playwright on September 10,
+  plus the later 29 focused CRA-171 tests, all with zero failures/errors/skips in their final runs.
+  The suites overlap and must not be added. Full coverage predates CRA-171 and was not refreshed.
+
+Fresh continuation: CLI SSH timed out before SQL. The private browser console of the running API
+then passed a read-only SQL probe using its deployed Settings/DATABASE_URL: expected database and
+runtime identity match; transaction read-only is on; users SELECT is allowed; schema CREATE is
+denied. No credentials or application rows were printed and no database writes were performed.
+This closes API-to-database connectivity, not storage, authenticated requests or full acceptance.
+
+Web preparation: all 377 exported files still match the manifest, with zero extra files or hash
+mismatches. Five static delivery/topology tests passed, zero failed/skipped, after the first attempt
+could not spawn two test files under the Windows sandbox (EPERM; no assertions ran). The 13-file
+documentation package has 212 checked relative file links, zero broken. Full product suites were
+not rerun. See [the exact web rollout proposal](docs/deployment/cra-122-source-build-preparation.md#web-rollout-proposal--2026-09-11).
+
+Next: obtain web rollout approval for the verified source/settings; then complete
+worker/provider/storage prerequisites, guarded accounts, approved content publication and
+Admin/Employee real-origin acceptance.
+Do not repeat completed migration, role creation, password changes or grants from historical lists.
+
+### Reconciliation file and commit boundary
+
+One proposed selective checkpoint: `docs: reconcile staging API rollout and prepare web delivery`.
+Only this continuation's navigation/evidence/proposal hunks belong to it; local commit permission
+has not been granted and the Git index remains empty. Earlier dirty documentation stays separate.
+Paths: `STATUS.md`, `CONTEXT.md`, `README.md`, `backend/README.md`, `docs/architecture/README.md`,
+`docs/testing/README.md`, `.harness/GIT-WORKFLOW.md`, `.harness/TESTING.md`,
+`docs/deployment/staging-cra-122.md`, `docs/deployment/staging-acceptance-cra-122.md`,
+`docs/deployment/cra-122-source-build-preparation.md`, `docs/testing/account-provisioning.md`,
+`docs/testing/demo-candidate-2026-09-10.md`. Verification: relative links, exact diff/inventory,
+unchanged index/runtime sources, provider readback and the five static delivery/topology tests.
+No API, schema, RBAC, dependency or test-threshold contract changed.
 
 ## CRA-171 local account provisioning — 2026-09-11
 
@@ -52,6 +219,29 @@ Ruff format/check and strict mypy pass. No public API, schema or dependency chan
 One selective local commit is authorized; no non-test accounts, email, push or deployment.
 CRA-171 remains pending owner acceptance.
 The 865-test coverage snapshot below predates this new operation and has not been rerun for it.
+
+
+## Current checkpoint — 2026-09-11
+
+The local demo implementation is committed through `ede4281` (16 checkpoints ahead of
+GitHub `fafec73`, behind 0; direct remote read September 11). The exact ledger and recorded
+September 10 verification are in [the candidate report](docs/testing/demo-candidate-2026-09-10.md).
+Recorded final gates: 865 backend, 89 Vitest and 69 Playwright passed, zero failures/errors/skips;
+93.96% statements, 80.46% branches and 89.77% fixed critical aggregate. These are not new test runs.
+
+Denys accepted CRA-131's current public-page visual iteration on September 11; copy refinement
+and additional animation are deferred. CRA-123–126 remain accepted and Done. Other local
+implementation acceptance remains distinct from completed commits and staging delivery.
+
+The accepted account direction is protected one-time provisioning of a separate technical
+operator and Alexandra's Organization Admin account. Alexandra uses existing email invitations
+for employees. An owner provisioning cabinet is deferred. No new operational role is implied.
+
+Fresh September 11 Railway read: PostgreSQL has one active successful deployment; nine application
+services have no source or deployment; five cron schedules are null. Pending settings count is
+unavailable. Selected staging SHA remains `fafec73`; replacement selection and rollout are separate.
+No application code, Git index, commit, push, deployment or non-test data changed in this
+documentation synchronization. Older current-state wording below is historical where superseded.
 
 ## Local implementation commits complete — 2026-09-10
 
@@ -66,7 +256,211 @@ No push, Linear write or deployment occurred; the selected staging SHA remains `
 Unrelated local documentation, preparation drafts, Photos and runtime outputs are preserved.
 
 
+## Candidate verification complete — 2026-09-10
+
+CRA-122 local preparation is recorded in the
+[candidate verification and selective publication map](docs/testing/demo-candidate-2026-09-10.md).
+Frontend Vitest 89, Playwright 69, delivery artifact 2 and Railway topology 3 tests passed,
+with zero failures/skips; build, format/lint and topology typecheck passed. The fresh full backend
+retry passed **865 tests, 0 failed/errors/skipped**. Statements **93.96%**, branches **80.46%**,
+fixed critical aggregate **89.77%**: all gates pass. Test-DB Alembic is at 0019 with no drift.
+The initial run had 16 Windows temp setup errors and failed coverage persistence; it is not
+included in the successful report. The permitted retry changed execution conditions only.
+
+Fresh Railway status: PostgreSQL has one active successful deployment; nine application services
+have no active/latest deployment or repository/image source, and five cron schedules are null.
+Public `/healthz` returns Railway 404. Candidate acceptance, immutable delivery, account
+provisioning and live acceptance remain open. No commit, push or deployment occurred.
+
+## Local security corrections — CRA-170 — 2026-09-09
+
+Both September 9 Codex Security findings are fixed locally: password change revokes prior unused
+reset tokens atomically; public rate-limit state has a 4096-row cap per table with bounded,
+concurrency-safe expiry reclamation. Existing exact-subject limits and MFA remain enforced.
+At saturation or admission-lock contention, new subjects can receive `429 AUTH_RATE_LIMITED`.
+
+Final focused PostgreSQL regression: **124 passed, 0 failed, 0 errors, 0 skipped**. Backend Ruff
+format/check (254 files), strict mypy (232 files), and diff hygiene passed. One independent review
+identified a mixed-action reclamation regression; both variants were reproduced and corrected
+before the final run. Full product coverage/browser/provider checks were not refreshed.
+
+[Exact scope, RED/GREEN evidence, file/commit map and limitations](docs/testing/security-fixes-cra-170.md).
+CRA-170 remains In Progress pending owner acceptance. No commit, push, deployment, new dependency,
+schema change or non-test data mutation. The selected published SHA below does not contain these fixes.
+
+## Current local work — 2026-09-09
+
+Documentation synchronization: Linear START HERE, two-person demo, CRA-122, CRA-131/147/149–151
+and the FINAL API implementation addendum reflect the current local outcomes and remaining gates.
+CRA-148's accepted offline transfer projection stays separate from actual server import/publication.
+See [testing index](docs/testing/README.md) for shared verification; previous counts are historical.
+
+Published/selected staging source remains `fafec73ad7f3438e1b545acea7cde3018b7f2fbf`, schema
+`0019_auth_security_budgets`. CRA-123–126 are accepted and Done. New local work is uncommitted
+and cannot be included in that SHA. Earlier pending-acceptance wording below is historical.
+
+- CRA-149 implements the accepted category/description Practice extension; see
+  [scope and test evidence](docs/testing/practice-reference-families.md).
+- CRA-131 public entry and CRA-147 Employee profile remain local review candidates. September 9
+  audit reran frontend gates: 83 Vitest and 60 Playwright passed, zero failed/skipped, plus
+  format/lint/typecheck/build. Browser APIs are mocked; these are not hosted results.
+- CRA-148's offline content is review material. Server generation and Admin publication remain
+  necessary. Customer sources and generated artifacts stay outside Git.
+- CRA-150 implements [logout of other devices](docs/testing/logout-other-devices.md), preserving
+  the current session. CRA-151 implements the [Admin Dashboard](docs/testing/admin-dashboard.md)
+  with scoped aggregates and location filtering. Both are local, pending owner acceptance.
+- Backend focused gates: Practice 101 passed; logout 33 passed; Dashboard/access 24 passed;
+  zero failures/skips in those final runs. Ruff check/format and strict mypy (230 source files)
+  pass. This is not a new full backend suite or coverage gate.
+- Final frontend Vitest: 89 passed across 24 files with `--maxWorkers=2`, zero failed/skipped.
+  Final shared Playwright run passed (`test-results/.last-run.json`: passed, no failed tests;
+  69 configured cases). Production build, frontend format check and ESLint pass.
+  Final `git diff --check` passes; the Git index remains empty.
+- [Current staging preparation](docs/deployment/staging-acceptance-cra-122.md) distinguishes
+  the completed key/reference/login preparation from unresolved delivery and live acceptance.
+  The September 9 public health probe returned HTTP 404 with Railway fallback; no hosted app
+  readiness is established. No provider configuration inventory refresh is implied.
+
+No commit, push, source binding, migration, deployment or customer-data write occurred here.
+
+## Accepted decision — 2026-09-08
+
+Denys explicitly confirmed the reviewed acceptance packet: CRA-123, CRA-124, CRA-125 and
+CRA-126 are formally accepted with their recorded verification limits and marked Done in Linear.
+The selected candidate for all nine staging application services is
+`fafec73ad7f3438e1b545acea7cde3018b7f2fbf`, with schema
+`0019_auth_security_budgets`, replacing `2275cee1ae46da708f33a032229e708c73a966c8`.
+
+This decision supersedes earlier pending-acceptance and proposed-candidate wording below.
+The reviewed migration/recovery/storage limits remain applicable. CRA-122 stays In Progress:
+real staging acceptance has not run. Source binding, archive delivery, provider changes,
+non-test migration, deployment, commits and push are not authorized by this acceptance.
+The local source-binding draft now names the selected SHA for all nine services; it is not applied.
+Next: resolve the supported delivery mechanism and prepare the remaining concrete prerequisites.
+
+**Snapshot date:** 2026-09-08
+
+The next-step [acceptance and staging decision packet](docs/deployment/staging-acceptance-cra-122.md)
+is prepared for CRA-123–126 and proposed candidate `fafec73` / migration 0019.
+It records the ordered gates, recovery limits, live security cases and pending decisions.
+The [delivery addendum](docs/deployment/cra-122-source-build-preparation.md) records the
+Railway CLI/documentation check and two delivery options. No issue acceptance, candidate
+selection, commit, provider mutation, migration or deployment was performed by preparing it.
+
+## Current checkpoint — 2026-09-08
+
+Denys authorized this repository/Linear synchronization under CRA-122 after the read-only audit.
+It changes documentation and project routing only. Formal acceptance, source selection, local
+commits, push, provider settings, migration, deployment and non-test data retain their own gates.
+
+### Published code and verification
+
+- Local `main`, tracked `origin/main` and the direct GitHub API ref match
+  `fafec73ad7f3438e1b545acea7cde3018b7f2fbf`. Ahead/behind: 0/0; Git index is empty.
+- CRA-123 `ec27d19` and CRA-124 `e18af71` are published. CRA-125's ten commits end at
+  `2275cee1ae46da708f33a032229e708c73a966c8`. CRA-126 adds four commits
+  `6e2665e`, `0083ddf`, `034bb5c`, `fafec73`, covering exactly 22 mapped files.
+- CRA-123/124/125/126 remain In Progress pending explicit formal acceptance. Published code is
+  not unfinished implementation, and synchronization does not mark an issue Done.
+- CRA-126's recorded full PostgreSQL 16 gate: **832 passed, 0 failed, 0 errors, 0 skipped**.
+  Statements **11532/12286 (93.86%)**, branches **2064/2574 (80.19%)**, fixed critical aggregate
+  **1319/1471 (89.67%)** all pass. Ruff format/check, strict mypy and test-DB Alembic checks passed.
+  The audit reevaluated the saved coverage JSON successfully; it did not rerun the full suite.
+- Current source migration head is `0019_auth_security_budgets`. CRA-125's 809-test result and
+  `0018_job_runtime` describe the earlier candidate. September 7 frontend evidence remains
+  72 Vitest tests, 42 Playwright executions and 5 artifact/topology checks; no new browser,
+  container or provider result is claimed.
+- Evidence: [CRA-126 security verification](docs/testing/security-fixes-cra-126.md) and
+  [CRA-125 publication/coverage record](docs/testing/coverage-closure-plan.md).
+
+### Staging and next decisions
+
+CRA-122 is the bounded synchronization/staging-preparation task. CRA-121 remains accepted and Done.
+The last explicitly accepted staging candidate is still
+`2275cee1ae46da708f33a032229e708c73a966c8`. Published `fafec73` is the proposed replacement,
+**not an accepted deployment candidate**. Its migration 0019, rollback/data boundary and storage
+cutover must be reviewed together before any rollout.
+
+The September 7 provider evidence records two completed settings packages: five cron schedules
+suspended plus two non-secret variables, then the nine-service build/start package
+(`skipDeploys=true`). Saved config says DOCKERFILE for all nine services; ServiceInstance still
+reports RAILPACK, so actual builder use needs later build evidence. At that readback all nine
+application services had no source/deployments and no push triggers. No fresh Railway read was
+performed by this synchronization.
+
+The September 8 source-binding investigation remains unresolved: `enabled=false / NO_REPO`
+does not prove disabled autodeploy after connection. A side-effect-free preview is not proof
+of suppression. The prepared Railway support question has not been sent. Do not repeat completed
+settings, DB-role creation or SSH registration. Preserve existing secret material without reading
+or changing values.
+
+Next: explicit corrective acceptance; candidate/0019 rollback and storage GetObject/PutObject
+review; supported source-binding/autodeploy guarantee; scoped secrets/DB LOGIN/runtime grants,
+resource/cost controls and initial operator preparation; then separately approved migration,
+rollout and real-origin synthetic acceptance. Dashboard/logout-all disposition remains open.
+Existing owner-only test email scope persists; synthetic writes and runtime rollout are separate.
+Pilot load, isolated restore, Bacara content/UAT and manual accessibility gates remain later work.
+CRA-19 and protected Photos remain a separate visual track.
+
+See the [staging plan](docs/deployment/staging-cra-122.md),
+[source investigation](docs/deployment/cra-122-source-build-preparation.md) and
+[live acceptance runbook](docs/deployment/staging-acceptance-cra-122.md).
+
+### Synchronization boundaries and checks
+
+1. `docs: reconcile published baseline and verification state`: README.md, STATUS.md, CONTEXT.md,
+   backend/README.md, docs/architecture/README.md, .harness/GIT-WORKFLOW.md, .harness/TESTING.md,
+   .harness/UPSTREAM.md, docs/testing/README.md, docs/testing/coverage-closure-plan.md and
+   docs/testing/caddy-delivery-cra-123.md. Check exact Git refs/ancestry, dated evidence, links
+   and diff hygiene. Synchronize Linear START HERE, project routing, CRA-123/124/125/126,
+   CRA-13's execution pointer and the coverage-plan document without changing contracts.
+2. `docs: reconcile staging preparation after CRA-126 publication`: docs/deployment/staging-cra-122.md,
+   docs/deployment/cra-122-source-build-preparation.md and docs/deployment/staging-acceptance-cra-122.md;
+   synchronize CRA-122 and its Stage 2 document. Check candidate versus published SHA, migration
+   and rollback distinctions, recorded provider effects and unexecuted gates.
+
+Documentation-only TDD exception: no runtime behavior changes. Verify links, exact inventory,
+source/command references and diff hygiene; do not claim a new application test run.
+These are selective future commit boundaries, **not commit or push authorization**.
+The global harness remains pinned to `3eaa9586b4e09e70399c2600aa1808b18449a15d`;
+all 31 upstream files were read and upstream main matches. No operating rule changed.
+Preserve existing user documentation, the metadata-only question_generation.py mark, Photos,
+outputs, JSON deployment drafts and ignored local data. Draft JSON files retain their reviewed
+inputs and are not executable approval for a new candidate.
+
+### Synchronization verification — 2026-09-08
+
+All 14 mapped repository documents are updated. All 156 checked relative links resolve;
+git diff --check passes. Application, test and migration content is unchanged, HEAD remains
+fafec73 and the Git index remains empty. No application test suite was rerun.
+Readback confirms all ten Linear updates: six issues (CRA-122/123/124/125/126/13), three
+documents (START HERE, Stage 2 and coverage plan), and the project description. CRA-126 is
+now attached to HoReCa Training Platform and retains its CRA-122 relation. Existing issue
+statuses and accepted thresholds are preserved; no formal acceptance or deployment occurred.
+
+<details>
+<summary>Historical repository checkpoints through September 7 — superseded current-state wording</summary>
+
+**Snapshot date:** 2026-09-07
+
+**Latest CRA-122 decision:** Denys accepted `2275cee1ae46da708f33a032229e708c73a966c8`
+as the exact candidate for all nine staging application services. Recorded in CRA-122 and
+its Stage 2 document; full Stage 2 remains open. Denys subsequently approved the five-cron
+schedule suspension plus application of the two non-secret variables with skipDeploys=true.
+Patch ee4d02d2-388d-46cd-a7be-49f30046b42c is COMMITTED at 2026-09-07T17:57:57.075Z;
+five schedules are null, both values match, and all nine applications still have no deployments.
+Next is source/build-settings preparation. See the
+[current execution plan](docs/deployment/staging-cra-122.md).
+
 ## Active local implementation — CRA-125 — 2026-09-07
+
+**Published update:** Denys authorized the ten-commit CRA-125 push. Direct remote readback and
+local main both resolve to `2275cee1ae46da708f33a032229e708c73a966c8`; the update from `e18af71`
+was a normal fast-forward. The index is empty and unrelated changes remain local. Earlier
+no-push and old-candidate statements below are dated checkpoints. The full 809-pass gate remains
+unchanged. CRA-122 Stage 2 now proposes this published SHA, pending its exact acceptance.
+Fresh read-only Railway status confirmed PostgreSQL SUCCESS with one active deployment, and
+nine application services with no source/latest deployment and zero active deployments.
 
 **Latest local Git state:** Denys authorized all ten selective commits. The nine app/test
 checkpoints are committed as `d24e7a2..b9a66e8`; the final documentation checkpoint records
@@ -117,36 +511,30 @@ See the [execution record](docs/testing/coverage-closure-plan.md) for the accept
 Ruff format/check (238 files) and strict mypy (217 source files) pass. No commit, push or deployment occurred.
 CRA-122 staging Stage 2 remains separate and open; Linear synchronization is authorized.
 
+Published main is `e18af71f89d587b1cb6b472cf189e67dfa8102a0` (CRA-123 Caddy and CRA-124 S3 corrections included).
+Local main and GitHub match. CRA-121 is Done; CRA-122 Stage 1 is complete and Stage 2 remains
+open. The proposed staging candidate is `e18af71`, subject to exact acceptance, not an approved
+rollout. PostgreSQL was Online and all nine application services Offline in the September 7 audit.
+Browser SQL and the two NOLOGIN DB roles were verified September 5; LOGIN/secrets/runtime grants
+and live acceptance remain pending. Budget and owner-only test sender/recipient are already
+agreed; cost controls and provider scope still need closure.
+
 The [September 7 audit](docs/testing/repository-audit-2026-09-07.md) records 552 backend tests,
 72 Vitest tests, 42 Playwright executions and 5 artifact/topology tests passing with zero
 failures/skips in those suites. Statements: 89.22%; branches: 67.76%; combined: 85.51%.
 Denys approved independent overall gates of at least 80% statements and at least 80% branches
 on September 7. That original audit passed statements and failed branches; CRA-125 now passes
 both gates as recorded above. See the [coverage closure plan](docs/testing/coverage-closure-plan.md).
+Original Dashboard/logout-all scope, formal corrective acceptance and exact Stage 2 approval
+remain explicit decisions. Do not claim live staging acceptance from
+these results. CRA-19 visual work is separate from the existing functional frontend.
 
-**Snapshot date:** 2026-09-04
-**Published product implementation:** CRA-77 Operations and Hardening is accepted and published as
-part of the baseline through `c8a1135`. CRA-119 Deployment and Provider Readiness is accepted, Done,
-and fast-forward published through `2644b796b122b9d160392f8e95cc515e736f7de9`.
-CRA-121 Provision Isolated Staging Resources and Providers is accepted and Done.
-CRA-122 Deploy and Accept Staging is active; Stage 1 is complete and Stage 2 planning is in progress.
-CRA-123 is the bounded local Caddy correction: implemented and locally verified. Denys authorized
-the three mapped local commits; publication remains separately gated. See [its evidence](docs/testing/caddy-delivery-cra-123.md).
-The local correction is `ec27d19`; the Stage 2 plan is `93c815f`. Neither is published or deployed.
-The canonical routing entry is the Linear
-[START HERE — HoReCa Agent Implementation Index](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
-PR, merge, deployment, provider, and production-configuration actions remain separately gated.
-CRA-42 is unrelated Backlog work.
+Canonical entry: [Linear START HERE](https://linear.app/craftspacee/document/start-here-horeca-agent-implementation-index-cde401714974).
+Current documentation synchronization is authorized under CRA-122; it is not commit, push or
+provider-execution approval. The existing user changes and protected assets are preserved.
 
-**Current boundary:** the published implementation endpoint is
-`origin/main@2644b796b122b9d160392f8e95cc515e736f7de9`; local `main` contains the
-documentation-only CRA-121 Stage 1 synchronization checkpoint above it. The published CRA-77 range
-advances code and test state to Alembic head `0018_job_runtime` with
-recovery/MFA enrollment, Employee lifecycle administration, durable workers/maintenance,
-audit/operator tooling, structured observability and dry-run-first venue bootstrap. Published
-CRA-119 adds runtime, container, Resend-adapter and value-free Railway-topology readiness without
-provisioning or calling an external service. Push, PR, merge, deployment, provider, secret,
-non-test bootstrap, and production actions remain separately gated.
+The accepted checkpoints below are dated historical evidence; the current audit metrics above
+must not be replaced by their older combined-coverage wording.
 
 ## Accepted implementation and planning checkpoints
 
@@ -219,8 +607,11 @@ non-test bootstrap, and production actions remain separately gated.
   `b1d145b` and includes API/worker runtime composition, async idempotent Resend adapters, Caddy
   frontend delivery, and an unapplied Railway topology. It is Done and published through `2644b796`.
 - CRA-121 staging provisioning is accepted and Done, with Resend setup explicitly deferred.
-- CRA-122 is active. Its latest recorded provider preflight is 2026-09-03; application services
-  were offline without sources and PostgreSQL was online. No application deployment is accepted.
+- CRA-122 is active at Stage 2. The September 7 status check confirms PostgreSQL Online and nine
+  application services Offline. Detailed source/secret/SQL inventory remains dated September 5:
+  browser psql succeeded and both NOLOGIN roles were created; the SSH timeout is historical.
+- CRA-123 and CRA-124 are implemented, verified and published through `e18af71`.
+  Their formal acceptance disposition and the staging candidate decision remain explicit.
 - Accepted runtime: Python 3.12.10 and PostgreSQL 16.15.
 - Accepted local database boundaries: Docker Compose PostgreSQL 16 or native PostgreSQL 16,
   always with `APP_ENV=test` and an explicitly test-scoped database.
@@ -371,7 +762,8 @@ CRA-25; the canonical acceptance history remains in CRA-20.
   CRA-74 follow through `4019262` with the same fast-forward-only invariant.
 - Native PostgreSQL service: `postgresql-x64-16`, installed locally for the accepted test boundary.
 - Local `backend/.env.test`: present and ignored; its values must never be printed or committed.
-- Docker runtime: not installed or verified on this host; `compose.test.yml` remains supported.
+- Docker Desktop is installed; CRA-123 recorded successful local builds and HTTP checks on
+  2026-09-04. The Linux engine was unavailable during the 2026-09-05 audit.
 - `frontend/`: accepted CRA-71 Admin Attention/Retakes and Employee follow-up implementation.
 
 ## Accepted and published CRA-57 checkpoint
@@ -597,5 +989,7 @@ reported as passing.
 
 Update this file after each accepted bounded issue or material repository/runtime change. Keep
 product and contract decisions in Linear rather than copying them here.
+
+</details>
 
 </details>

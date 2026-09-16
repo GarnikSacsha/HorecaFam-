@@ -1,5 +1,17 @@
 # Testing Context
 
+## Current routing — 2026-09-16
+
+Use [STATUS](../../STATUS.md) and [the reconciliation ledger](reconciliation-2026-09-16.md) before the dated records below.
+September 15 CRA-233 delivery and September 16 authenticated UI evidence supersede the older
+worker-offline, mail-unsent and Employee-not-activated descriptions: one Employee is active;
+Menu and Training remain empty unpublished drafts with no assignments. CRA-234 is local-only.
+Accounts, activation, CORS application and completed migrations must not be repeated.
+
+
+The dated implementation and verification sections below preserve their original evidence;
+they do not override the current source/delivery/acceptance checkpoint.
+
 ## Current verification routing
 
 Current source/runtime/acceptance: [STATUS](../../STATUS.md).
@@ -48,6 +60,35 @@ Counts overlap. Local/mock tests do not establish hosted user acceptance or prov
 CRA-171: [one-time account provisioning](account-provisioning.md), 29 focused tests passed;
 no non-test account creation or full coverage rerun.
 
+## Current staging state — after API rollout, 2026-09-11
+
+Follow the [verified staging checkpoint](../../STATUS.md#verified-staging-checkpoint--2026-09-11-after-api-rollout).
+CRA-171 is committed at `0956e7b`; migration and runtime grants completed in the preceding task,
+and API/web are running. Worker, account setup and authenticated acceptance remain open.
+The earlier snapshot below is historical and must not drive repeated migration or setup actions.
+
+## Earlier current checkpoint — 2026-09-11, before migration/API rollout
+
+The local demo implementation is committed through `ede4281` (16 checkpoints ahead of
+GitHub `fafec73`, behind 0; direct remote read September 11). The exact ledger and recorded
+September 10 verification are in [the candidate report](../../docs/testing/demo-candidate-2026-09-10.md).
+Recorded final gates: 865 backend, 89 Vitest and 69 Playwright passed, zero failures/errors/skips;
+93.96% statements, 80.46% branches and 89.77% fixed critical aggregate. These are not new test runs.
+
+Denys accepted CRA-131's current public-page visual iteration on September 11; copy refinement
+and additional animation are deferred. CRA-123–126 remain accepted and Done. Other local
+implementation acceptance remains distinct from completed commits and staging delivery.
+
+The accepted account direction is protected one-time provisioning of a separate technical
+operator and Alexandra's Organization Admin account. Alexandra uses existing email invitations
+for employees. An owner provisioning cabinet is deferred. No new operational role is implied.
+
+Fresh September 11 Railway read: PostgreSQL has one active successful deployment; nine application
+services have no source or deployment; five cron schedules are null. Pending settings count is
+unavailable. Selected staging SHA remains `fafec73`; replacement selection and rollout are separate.
+No application code, Git index, commit, push, deployment or non-test data changed in this
+documentation synchronization. Older current-state wording below is historical where superseded.
+
 ## Local implementation commits complete — 2026-09-10
 
 The six CRA-131/147/149/150/151/170 maps are committed locally under Denys's explicit
@@ -60,6 +101,47 @@ this mapped series. Feature acceptance, publication and staging delivery remain 
 No push, Linear write or deployment occurred; the selected staging SHA remains `fafec73`.
 Unrelated local documentation, preparation drafts, Photos and runtime outputs are preserved.
 
+
+## Candidate verification complete — 2026-09-10
+
+See the [fresh verification ledger and next-step map](demo-candidate-2026-09-10.md).
+Frontend and static delivery checks passed. Fresh full backend retry: **865 passed, 0 failed,
+0 errors, 0 skipped**. Independent gates: statements **11657/12406 (93.96%)**, branches
+**2084/2590 (80.46%)**, fixed critical aggregate **1325/1476 (89.77%)** — all PASS.
+Alembic upgrade/current/no-drift passed at 0019 on the dedicated test DB. The initial Windows
+temp/coverage failure is recorded separately; no old or partial coverage was merged.
+
+## Current local regression — 2026-09-09
+
+CRA-131/147/149/150/151 are implemented locally and remain pending owner acceptance.
+Final shared Vitest: 89 passed, 0 failed/skipped in 24 files (`--maxWorkers=2`).
+Playwright completed successfully: 69 configured cases, saved status passed and no failed tests.
+Production build, Prettier and ESLint passed. Browser APIs are mocked.
+Focused backend suites: Practice 101, logout/auth 33, Dashboard/access 24 passed, zero failed/skipped.
+Ruff check/format and strict mypy (230 files) passed. No new full backend or coverage run is claimed.
+
+Exact files, commit boundaries and RED/GREEN evidence:
+[public entry](public-start-editorial.md), [Employee profile](employee-profile.md),
+[Practice](practice-reference-families.md), [other-device logout](logout-other-devices.md),
+[Admin Dashboard](admin-dashboard.md). Older totals below are dated, not cumulative.
+Use [STATUS](../../STATUS.md) for acceptance and publication limits.
+
+## Current verification — 2026-09-08
+
+Published source: `fafec73ad7f3438e1b545acea7cde3018b7f2fbf`; migration head: `0019_auth_security_budgets`.
+CRA-126 records one full PostgreSQL 16 run: **832 passed, 0 failed, 0 errors, 0 skipped**.
+Statements **11532/12286 (93.86%) PASS**; branches **2064/2574 (80.19%) PASS**;
+fixed nine-file critical aggregate **1319/1471 (89.67%) PASS**.
+Ruff format/check, strict mypy and test-DB Alembic checks passed in that recorded gate.
+The September 8 audit reevaluated the saved full-run coverage report; no full suite rerun is claimed.
+CRA-125's 809-pass gate and earlier failed branch gates remain historical, with unchanged thresholds.
+Latest frontend evidence remains September 7: 72 Vitest, 42 Playwright and 5 artifact/topology
+checks passed with zero failures/skips; CRA-126 did not rerun browser/container/provider suites.
+Local results do not prove live staging acceptance. Formal issue acceptance remains explicit.
+See [CRA-126 report](security-fixes-cra-126.md) and [current status](../../STATUS.md).
+
+<details>
+<summary>Historical CRA-125 and September 7 audit checkpoints</summary>
 
 ## Latest local CRA-125 evidence
 
@@ -115,6 +197,9 @@ Done and published through `9ef9fe1`. CRA-69 Slice 8 planning and CRA-71 Attenti
 accepted and Done. CRA-74 ordinary fast-forward published CRA-70 at `5352f89`, CRA-71 as
 `62a80a0..054d731`, and the CRA-72 documentation checkpoint through `4019262`; CRA-75 owns the
 publication-state documentation checkpoint.
+
+
+</details>
 
 ## Current test layout
 
@@ -397,6 +482,7 @@ from application/container/email acceptance. See [the deployment plan](../deploy
 ## CRA-123 local Caddy correction
 
 [Local evidence](caddy-delivery-cra-123.md): real image build RED/GREEN, 9 final Caddy HTTP tests,
-72 Vitest tests and 5 static artifact/topology tests pass. Acceptance/publication is pending.
+72 Vitest tests and 5 static artifact/topology tests pass. The correction is published as
+`ec27d19` within `5a1e650`; Stage 2 deployment-candidate acceptance remains open.
 
 </details>

@@ -1,5 +1,20 @@
 # CRA-171 — one-time staging account provisioning
 
+## Current evidence — 2026-09-16
+
+Provisioning is no longer an outstanding setup step. The September 12 read-only preflight
+recorded existing Organization/Admin access; the September 16 authenticated Dashboard shows
+one active Employee and zero awaiting activation. Do not repeat bootstrap, account provisioning
+or activation. This does not establish full CRA-171 owner acceptance or a complete Employee
+learning journey. Follow [STATUS](../../STATUS.md) and the
+[reconciliation ledger](reconciliation-2026-09-16.md).
+
+## Historical committed checkpoint — 2026-09-11
+
+The authorized six-file checkpoint is committed as `0956e7b`. Migration and API rollout later
+used that isolated source export. At that checkpoint account provisioning was still unperformed
+on staging; the later current evidence above supersedes that account-state observation.
+
 ## Scope and authority
 
 Denys selected protected one-time Admin setup on September 11. An owner provisioning cabinet is

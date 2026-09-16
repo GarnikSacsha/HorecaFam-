@@ -51,3 +51,15 @@ No upstream `LICENSE` is copied. No licensing decision for HoReCa is implied.
 Updating this pin requires a separate read-only comparison against the then-current upstream
 `main`, an exact new SHA, a summary of material rule changes, and Denys approval before project
 instructions change. Never replace the adapted files by running the upstream bootstrap script.
+
+## Read-only reconciliation — 2026-09-08
+
+The direct upstream main tree is still `3eaa9586b4e09e70399c2600aa1808b18449a15d`.
+The September 8 session recorded reading all 31 files; all were nonempty and the four skill files had name and
+description frontmatter. The upstream validator was inspected, not executed. This records a new
+read date, not a pin or policy change. The HoReCa status drift is tracked in STATUS.md and Linear;
+upstream has no new revision to import. No bootstrap or automatic copying was performed.
+
+September 16 local checkout verification returned the same pinned SHA. The operating contract,
+context router, profile, project patterns and security guidance were read for reconciliation.
+This does not claim a new full 31-file read or a fresh upstream remote query. No pin or policy changed.

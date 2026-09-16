@@ -1,0 +1,10 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": ["https://web-staging-4268.up.railway.app"],
+      "AllowedMethods": ["GET", "HEAD", "POST"],
+      "AllowedHeaders": ["Content-Type"],
+      "MaxAgeSeconds": 300
+    }
+  ]
+}

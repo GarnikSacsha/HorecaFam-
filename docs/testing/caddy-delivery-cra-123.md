@@ -1,8 +1,16 @@
 # CRA-123 local Caddy delivery evidence
 
-Date: 2026-09-04. State: locally verified candidate; Denys subsequently authorized the three
-mapped local commits. Publication and deployment remain unauthorized. Canonical issue:
+Evidence date: 2026-09-04. Publication verified again on 2026-09-08: correction `ec27d19` is
+included in GitHub `main@fafec73`. CRA-123 was accepted and marked Done on September 8;
+its implementation is included in the later delivered web packet. Full CRA-122 staging acceptance
+remains open. Canonical issue:
 [CRA-123](https://linear.app/craftspacee/issue/CRA-123/correct-caddy-staging-cache-health-and-api-routing-contract).
+
+The [September 7 full audit](repository-audit-2026-09-07.md) reran 552 backend tests,
+72 Vitest tests, 42 Playwright executions and 5 artifact/topology tests, all passing. It did not
+rerun Docker HTTP checks because the Linux engine was unavailable. The image evidence below
+remains September 4 evidence. See [current reconciliation](reconciliation-2026-09-16.md);
+the dated proposed-candidate and approval wording below is historical, not a deployment instruction.
 
 ## Changes and boundary
 
@@ -73,8 +81,9 @@ Base images used:
 - Caddy: `sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d`.
 - Node: `sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf`.
 
-These are local test artifacts, not published application SHAs. No accepted candidate SHA exists
-for the uncommitted correction. Base tags remain mutable; record digests again when publishing.
+These are local test artifacts, not published application SHAs. The published correction is
+`ec27d19`; the proposed all-role source is `e18af71`. Base tags remain mutable; record image
+digests again during an authorized deployment.
 Final test-only Node import changes do not alter the tested Caddyfile or Dockerfile.
 
 Related CRA-122 preflight also built the unchanged backend Dockerfile successfully as
@@ -99,8 +108,8 @@ At verification time no staging, commit, push or deployment had occurred. The su
 authorization permits this selective local checkpoint only. Preserve unrelated `Photos/`, `outputs/` and
 the pre-existing metadata-only `question_generation.py` status.
 
-After acceptance and separately authorized publication, record the replacement application SHA
-in CRA-122 before source binding. Follow the
+Publication is complete and CRA-122 records proposed candidate `e18af71`. Accept the exact
+Stage 2 plan before source binding. Follow the
 [canonical Stage 2 plan](https://linear.app/craftspacee/document/cra-122-stage-2-staging-source-variables-and-rollback-plan-dde7a78ff215).
 
 Reference: Caddy's [ordered routes](https://caddyserver.com/docs/caddyfile/directives/route) and

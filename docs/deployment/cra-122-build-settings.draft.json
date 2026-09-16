@@ -1,0 +1,169 @@
+{
+  "services": {
+    "785ae5f7-9052-4a1b-92ea-e8524236de97": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.api_server",
+        "preDeployCommand": null,
+        "healthcheckPath": "/api/v1/health",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3,
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "5028af74-ea48-4c31-97d7-042ae0c5836d": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.worker",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3,
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "c7d4489f-75c1-4a4a-8f85-39e8cd2737b1": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m alembic upgrade head",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "NEVER",
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "167269a6-26cb-40f6-b129-b698127c87ee": {
+      "source": {
+        "rootDirectory": "/frontend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": null,
+        "preDeployCommand": null,
+        "healthcheckPath": "/healthz",
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3,
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "f6ab8054-ffba-4e8e-a217-206d9e396b06": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.cron stale-jobs",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "NEVER",
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "4d78a477-8439-473a-899f-7a7ad055814e": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.cron attempt-expiry",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "NEVER",
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "c8f63848-2e5c-4fbf-a5d5-c8c5f0404c43": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.cron retake-deadlines",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "NEVER",
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "9c3a978f-325a-4e9d-a5c1-700ba0f4575c": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.cron security-cleanup",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "NEVER",
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    },
+    "b2e10228-f0d5-4328-89d5-6ebd3eb055e8": {
+      "source": {
+        "rootDirectory": "/backend"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+        "buildCommand": null
+      },
+      "deploy": {
+        "startCommand": "python -m app.cron audit-retention",
+        "preDeployCommand": null,
+        "healthcheckPath": null,
+        "restartPolicyType": "NEVER",
+        "sleepApplication": false,
+        "cronSchedule": null
+      }
+    }
+  }
+}

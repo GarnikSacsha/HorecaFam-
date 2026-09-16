@@ -1,5 +1,57 @@
 # Backend Foundation
 
+## Current routing — 2026-09-16
+
+Use [STATUS](../STATUS.md) and [the reconciliation ledger](../docs/testing/reconciliation-2026-09-16.md) before the dated records below.
+September 15 CRA-233 delivery and September 16 authenticated UI evidence supersede the older
+worker-offline, mail-unsent and Employee-not-activated descriptions: one Employee is active;
+Menu and Training remain empty unpublished drafts with no assignments. CRA-234 is local-only.
+Accounts, activation, CORS application and completed migrations must not be repeated.
+
+
+The dated implementation and verification sections below preserve their original evidence;
+they do not override the current source/delivery/acceptance checkpoint.
+
+## Current staging state — after API rollout, 2026-09-11
+
+Follow the [verified staging checkpoint](../STATUS.md#verified-staging-checkpoint--2026-09-11-after-api-rollout).
+CRA-171 is committed at `0956e7b`; migration and runtime grants completed in the preceding task,
+and API/web are running. Worker, account setup and authenticated acceptance remain open.
+The earlier snapshot below is historical and must not drive repeated migration or setup actions.
+
+## Earlier current checkpoint — 2026-09-11, before migration/API rollout
+
+The local demo implementation is committed through `ede4281` (16 checkpoints ahead of
+GitHub `fafec73`, behind 0; direct remote read September 11). The exact ledger and recorded
+September 10 verification are in [the candidate report](../docs/testing/demo-candidate-2026-09-10.md).
+Recorded final gates: 865 backend, 89 Vitest and 69 Playwright passed, zero failures/errors/skips;
+93.96% statements, 80.46% branches and 89.77% fixed critical aggregate. These are not new test runs.
+
+Denys accepted CRA-131's current public-page visual iteration on September 11; copy refinement
+and additional animation are deferred. CRA-123–126 remain accepted and Done. Other local
+implementation acceptance remains distinct from completed commits and staging delivery.
+
+The accepted account direction is protected one-time provisioning of a separate technical
+operator and Alexandra's Organization Admin account. Alexandra uses existing email invitations
+for employees. An owner provisioning cabinet is deferred. No new operational role is implied.
+
+Fresh September 11 Railway read: PostgreSQL has one active successful deployment; nine application
+services have no source or deployment; five cron schedules are null. Pending settings count is
+unavailable. Selected staging SHA remains `fafec73`; replacement selection and rollout are separate.
+No application code, Git index, commit, push, deployment or non-test data changed in this
+documentation synchronization. Older current-state wording below is historical where superseded.
+
+## Published security checkpoint — 2026-09-08
+
+Current published source is `fafec73ad7f3438e1b545acea7cde3018b7f2fbf`; migration head is
+`0019_auth_security_budgets`. CRA-126 adds assessment-family checks, shared authentication
+budgets and password-authority revocation, bounded asynchronous password computation, and
+protected asset finalization. Its recorded full gate is 832 passed / 0 failed / 0 errors /
+0 skipped, with independent coverage gates passing. Formal acceptance remains open.
+See [security evidence](../docs/testing/security-fixes-cra-126.md) and [STATUS](../STATUS.md).
+Historical slice descriptions below describe their own acceptance boundaries, not current absence
+of features added later. Non-test migration and live provider/deployment acceptance remain unperformed.
+
 This directory contains the accepted and published backend MVP Vertical Slice 1 through CRA-40
 plus the accepted CRA-49 Menu Source of Truth runtime and corrective acceptance tail, published
 through `8028d6e`. CRA-49 adds Location-owned versioned Menu persistence,
