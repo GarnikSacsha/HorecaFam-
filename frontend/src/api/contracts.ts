@@ -151,6 +151,21 @@ export interface MfaEnrollmentConfirmResponse {
   recovery_codes: string[];
 }
 
+export interface InvitationResponse {
+  id: string;
+  organization_id: string;
+  email: string;
+  status: "pending" | "expired" | "revoked" | "accepted";
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvitationListResponse {
+  items: InvitationResponse[];
+  next_cursor: string | null;
+}
+
 export interface InvitationValidationResponse {
   status: "valid";
   organization_id: string;

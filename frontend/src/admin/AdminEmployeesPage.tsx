@@ -8,6 +8,7 @@ import { useSession } from "../session/SessionContext";
 import { ErrorSummary } from "../ui/ErrorSummary";
 import { StatusPill } from "../ui/States";
 import { formErrors } from "../ui/formErrors";
+import { AdminInvitationsPanel } from "./AdminInvitationsPanel";
 
 const statusCopy = { pending: "Очікує", active: "Активний", disabled: "Вимкнено" } as const;
 
@@ -117,6 +118,7 @@ export function AdminEmployeesPage() {
   const [inviteErrors, setInviteErrors] = useState<ReturnType<typeof formErrors>>([]);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
+  const [invitationRevision, setInvitationRevision] = useState(0);
 
   const loadEmployees = useCallback(
     async (search = "") => {
@@ -163,6 +165,7 @@ export function AdminEmployeesPage() {
       });
       setInviteSuccess(`Запрошення створено для ${inviteEmail}`);
       setInviteEmail("");
+      setInvitationRevision((value) => value + 1);
     } catch (error) {
       setInviteErrors(formErrors(error, "email"));
     } finally {
@@ -210,6 +213,15 @@ export function AdminEmployeesPage() {
           </p>
         ) : null}
       </section>
+      {organizationId && session && status === "authenticated" && (
+        <AdminInvitationsPanel
+          key={organizationId}
+          client={client}
+          organizationId={organizationId}
+          csrfToken={session.csrf_token}
+          revision={invitationRevision}
+        />
+      )}
       <section className="dataset-section" aria-labelledby="team-list-title">
         <div className="dataset-header">
           <div>

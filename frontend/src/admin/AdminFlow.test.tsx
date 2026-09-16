@@ -121,6 +121,9 @@ describe("Admin Employee flow", () => {
     const employees: EmployeeListResponse = { items: [pendingEmployee], next_cursor: null };
     const client = adminClient(<T,>(path: string, options?: RequestOptions) => {
       requests.push({ path, options });
+      if (path.includes("/invitations?") && !options?.method) {
+        return Promise.resolve({ items: [], next_cursor: null } as T);
+      }
       if (path.endsWith("/employees")) return Promise.resolve(employees as T);
       if (path.endsWith("/invitations")) {
         return Promise.resolve({ id: "invitation-1", email: "new@example.com" } as T);
@@ -148,7 +151,7 @@ describe("Admin Employee flow", () => {
     await user.click(screen.getByRole("button", { name: "Надіслати запрошення" }));
 
     expect(await screen.findByText("Запрошення створено для new@example.com")).toBeInTheDocument();
-    const invitationRequest = requests.at(-1);
+    const invitationRequest = requests.find(({ options }) => options?.method === "POST");
     expect(invitationRequest?.path).toBe("/organizations/organization-1/invitations");
     expect(invitationRequest?.options?.method).toBe("POST");
     expect(invitationRequest?.options?.body).toEqual({ email: "new@example.com" });
