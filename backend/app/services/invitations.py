@@ -16,7 +16,11 @@ from app.models import (
     OrganizationMembership,
     User,
 )
-from app.schemas.invitations import InvitationResponse, InvitationValidationResponse
+from app.schemas.invitations import (
+    InvitationListResponse,
+    InvitationResponse,
+    InvitationValidationResponse,
+)
 from app.security.invitation_tokens import InvitationTokenManager
 from app.security.tokens import hash_secret
 from app.services.idempotency import (
@@ -33,6 +37,25 @@ INVITATION_RATE_BLOCK = timedelta(minutes=15)
 CREATE_RATE_LIMIT = 10
 VALIDATE_FAILURE_LIMIT = 10
 RESEND_RATE_LIMIT = 3
+
+
+async def list_invitations(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    cursor: UUID | None,
+    limit: int,
+    now: datetime,
+) -> InvitationListResponse:
+    # Незмінний UUID забезпечує стабільну пагінацію після перевипуску запрошення.
+    statement = select(Invitation).where(Invitation.organization_id == organization_id)
+    if cursor is not None:
+        statement = statement.where(Invitation.id > cursor)
+    rows = list((await db.scalars(statement.order_by(Invitation.id).limit(limit + 1))).all())
+    return InvitationListResponse(
+        items=[invitation_response(row, now=now) for row in rows[:limit]],
+        next_cursor=rows[limit - 1].id if len(rows) > limit else None,
+    )
 
 
 def _rate_limited() -> APIError:

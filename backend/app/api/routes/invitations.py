@@ -1,7 +1,7 @@
 from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import AuthorizationContext, require_organization_admin
@@ -15,6 +15,7 @@ from app.schemas.invitations import (
     InvitationAcceptanceRequest,
     InvitationAcceptanceResponse,
     InvitationCreateRequest,
+    InvitationListResponse,
     InvitationResponse,
     InvitationValidateRequest,
     InvitationValidationResponse,
@@ -25,6 +26,7 @@ from app.services.invitation_acceptance import accept_invitation
 from app.services.invitations import (
     create_invitation,
     invitation_response,
+    list_invitations,
     resend_invitation,
     revoke_invitation,
     validate_invitation,
@@ -32,6 +34,28 @@ from app.services.invitations import (
 from app.services.sessions import build_session_response
 
 router = APIRouter(tags=["invitations"])
+
+
+@router.get(
+    "/organizations/{organization_id}/invitations",
+    response_model=InvitationListResponse,
+)
+async def list_invitations_route(
+    organization_id: UUID,
+    request: Request,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    cursor: UUID | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> InvitationListResponse:
+    clock = cast(Clock, request.app.state.clock)
+    return await list_invitations(
+        db,
+        organization_id=organization_id,
+        cursor=cursor,
+        limit=limit,
+        now=clock(),
+    )
 
 
 @router.post(

@@ -31,6 +31,11 @@ class InvitationResponse(BaseModel):
     updated_at: datetime
 
 
+class InvitationListResponse(BaseModel):
+    items: list[InvitationResponse]
+    next_cursor: UUID | None
+
+
 class InvitationValidationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
