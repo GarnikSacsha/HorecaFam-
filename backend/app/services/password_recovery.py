@@ -3,7 +3,7 @@ import hmac
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -66,6 +66,7 @@ async def _consume_rate_limit(
     action: str,
     subject_hash: str,
     now: datetime,
+    public_subject: bool = True,
 ) -> AuthRateLimitBucket:
     await lock_rate_subject(db, f"password-rate:{action}:{subject_hash}")
     bucket = await db.scalar(
@@ -77,7 +78,8 @@ async def _consume_rate_limit(
         .with_for_update()
     )
     if bucket is None:
-        await reserve_public_bucket(db, model=AuthRateLimitBucket, now=now)
+        if public_subject:
+            await reserve_public_bucket(db, model=AuthRateLimitBucket, now=now)
         bucket = AuthRateLimitBucket(
             action=action,
             subject_hash=subject_hash,
@@ -120,18 +122,28 @@ async def request_password_reset(
     manager = _token_manager(settings)
     normalized_email = normalize_email(email)
     await lock_auth_email(db, normalized_email)
-    await _consume_rate_limit(
-        db,
-        action="password_forgot",
-        subject_hash=_rate_subject(normalized_email, settings),
-        now=now,
-    )
     user = await db.scalar(
         select(User).where(User.email_normalized == normalized_email).with_for_update()
     )
     if user is None or user.password_hash is None:
         hash_secret(manager.derive(uuid4()))
         await db.commit()
+        return
+
+    # Стан обмежений реальними акаунтами; анонімне заповнення не блокує відновлення.
+    try:
+        await _consume_rate_limit(
+            db,
+            action="password_forgot",
+            subject_hash=_rate_subject(normalized_email, settings),
+            now=now,
+            public_subject=False,
+        )
+    except APIError as error:
+        if error.code != "AUTH_RATE_LIMITED":
+            raise
+        # Однакова відповідь не розкриває існування акаунта після вичерпання бюджету.
+        await db.rollback()
         return
 
     await db.execute(
@@ -195,12 +207,6 @@ async def reset_password(
         )
     if owner_id is not None:
         await lock_auth_user(db, owner_id)
-    bucket = await _consume_rate_limit(
-        db,
-        action="password_reset",
-        subject_hash=_rate_subject(token_hash, settings),
-        now=now,
-    )
     token = await db.scalar(
         select(PasswordResetToken)
         .where(PasswordResetToken.token_hash == token_hash)
@@ -214,6 +220,12 @@ async def reset_password(
         or token.revoked_at is not None
         or token.expires_at <= now
     ):
+        await _consume_rate_limit(
+            db,
+            action="password_reset",
+            subject_hash=_rate_subject(token_hash, settings),
+            now=now,
+        )
         await db.commit()
         raise _invalid_reset_token_error()
 
@@ -240,7 +252,12 @@ async def reset_password(
             )
         ).all()
     )
-    await db.delete(bucket)
+    await db.execute(
+        delete(AuthRateLimitBucket).where(
+            AuthRateLimitBucket.action == "password_reset",
+            AuthRateLimitBucket.subject_hash == _rate_subject(token_hash, settings),
+        )
+    )
     db.add(
         AuditEvent(
             actor_user_id=token.user_id,

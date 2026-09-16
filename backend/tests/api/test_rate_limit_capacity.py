@@ -13,7 +13,7 @@ from app.services.maintenance import cleanup_security_records
 from tests.factories.identity import make_user
 
 
-@pytest.mark.parametrize("route", ["login", "forgot", "reset", "validate", "accept"])
+@pytest.mark.parametrize("route", ["login", "reset", "validate", "accept"])
 async def test_distinct_public_subjects_cannot_grow_beyond_capacity(
     route: str,
     auth_app: FastAPI,
@@ -36,8 +36,6 @@ async def test_distinct_public_subjects_cannot_grow_beyond_capacity(
                 "email": f"absent-{index}@example.com",
                 "password": "invalid-password",
             }
-        if route == "forgot":
-            return "/api/v1/auth/password/forgot", {"email": f"absent-{index}@example.com"}
         if route == "reset":
             return "/api/v1/auth/password/reset", {
                 "token": f"invalid-reset-token-{index:032d}",
@@ -50,10 +48,7 @@ async def test_distinct_public_subjects_cannot_grow_beyond_capacity(
 
     path, body = request(0)
     first = await auth_client.post(path, json=body)
-    assert (
-        first.status_code
-        == {"login": 401, "forgot": 202, "reset": 400, "validate": 404, "accept": 404}[route]
-    )
+    assert first.status_code == {"login": 401, "reset": 400, "validate": 404, "accept": 404}[route]
     path, body = request(1)
     denied = await auth_client.post(path, json=body)
     assert denied.status_code == 429
@@ -221,12 +216,13 @@ async def test_public_capacity_reclaims_public_rows_despite_older_private_budget
             )
         else:
             response = await auth_client.post(
-                "/api/v1/auth/password/forgot",
+                "/api/v1/auth/password/reset",
                 json={
-                    "email": f"unknown-{index}@example.com",
+                    "token": f"invalid-cleanup-token-{index:032d}",
+                    "new_password": "valid-new-password",
                 },
             )
-        assert response.status_code == (404 if invitation else 202)
+        assert response.status_code == (404 if invitation else 400)
     assert (
         await db_session.scalar(
             select(func.count()).select_from(model).where(model.action == private_action)

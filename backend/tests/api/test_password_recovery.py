@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -13,6 +13,7 @@ from app.core.errors import APIError
 from app.models import (
     AdminAccess,
     AuditEvent,
+    AuthRateLimitBucket,
     BackgroundJob,
     EmailDelivery,
     PasswordResetToken,
@@ -27,6 +28,71 @@ from app.services.password_reset_delivery import PasswordResetTokenManager
 from app.services.sessions import derive_csrf_token
 from tests.factories.auth import make_session
 from tests.factories.identity import make_user
+
+
+@pytest.mark.parametrize("capacity_before_forgot", [True, False])
+async def test_recovery_remains_available_at_public_capacity(
+    capacity_before_forgot: bool,
+    auth_app: FastAPI,
+    auth_client: AsyncClient,
+    auth_settings: Settings,
+    db_session: AsyncSession,
+) -> None:
+    now = datetime(2031, 1, 2, tzinfo=UTC)
+    auth_app.state.clock = lambda: now
+    user = make_user(
+        email_normalized="capacity-recovery@example.com",
+        password_hash=PasswordManager().hash("old-password"),
+    )
+    db_session.add(user)
+    await db_session.flush()
+    session = make_session(user, token_hash="1" * 64, csrf_token_hash="2" * 64)
+    db_session.add(session)
+    buckets = [
+        AuthRateLimitBucket(action="login", subject_hash=f"{i:064x}", window_started_at=now)
+        for i in range(4096)
+    ]
+    if capacity_before_forgot:
+        db_session.add_all(buckets)
+    await db_session.commit()
+    session_id = session.id
+    token, raw = await _request_reset_and_derive_token(
+        auth_client, db_session, auth_settings, email=user.email_normalized
+    )
+    token_id = token.id
+    if not capacity_before_forgot:
+        db_session.add_all(buckets)
+        await db_session.commit()
+    for index in range(8):
+        response = await auth_client.post(
+            "/api/v1/auth/password/forgot", json={"email": f"absent-{index}@example.com"}
+        )
+        assert response.status_code == 202
+        assert response.json() == {"status": "accepted"}
+    assert await db_session.scalar(select(func.count()).select_from(AuthRateLimitBucket)) == 4097
+    assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == 1
+    response = await auth_client.post(
+        "/api/v1/auth/password/reset", json={"token": raw, "new_password": "new-password"}
+    )
+    assert response.status_code == 204
+    await db_session.refresh(user)
+    await db_session.refresh(session)
+    await db_session.refresh(token)
+    assert user.password_hash is not None
+    assert PasswordManager().verify(user.password_hash, "new-password")
+    assert session.id == session_id and session.revoke_reason == "password_reset"
+    assert token.id == token_id and token.used_at == now
+
+
+async def test_unknown_forgot_requests_allocate_no_persistent_state(
+    auth_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    for index in range(8):
+        response = await auth_client.post(
+            "/api/v1/auth/password/forgot", json={"email": f"absent-{index}@example.com"}
+        )
+        assert response.status_code == 202
+    assert await db_session.scalar(select(func.count()).select_from(AuthRateLimitBucket)) == 0
 
 
 async def test_password_forgot_is_non_enumerating_and_queues_safe_outbox(
@@ -213,8 +279,11 @@ async def test_password_forgot_throttles_known_and_unknown_subjects(
         json={"email": email},
     )
 
-    assert blocked.status_code == 429
-    assert blocked.json()["code"] == "AUTH_RATE_LIMITED"
+    assert blocked.status_code == 202
+    assert blocked.json() == {"status": "accepted"}
+    assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == (
+        5 if known_account else 0
+    )
     assert email not in blocked.text
 
 
@@ -552,7 +621,7 @@ async def test_password_reset_throttle_rejects_repeats_and_recovers_at_window_bo
     before = await db_session.scalar(select(func.count()).select_from(BackgroundJob))
     for _ in range(2):
         response = await auth_client.post("/api/v1/auth/password/forgot", json=body)
-        assert response.status_code == 429 and response.json()["code"] == "AUTH_RATE_LIMITED"
+        assert response.status_code == 202 and response.json() == {"status": "accepted"}
         assert await db_session.scalar(select(func.count()).select_from(BackgroundJob)) == before
     clock["now"] += timedelta(minutes=15)
     recovered = await auth_client.post("/api/v1/auth/password/forgot", json=body)
