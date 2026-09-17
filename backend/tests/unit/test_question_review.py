@@ -97,6 +97,25 @@ def test_candidate_edit_can_change_copy_but_not_provenance_bound_answer() -> Non
     assert raised.value.code == "QUESTION_PROVENANCE_INVALID"
 
 
+def test_candidate_edit_cannot_change_selection_semantics() -> None:
+    candidate = _candidate()
+    edited = CandidateEditedPayload(
+        prompt_payload=CandidatePromptPayload.model_validate(
+            {
+                **candidate.prompt_payload,
+                "selection_mode": "single",
+            }
+        ),
+        answer_payload=CandidateAnswerPayload.model_validate(candidate.answer_payload),
+        explanation_payload=CandidateExplanationPayload.model_validate(
+            candidate.explanation_payload
+        ),
+    )
+    with pytest.raises(APIError) as raised:
+        _validated_payloads(candidate, edited)
+    assert raised.value.code == "QUESTION_PROVENANCE_INVALID"
+
+
 @pytest.mark.asyncio
 async def test_reject_candidate_records_reason_and_audit() -> None:
     candidate = _candidate()

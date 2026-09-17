@@ -846,6 +846,7 @@ export interface QuestionCandidateOption {
 }
 
 export interface QuestionCandidatePromptPayload {
+  selection_mode?: "single" | null;
   locale: "uk";
   stem: string;
   options: QuestionCandidateOption[];

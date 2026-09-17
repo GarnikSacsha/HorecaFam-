@@ -69,6 +69,35 @@ function renderTraining(client: ApiClient, lessonCompleted = true) {
 }
 
 describe("Employee Interactive Training", () => {
+  it("uses exclusive radio selection for description recognition without changing answer wire format", async () => {
+    const user = userEvent.setup();
+    const requests: RequestOptions[] = [];
+    const descriptionAttempt = {
+      ...attempt,
+      questions: attempt.questions.map((q) => ({
+        ...q,
+        mechanic: "recognition",
+        prompt_payload: { ...q.prompt_payload, selection_mode: "single" },
+      })),
+    };
+    const client: ApiClient = {
+      getSession: () => Promise.reject(new Error("unused")),
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (options) requests.push(options);
+        if (path.endsWith("/answer")) return new Promise<T>(() => {});
+        return Promise.resolve({ ...emptySummary, active_attempt: descriptionAttempt } as T);
+      },
+    };
+    renderTraining(client);
+    await user.click(await screen.findByRole("radio", { name: "Борщ" }));
+    await user.click(screen.getByRole("radio", { name: "Салат" }));
+    expect(screen.getByRole("radio", { name: "Борщ" })).not.toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Підтвердити відповідь" }));
+    expect(requests.at(-1)?.body).toMatchObject({
+      answer_payload: { mechanic: "recognition", option_ids: ["question-1-b"] },
+    });
+  });
+
   it("does not load or expose practice before explicit lesson completion", () => {
     const requests: string[] = [];
     const client: ApiClient = {

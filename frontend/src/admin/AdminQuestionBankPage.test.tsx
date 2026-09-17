@@ -30,6 +30,7 @@ const candidates = [
     lesson_version_id: "lesson-version-1",
     mechanic: "single_choice",
     prompt_payload: {
+      selection_mode: "single",
       locale: "uk",
       stem: "До якої категорії належить Борщ?",
       options: [
@@ -296,11 +297,12 @@ describe("Admin Question Bank", () => {
       ?.body as
       | {
           expected_revision?: number;
-          edited_payload?: { prompt_payload?: { stem?: string } };
+          edited_payload?: { prompt_payload?: { stem?: string; selection_mode?: string } };
         }
       | undefined;
     expect(approvalBody?.expected_revision).toBe(3);
     expect(approvalBody?.edited_payload?.prompt_payload?.stem).toBe("Оновлене питання про Борщ");
+    expect(approvalBody?.edited_payload?.prompt_payload?.selection_mode).toBe("single");
   });
 
   it("announces an atomic batch failure without clearing the selection", async () => {

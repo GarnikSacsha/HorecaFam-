@@ -17,6 +17,7 @@ import type {
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
+import { isSingleAnswer } from "./answerSelection";
 
 type BusyAction = "load" | "start" | "answer" | "takeover" | "finish" | null;
 
@@ -431,13 +432,13 @@ export function EmployeeFinalExamPage() {
             disabled={!attempt.writable || Boolean(activeQuestion.saved_answer)}
           >
             <legend>
-              {activeQuestion.mechanic === "single_choice"
+              {isSingleAnswer(activeQuestion)
                 ? "Оберіть один варіант"
                 : "Оберіть усі правильні варіанти"}
             </legend>
             {activeQuestion.options.map((option) => {
               const checked = activeSelection.includes(option.id);
-              const single = activeQuestion.mechanic === "single_choice";
+              const single = isSingleAnswer(activeQuestion);
               return (
                 <label className="interactive-option" key={option.id}>
                   <input

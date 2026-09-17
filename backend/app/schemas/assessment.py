@@ -89,6 +89,7 @@ class CandidateOption(StrictAssessmentSchema):
 
 class CandidatePromptPayload(StrictAssessmentSchema):
     locale: Literal["uk"] = "uk"
+    selection_mode: Literal["single"] | None = None
     stem: str = Field(min_length=1, max_length=500)
     options: list[CandidateOption] = Field(min_length=2, max_length=20)
 

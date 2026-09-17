@@ -89,7 +89,7 @@ function CandidateCard({
 
   const submitEdited = async () => {
     const approved = await onApprove(candidate, {
-      prompt_payload: { locale: "uk", stem, options },
+      prompt_payload: { ...candidate.prompt_payload, locale: "uk", stem, options },
       answer_payload: { correct_option_keys: [correctKey] },
       explanation_payload: { locale: "uk", text: explanation },
     });

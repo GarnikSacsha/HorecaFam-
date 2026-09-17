@@ -473,6 +473,7 @@ def _validated_payloads(
         return current_prompt, current_answer, current_explanation
     if (
         edited.prompt_payload.options != current_prompt.options
+        or edited.prompt_payload.selection_mode != current_prompt.selection_mode
         or edited.answer_payload != current_answer
     ):
         raise _provenance_invalid()
@@ -700,7 +701,10 @@ async def _publish_candidate(
         QuestionVersionTranslation(
             question_version_id=question_version.id,
             locale="uk",
-            prompt_payload={"stem": prompt.stem},
+            prompt_payload={
+                "stem": prompt.stem,
+                **({"selection_mode": prompt.selection_mode} if prompt.selection_mode else {}),
+            },
             explanation_payload=explanation.model_dump(mode="json"),
         )
     )

@@ -182,7 +182,10 @@ function QuestionOptions({
 }) {
   const options = [...question.options].sort((left, right) => left.position - right.position);
 
-  if (question.mechanic === "single_choice") {
+  if (
+    question.mechanic === "single_choice" ||
+    (question.mechanic === "recognition" && question.prompt_payload.selection_mode === "single")
+  ) {
     return (
       <fieldset className="interactive-options" disabled={disabled}>
         <legend>Оберіть одну відповідь</legend>

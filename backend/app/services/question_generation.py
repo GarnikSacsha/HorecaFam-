@@ -149,6 +149,7 @@ def _candidate(
     explanation: str,
     sources: list[CandidateSource],
     target_payload: dict[str, object],
+    selection_mode: Literal["single"] | None = None,
 ) -> GeneratedCandidate:
     fingerprint_payload: dict[str, object] = {
         "rule": {"code": rule_code, "version": rule_version},
@@ -159,7 +160,9 @@ def _candidate(
     }
     return GeneratedCandidate(
         mechanic=mechanic,
-        prompt_payload=CandidatePromptPayload(stem=stem, options=options),
+        prompt_payload=CandidatePromptPayload(
+            stem=stem, options=options, selection_mode=selection_mode
+        ),
         answer_payload=CandidateAnswerPayload(correct_option_keys=correct_option_keys),
         explanation_payload=CandidateExplanationPayload(text=explanation),
         source_fingerprint=_canonical_fingerprint(fingerprint_payload),
@@ -421,7 +424,7 @@ def build_description_candidate(
         for fact in facts
         if fact.verified and fact.item_name.strip() and fact.description.strip()
     ]
-    if len(usable) < 2 or len(usable) > 20:
+    if len(usable) < 2:
         return None
     names: dict[str, DescriptionFact] = {}
     descriptions: dict[str, DescriptionFact] = {}
@@ -435,6 +438,15 @@ def build_description_candidate(
     if target.menu_item_version_id not in {fact.menu_item_version_id for fact in usable}:
         return None
 
+    # Залишаємо перевірені альтернативи з цього уроку; порядок входу не змінює набір.
+    distractors = sorted(
+        (fact for fact in usable if fact.menu_item_version_id != target.menu_item_version_id),
+        key=lambda fact: (fact.item_name.casefold(), str(fact.menu_item_version_id)),
+    )[:3]
+    usable = sorted(
+        [target, *distractors],
+        key=lambda fact: (fact.item_name.casefold(), str(fact.menu_item_version_id)),
+    )
     options = sorted(
         [
             CandidateOption(
@@ -470,6 +482,7 @@ def build_description_candidate(
         rule_version=rule.version,
         mechanic=rule.mechanic,
         stem=f"Якій позиції відповідає опис: «{target.description.strip()}»?",
+        selection_mode="single",
         options=options,
         correct_option_keys=[correct_key],
         explanation=f"Цей опис належить позиції «{target.item_name}».",
@@ -477,6 +490,7 @@ def build_description_candidate(
         target_payload={
             "menu_item_version_id": str(target.menu_item_version_id),
             "description": target.description.strip(),
+            "selection_mode": "single",
         },
     )
 

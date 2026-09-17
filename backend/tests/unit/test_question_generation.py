@@ -253,6 +253,31 @@ def test_allergen_generation_requires_confirmed_verified_links() -> None:
     )
 
 
+def test_description_choices_are_bounded_single_and_deterministic() -> None:
+    facts = [
+        DescriptionFact(
+            menu_item_version_id=uuid4(),
+            menu_item_id=uuid4(),
+            item_name=f"Напій {i}",
+            description=f"Опис {i}",
+            verified=True,
+        )
+        for i in range(12)
+    ]
+    rule = DescriptionGenerationRule(code="menu.description", version=1)
+    scope = _scope()
+    candidate = build_description_candidate(scope, rule, facts[8], facts)
+    reverse = build_description_candidate(scope, rule, facts[8], list(reversed(facts)))
+    assert candidate is not None and reverse is not None
+    assert len(candidate.prompt_payload.options) == 4
+    assert candidate.prompt_payload.model_dump()["selection_mode"] == "single"
+    assert len(candidate.answer_payload.correct_option_keys) == 1
+    assert candidate == reverse
+    assert candidate.answer_payload.correct_option_keys[0] in {
+        o.stable_key for o in candidate.prompt_payload.options
+    }
+
+
 def test_description_generation_rejects_duplicate_descriptions() -> None:
     target = DescriptionFact(
         menu_item_version_id=uuid4(),
