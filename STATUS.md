@@ -1,5 +1,30 @@
 # HoReCa Repository Status
 
+## Local demo UX correction — CRA-271, 2026-09-17
+
+Denys reported successful Employee/mobile/password-reset acceptance and supplied a passed
+Final Exam screenshot (19/20, 95%). The earlier lack-of-Employee-session checkpoint below is
+historical; this is owner-reported evidence, not a fresh automated staging acceptance run.
+
+Authorized local fixes now cover certified Home, bounded single-answer description questions
+for new generation, return from Menu to the originating lesson, concise exam summary/error
+review, richer Admin Results and separate Menu business change history with actor-email
+snapshots and before/after values. Technical Operator audit is preserved. Migration 0020
+was applied only to the dedicated test database; no deployed data or existing attempts changed.
+
+Final combined backend verification: 61 passed, 0 failed/skipped. Frontend full suite with two
+workers: 124 passed; additional focused final run: 20 passed (overlapping, includes four new
+return-path checks). Browser checks: 6 passed across desktop/compact/mobile. Ruff, mypy,
+frontend lint and build pass. One pre-existing unrelated frontend formatting difference
+remains; initial failed runs and recovery are recorded in the report.
+
+Follow-up: Denys explicitly authorized six selective CRA-271 commits and push to origin/main.
+Fresh origin has no divergence and is 32 commits behind the previous local checkpoint;
+normal publication includes that existing ancestry. Unrelated dirty changes remain excluded.
+No deployment is authorized. Existing Published questions retain their old option counts;
+new-bank review/publication and email notifications remain separate actions. Evidence is in
+[CRA-271 evidence](docs/testing/demo-ux-followup-2026-09-17.md).
+
 ## Current product and source checkpoint — 2026-09-16
 
 Denys authorized the audit reconciliation, Linear updates and six selective local commits.
