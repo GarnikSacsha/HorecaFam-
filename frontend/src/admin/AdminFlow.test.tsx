@@ -109,6 +109,9 @@ describe("Admin Employee flow", () => {
       await screen.findByRole("table", { name: "Результати працівників" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Сертифіковано").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/80%/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Завершено").length).toBeGreaterThan(0);
+    expect(screen.queryByText("completed")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Відкрити" })).toHaveAttribute(
       "href",
       "/admin/results/employee-1",

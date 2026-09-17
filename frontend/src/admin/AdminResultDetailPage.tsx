@@ -5,9 +5,11 @@ import type {
   AdminAttentionCollection,
   AdminEmployeeResultsDetailResponse,
   AdminRetakeRequirementCollection,
+  FinalExamFinishResponse,
 } from "../api/contracts";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
+import { ExamResultReview, ExamResultSummary } from "../ui/ExamResultReview";
 
 export function AdminResultDetailPage() {
   const { employeeId } = useParams();
@@ -19,6 +21,26 @@ export function AdminResultDetailPage() {
   const [attentionCount, setAttentionCount] = useState(0);
   const [currentRetakeCount, setCurrentRetakeCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [review, setReview] = useState<FinalExamFinishResponse | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const openReview = async (attemptId: string) => {
+    setReviewLoading(true);
+    setReviewError(null);
+    setReview(null);
+    try {
+      setReview(
+        await client.request<FinalExamFinishResponse>(
+          `/organizations/${organizationId}/results/final-exams/${attemptId}`,
+        ),
+      );
+    } catch {
+      setReviewError("Не вдалося завантажити розбір. Повторіть дію.");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (status !== "authenticated" || !organizationId || !employeeId) return;
@@ -99,12 +121,45 @@ export function AdminResultDetailPage() {
           Відкрити робочу чергу
         </Link>
       </section>
+      <section className="bounded-section">
+        <h2>Підсумок навчання</h2>
+        <p>
+          Практика:{" "}
+          {detail.employee.latest_practice_score_basis_points == null
+            ? "Ще немає результату"
+            : `${detail.employee.latest_practice_score_basis_points / 100}%`}
+        </p>
+        <p>Завершених спроб іспиту: {detail.final_exam.history.length}</p>
+        {detail.final_exam.latest ? (
+          <>
+            <h3>Останній іспит</h3>
+            <ExamResultSummary result={detail.final_exam.latest} />
+          </>
+        ) : null}
+      </section>
+      {reviewLoading ? <p role="status">Завантажуємо розбір…</p> : null}
+      {reviewError ? <p role="alert">{reviewError}</p> : null}
+      {review ? (
+        <section className="bounded-section">
+          <h2>Обрана спроба</h2>
+          <ExamResultSummary result={review.result} />
+          <ExamResultReview key={review.result.id} items={review.review} />
+        </section>
+      ) : null}
       {detail.final_exam.history.length ? (
         <ol className="results-history-list">
           {detail.final_exam.history.map((result) => (
             <li key={result.result_id}>
               <strong>{result.correct_count}/20</strong>
-              <span>{result.pass_status === "passed" ? "Passed" : "Failed"}</span>
+              <span>{result.pass_status === "passed" ? "Пройдено" : "Не пройдено"}</span>
+              <button
+                className="button button-secondary"
+                disabled={reviewLoading}
+                type="button"
+                onClick={() => void openReview(result.attempt_id)}
+              >
+                Розбір спроби
+              </button>
               <time dateTime={result.completed_at}>
                 {new Date(result.completed_at).toLocaleDateString("uk-UA")}
               </time>

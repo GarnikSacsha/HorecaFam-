@@ -10,6 +10,32 @@ function employeeName(employee: AdminEmployeeResultRow) {
   return [employee.first_name, employee.last_name].filter(Boolean).join(" ") || "Працівник";
 }
 
+function trainingStatus(status: string | null) {
+  return (
+    (
+      {
+        completed: "Завершено",
+        in_progress: "Триває",
+        assigned: "Призначено",
+        revoked: "Відкликано",
+      } as Record<string, string>
+    )[status ?? ""] ?? "Не призначено"
+  );
+}
+
+function ExamScore({ employee }: { employee: AdminEmployeeResultRow }) {
+  const result = employee.latest_final_exam;
+  return result ? (
+    <p>
+      {result.score_basis_points / 100}% · {result.correct_count}/{result.total_count}
+      <br />
+      <time dateTime={result.completed_at}>
+        {new Date(result.completed_at).toLocaleDateString("uk-UA")}
+      </time>
+    </p>
+  ) : null;
+}
+
 function ResultState({ employee }: { employee: AdminEmployeeResultRow }) {
   if (employee.certification) return <StatusPill tone="success">Сертифіковано</StatusPill>;
   if (employee.latest_final_exam?.pass_status === "failed") {
@@ -91,7 +117,7 @@ export function AdminResultsPage() {
                     <td>
                       <strong>{employeeName(employee)}</strong>
                     </td>
-                    <td>{employee.current_training_status ?? "Не призначено"}</td>
+                    <td>{trainingStatus(employee.current_training_status)}</td>
                     <td>
                       {employee.latest_practice_score_basis_points == null
                         ? "—"
@@ -99,6 +125,7 @@ export function AdminResultsPage() {
                     </td>
                     <td>
                       <ResultState employee={employee} />
+                      <ExamScore employee={employee} />
                     </td>
                     <td>
                       <Link className="text-link" to={`/admin/results/${employee.employee_id}`}>
@@ -115,6 +142,8 @@ export function AdminResultsPage() {
               <article className="mobile-employee-row" key={employee.employee_id}>
                 <strong>{employeeName(employee)}</strong>
                 <ResultState employee={employee} />
+                <p>{trainingStatus(employee.current_training_status)}</p>
+                <ExamScore employee={employee} />
                 <p>
                   Practice:{" "}
                   {employee.latest_practice_score_basis_points == null

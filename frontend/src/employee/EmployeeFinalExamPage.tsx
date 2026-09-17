@@ -10,7 +10,6 @@ import type {
   FinalExamAttemptTakeoverResponse,
   FinalExamFinishResponse,
   FinalExamHistoryResponse,
-  FinalExamQuestionReview,
   FinalExamSummaryResponse,
   InteractiveAnswerPayload,
 } from "../api/contracts";
@@ -18,6 +17,7 @@ import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 import { isSingleAnswer } from "./answerSelection";
+import { ExamResultReview, ExamResultSummary } from "../ui/ExamResultReview";
 
 type BusyAction = "load" | "start" | "answer" | "takeover" | "finish" | null;
 
@@ -49,35 +49,6 @@ function answerOptionIds(payload: Record<string, unknown>): string[] {
 
 function savedOptionIds(question: FinalExamAttemptQuestion): string[] {
   return question.saved_answer ? answerOptionIds(question.saved_answer.answer_payload) : [];
-}
-
-function ReviewCard({ item }: { item: FinalExamQuestionReview }) {
-  const selectedIds = answerOptionIds(item.answer.answer_payload);
-  return (
-    <article className={`practice-review-card ${item.is_correct ? "is-correct" : "is-incorrect"}`}>
-      <div className="readiness-card-heading">
-        <h4>
-          {item.position + 1}. {payloadText(item.prompt_payload, "stem", "text", "title")}
-        </h4>
-        <StatusPill tone={item.is_correct ? "success" : "warning"}>
-          {item.is_correct ? "Правильно" : "Потрібно повторити"}
-        </StatusPill>
-      </div>
-      <ul>
-        {item.options.map((option) => (
-          <li key={option.id}>
-            {optionText(option)}
-            {selectedIds.includes(option.id) ? " · ваша відповідь" : ""}
-            {item.correct_option_ids.includes(option.id) ? " · правильна відповідь" : ""}
-          </li>
-        ))}
-      </ul>
-      {item.is_critical_error ? (
-        <p className="practice-critical-note">Критична помилка щодо алергенів.</p>
-      ) : null}
-      <p>{payloadText(item.explanation_payload, "text", "explanation")}</p>
-    </article>
-  );
 }
 
 export function EmployeeFinalExamPage() {
@@ -551,21 +522,11 @@ export function EmployeeFinalExamPage() {
           <h2 id="final-exam-result-title">
             {finish.result.correct_count} з {finish.result.total_count} правильних відповідей
           </h2>
-          <StatusPill tone={finish.result.pass_status === "passed" ? "success" : "warning"}>
-            {finish.result.pass_status === "passed" ? "Пройдено" : "Не пройдено"}
-          </StatusPill>
-          <p>
-            Результат: {finish.result.score_basis_points / 100}% · критичних помилок:{" "}
-            {finish.result.critical_error_count}
-          </p>
+          <ExamResultSummary result={finish.result} />
           {finish.certification ? (
             <p className="practice-qualified-note">Сертифікацію збережено.</p>
           ) : null}
-          <div className="practice-review-list" aria-label="Перевірка відповідей Final Exam">
-            {finish.review.map((item) => (
-              <ReviewCard item={item} key={item.attempt_question_id} />
-            ))}
-          </div>
+          <ExamResultReview key={finish.result.id} items={finish.review} />
           {finish.retake_available ? (
             <button className="button button-primary" onClick={() => void retry()} type="button">
               Повторити Final Exam
@@ -589,6 +550,12 @@ export function EmployeeFinalExamPage() {
         </button>
       ) : null}
 
+      {!finish && !attempt && history.latest ? (
+        <section className="bounded-section">
+          <h2>Останній результат</h2>
+          <ExamResultSummary result={history.latest} />
+        </section>
+      ) : null}
       {history.history.length ? (
         <section className="interactive-history" aria-labelledby="final-exam-history-title">
           <h2 id="final-exam-history-title">Історія Final Exam</h2>

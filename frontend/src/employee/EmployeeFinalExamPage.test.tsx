@@ -222,6 +222,47 @@ describe("Employee Final Exam", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Не пройдено")).toBeInTheDocument();
     expect(screen.getByText("Перевірений факт")).toBeInTheDocument();
+    expect(screen.getByText("Помилок: 7")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Усі відповіді/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Повторити Final Exam" })).toBeInTheDocument();
+  });
+
+  it("retains a readable passed result when returning after certification", async () => {
+    const result = {
+      result_id: "result-1",
+      attempt_id: "attempt-1",
+      assessment_version_id: "assessment-1",
+      completed_at: "2030-08-31T08:20:00Z",
+      correct_count: 19,
+      total_count: 20,
+      score_basis_points: 9500,
+      knowledge_level: "strong",
+      pass_status: "passed",
+      critical_error_count: 0,
+    };
+    const certification = {
+      result_id: "result-1",
+      attempt_id: "attempt-1",
+      certified_at: result.completed_at,
+    };
+    renderExam({
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) =>
+        Promise.resolve(
+          (path.endsWith("/attempts")
+            ? { certification, latest: result, best: result, history: [result] }
+            : {
+                availability: "certified",
+                certification,
+                can_start: false,
+                active_attempt: null,
+                reason_codes: [],
+              }) as T,
+        ),
+    });
+    expect(await screen.findByRole("heading", { name: "Останній результат" })).toBeInTheDocument();
+    expect(screen.getByText("95%")).toBeInTheDocument();
+    expect(screen.getByText("Помилок: 1")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Почати Final Exam" })).not.toBeInTheDocument();
   });
 });

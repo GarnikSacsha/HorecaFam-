@@ -59,7 +59,7 @@ function expectProtectedMutation(request: Request) {
 
 test("Employee completes Final Exam without feedback and sees certification only after confirmation", async ({
   page,
-}) => {
+}, testInfo) => {
   let answerCount = 0;
   let finished = false;
 
@@ -239,6 +239,11 @@ test("Employee completes Final Exam without feedback and sees certification only
     resultHeading.locator("xpath=..").getByText("Пройдено", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Сертифікацію збережено.")).toBeVisible();
+  await expect(page.getByText("Помилок: 6")).toBeVisible();
+  await expect(page.getByText("Пояснення Final Exam 1", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Пояснення Final Exam 15", { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("exam-summary.png"), fullPage: true });
+  await page.getByRole("button", { name: "Усі відповіді (20)" }).click();
   await expect(page.getByText("Пояснення Final Exam 1", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Повторити Final Exam" })).toHaveCount(0);
   expect(answerCount).toBe(20);
