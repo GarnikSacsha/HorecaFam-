@@ -11,7 +11,18 @@ import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
-function assignmentCopy(response: EmployeeTrainingHomeResponse) {
+function assignmentCopy(
+  response: EmployeeTrainingHomeResponse,
+  finalExam: FinalExamSummaryResponse | null,
+) {
+  if (finalExam?.certification && response.progress?.is_complete !== false) {
+    return {
+      heading: "Сертифікацію отримано",
+      action: "Переглянути результат",
+      note: "Ваш успішний результат збережено. Матеріали та практика залишаються доступними для повторення.",
+      to: "/employee/final-exam",
+    };
+  }
   if (response.next_action === "open_final_exam") {
     return {
       heading: "Час пройти Final Exam",
@@ -109,7 +120,7 @@ export function ActiveHomePage() {
       ? {
           training: training.training,
           progress: training.progress,
-          copy: assignmentCopy(training),
+          copy: assignmentCopy(training, finalExam),
         }
       : null;
 
@@ -129,6 +140,18 @@ export function ActiveHomePage() {
         <span>{profile.operational_role?.name_uk ?? "Роль не вказана"}</span>
         <span>{profile.location?.name ?? "Локація не вказана"}</span>
       </div>
+
+      {finalExam?.certification ? (
+        <p className="practice-qualified-note">
+          <StatusPill tone="success">Сертифіковано</StatusPill>
+          {" · "}
+          <time dateTime={finalExam.certification.certified_at}>
+            {new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium" }).format(
+              new Date(finalExam.certification.certified_at),
+            )}
+          </time>
+        </p>
+      ) : null}
 
       {finalExam?.current_retake_requirement ? (
         <section

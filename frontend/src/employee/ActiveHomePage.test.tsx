@@ -23,6 +23,69 @@ const activeSession: SessionResponse = {
 };
 
 describe("Active Employee Home", () => {
+  it.each([false, true])(
+    "shows earned certification with retake=%s without inviting a first exam",
+    async (retake) => {
+      const client: ApiClient = {
+        getSession: () => Promise.resolve(activeSession),
+        request: <T,>(path: string) =>
+          Promise.resolve(
+            (path === "/me/profile"
+              ? {
+                  profiles: [
+                    {
+                      id: "employee-1",
+                      organization: { id: "organization-1", name: "Demo" },
+                      membership_status: "active",
+                      first_name: "Анна",
+                    },
+                  ],
+                }
+              : path === "/me/training/final-exam"
+                ? {
+                    availability: "certified",
+                    can_start: false,
+                    certification: {
+                      result_id: "result-1",
+                      attempt_id: "attempt-1",
+                      certified_at: "2026-09-17T12:00:00Z",
+                    },
+                    current_retake_requirement: retake
+                      ? { timing_state: "on_time", permitted_action: "start_retake" }
+                      : null,
+                  }
+                : {
+                    assignment: { id: "assignment-1", status: "completed" },
+                    training: { id: "training-1", version_number: 1 },
+                    progress: {
+                      completed_required_lesson_count: 4,
+                      required_lesson_count: 4,
+                      percentage: 100,
+                    },
+                    next_action: "open_final_exam",
+                  }) as T,
+          ),
+      };
+      render(
+        <SessionProvider client={client}>
+          <MemoryRouter>
+            <ActiveHomePage />
+          </MemoryRouter>
+        </SessionProvider>,
+      );
+      expect(
+        await screen.findByRole("heading", { name: "Сертифікацію отримано" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Час пройти Final Exam")).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Переглянути результат" })).toHaveAttribute(
+        "href",
+        "/employee/final-exam",
+      );
+      if (retake)
+        expect(screen.getByRole("link", { name: "Почати перескладання" })).toBeInTheDocument();
+    },
+  );
+
   it("routes from the refreshed server session and renders a truthful zero-assignment state", async () => {
     const profiles: OwnEmployeeProfilesResponse = {
       profiles: [
