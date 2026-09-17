@@ -397,7 +397,9 @@ describe("Employee Training reference", () => {
     expect(screen.getByText("Спочатку завершіть урок")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Відкрити позицію в меню" })).toHaveAttribute(
       "href",
-      "/employee/menu?item=menu-item-1",
+      expect.stringMatching(
+        /^\/employee\/menu\?item=menu-item-1&returnTo=%2Femployee%2Flearning%2Flessons%2Flesson-1%23block-/,
+      ),
     );
     expect(requests.some((path) => path.includes("/assets/asset-1/access"))).toBe(true);
   });

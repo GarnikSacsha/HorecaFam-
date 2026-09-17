@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import type {
   EmployeeMenuItemDetail,
@@ -31,10 +31,12 @@ function MenuDetail({
   item,
   loading,
   onClose,
+  returnTo,
 }: {
   item: EmployeeMenuItemDetail | null;
   loading: boolean;
   onClose: () => void;
+  returnTo: string | null;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -81,6 +83,11 @@ function MenuDetail({
         aria-labelledby="menu-detail-title"
         ref={panelRef}
       >
+        {returnTo ? (
+          <Link className="text-link" to={returnTo}>
+            ← Повернутися до уроку
+          </Link>
+        ) : null}
         <div className="menu-detail-heading">
           <div>
             <p className="eyebrow">Позиція меню</p>
@@ -262,12 +269,23 @@ export function EmployeeMenuPage() {
   }, [openDetail, searchParams]);
 
   const sections = response?.menu?.sections ?? [];
+  const requestedReturn = searchParams.get("returnTo");
+  const returnTo =
+    requestedReturn &&
+    /^\/employee\/learning\/lessons\/[a-zA-Z0-9-]+(?:#block-[a-zA-Z0-9-]+)?$/.test(requestedReturn)
+      ? requestedReturn
+      : null;
   const categories = sectionId
     ? (sections.find((section) => section.id === sectionId)?.categories ?? [])
     : sections.flatMap((section) => section.categories);
 
   return (
     <section className="employee-menu-page" aria-labelledby="employee-menu-title">
+      {returnTo ? (
+        <Link className="text-link" to={returnTo}>
+          ← Повернутися до уроку
+        </Link>
+      ) : null}
       <div className="employee-menu-heading">
         <div>
           <p className="eyebrow">Робочий довідник</p>
@@ -381,7 +399,12 @@ export function EmployeeMenuPage() {
         </div>
       ) : null}
       {detailOpen ? (
-        <MenuDetail item={selected} loading={detailLoading} onClose={closeDetail} />
+        <MenuDetail
+          item={selected}
+          loading={detailLoading}
+          onClose={closeDetail}
+          returnTo={returnTo}
+        />
       ) : null}
       {!loading && response?.menu ? (
         <div className="compact-actions">

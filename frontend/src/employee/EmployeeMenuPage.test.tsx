@@ -70,6 +70,26 @@ const detail: EmployeeMenuItemDetail = {
 };
 
 describe("Employee published Menu", () => {
+  it.each([
+    "https://example.com",
+    "//example.com",
+    "/admin/results",
+    "/employee/learning/lessons/../admin",
+  ])("rejects unsafe lesson return destination %s", async (returnTo) => {
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>() => Promise.resolve(menu as T),
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter initialEntries={[`/employee/menu?returnTo=${encodeURIComponent(returnTo)}`]}>
+          <EmployeeMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByRole("heading", { name: "Меню" });
+    expect(screen.queryByRole("link", { name: "← Повернутися до уроку" })).not.toBeInTheDocument();
+  });
   it("loads all 308 items and retries a failed page without losing or duplicating items", async () => {
     const allItems = Array.from({ length: 308 }, (_, index) => ({
       ...menu.items[0],
@@ -264,7 +284,11 @@ describe("Employee published Menu", () => {
     };
     render(
       <SessionProvider client={client}>
-        <MemoryRouter initialEntries={["/employee/menu?item=item-1"]}>
+        <MemoryRouter
+          initialEntries={[
+            "/employee/menu?item=item-1&returnTo=%2Femployee%2Flearning%2Flessons%2Flesson-1%23block-card-1",
+          ]}
+        >
           <EmployeeMenuPage />
         </MemoryRouter>
       </SessionProvider>,
@@ -272,6 +296,10 @@ describe("Employee published Menu", () => {
 
     expect(await screen.findByRole("dialog", { name: "Борщ" })).toHaveTextContent(
       "Борщ на яловичому бульйоні.",
+    );
+    expect(screen.getAllByRole("link", { name: "← Повернутися до уроку" })[0]).toHaveAttribute(
+      "href",
+      "/employee/learning/lessons/lesson-1#block-card-1",
     );
   });
 });

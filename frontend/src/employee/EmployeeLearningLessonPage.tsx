@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import type {
   EmployeeTrainingAssetAccessResponse,
@@ -83,6 +83,7 @@ function TrainingBlock({
   block: EmployeeTrainingContentBlock;
   client: ApiClient;
 }) {
+  const { lessonId } = useParams<{ lessonId: string }>();
   const payload = block.payload;
   const fallback = <FallbackNote visible={block.translation_fallback} />;
 
@@ -139,10 +140,12 @@ function TrainingBlock({
     const note = textValue(payload, "note_uk");
     if (!itemId) return null;
     return (
-      <aside className="learning-menu-card">
+      <aside className="learning-menu-card" id={`block-${block.id}`} tabIndex={-1}>
         <p className="eyebrow">Пов’язана позиція меню</p>
         {note ? <p>{note}</p> : null}
-        <Link to={`/employee/menu?item=${encodeURIComponent(itemId)}`}>
+        <Link
+          to={`/employee/menu?item=${encodeURIComponent(itemId)}&returnTo=${encodeURIComponent(`/employee/learning/lessons/${lessonId}#block-${block.id}`)}`}
+        >
           Відкрити позицію в меню
         </Link>
         {fallback}
@@ -179,6 +182,7 @@ function TrainingBlock({
 }
 
 export function EmployeeLearningLessonPage() {
+  const { hash } = useLocation();
   const { client, session } = useSession();
   const { lessonId } = useParams<{ lessonId: string }>();
   const [lesson, setLesson] = useState<EmployeeTrainingLessonDetail | null>(null);
@@ -192,6 +196,13 @@ export function EmployeeLearningLessonPage() {
   );
   const idempotencyKey = useRef(createIdempotencyKey());
   const locale = session?.user.preferred_locale === "en" ? "en" : "uk";
+
+  useEffect(() => {
+    if (!lesson || !hash.startsWith("#block-")) return;
+    const card = document.getElementById(hash.slice(1));
+    card?.scrollIntoView?.({ block: "center" });
+    card?.focus({ preventScroll: true });
+  }, [hash, lesson]);
 
   const loadLesson = useCallback(async () => {
     if (!session || !lessonId) return;
