@@ -123,6 +123,7 @@ from app.models.menu import (
     MenuVersionSection,
     MenuVersionSectionTranslation,
 )
+from app.models.menu_history import MenuChangeEvent
 from app.models.training import (
     Asset,
     Lesson,
@@ -149,6 +150,7 @@ from app.models.training_assignments import (
 )
 
 __all__ = [
+    "MenuChangeEvent",
     "AccessStatus",
     "AdminAccess",
     "AdminScope",

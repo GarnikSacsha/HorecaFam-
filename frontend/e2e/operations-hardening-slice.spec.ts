@@ -352,7 +352,9 @@ test("admin confirms pause, resume, disable and reactivation from the employee p
   );
 });
 
-test("organization audit stays tenant-scoped and responsive", async ({ page }) => {
+test("menu change history shows business values and author on all viewports", async ({
+  page,
+}, testInfo) => {
   const requestedUrls: string[] = [];
   await page.route("**/api/v1/**", async (route: Route) => {
     const request = route.request();
@@ -362,24 +364,57 @@ test("organization audit stays tenant-scoped and responsive", async ({ page }) =
       await route.fulfill({ json: adminOrganizationSession });
       return;
     }
-    if (request.method() === "GET" && pathname === "/organizations/organization-1/audit-events") {
+    if (
+      request.method() === "GET" &&
+      pathname === "/organizations/organization-1/menu-change-history"
+    ) {
       requestedUrls.push(url.toString());
-      await route.fulfill({ json: { items: [auditEvent], next_cursor: null } });
+      const before = {
+        name: "Айс-матча-полуниця",
+        description: "Матча з полуницею",
+        price_minor: 19500,
+        currency: "UAH",
+        availability: "available",
+        component_data_status: "confirmed_present",
+        components: [{ name: "Вівсяне молоко", optional: false }],
+        allergen_data_status: "unknown",
+        allergen_codes: [],
+      };
+      await route.fulfill({
+        json: {
+          items: [
+            {
+              id: "change-1",
+              action: "updated",
+              item_name: before.name,
+              actor_email: "menu.manager@example.com",
+              created_at: "2026-09-17T12:00:00Z",
+              old_values: before,
+              new_values: {
+                ...before,
+                price_minor: 21000,
+                components: [{ name: "Мигдалеве молоко", optional: false }],
+              },
+            },
+          ],
+          next_cursor: null,
+        },
+      });
       return;
     }
     await route.fulfill({ status: 404, json: { code: "UNEXPECTED_TEST_REQUEST" } });
   });
 
   await page.goto("/admin/audit");
-  await expect(page.getByRole("heading", { name: "Аудит організації" })).toBeVisible();
-  await expect(page.locator("strong:visible").filter({ hasText: "employee.paused" })).toBeVisible();
-  await page.getByLabel("Дія").fill("employee.paused");
-  await page.getByLabel("Тип актора").selectOption("user");
-  await page.getByRole("button", { name: "Застосувати фільтри" }).click();
-  await expect.poll(() => requestedUrls.at(-1) ?? "").toContain("actor_type=user");
-  expect(requestedUrls.at(-1)).toContain("action=employee.paused");
-  expect(requestedUrls.at(-1)).toContain("actor_type=user");
+  await expect(page.getByRole("heading", { name: "Історія змін меню" })).toBeVisible();
+  await expect(page.getByText("menu.manager@example.com")).toBeVisible();
+  await expect(page.getByText("195,00 UAH")).toBeVisible();
+  await expect(page.getByText("210,00 UAH")).toBeVisible();
+  await expect(page.getByText("Вівсяне молоко")).toBeVisible();
+  await expect(page.getByText("Мигдалеве молоко")).toBeVisible();
+  await expect(page.getByText("employee.paused")).toHaveCount(0);
   expect(requestedUrls.every((url) => url.includes("organization-1"))).toBeTruthy();
+  await page.screenshot({ path: testInfo.outputPath("menu-history.png"), fullPage: true });
   expect(await page.evaluate<number>("document.documentElement.scrollWidth")).toBeLessThanOrEqual(
     (page.viewportSize()?.width ?? 0) + 1,
   );

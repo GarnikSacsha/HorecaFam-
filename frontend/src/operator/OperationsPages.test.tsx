@@ -78,27 +78,36 @@ function renderWithSession(session: SessionResponse, client: ApiClient, element:
   );
 }
 
-it("renders Organization audit with controlled filters and responsive event views", async () => {
+it("shows business menu changes with author email and before/after instead of technical events", async () => {
   const requests: string[] = [];
   const client: ApiClient = {
     getSession: () => Promise.resolve(adminSession),
     request: <T,>(path: string) => {
       requests.push(path);
-      return Promise.resolve({ items: [event], next_cursor: null } as T);
+      return Promise.resolve({
+        items: [
+          {
+            id: "change-1",
+            action: "updated",
+            actor_email: "chef@example.com",
+            item_name: "Кава",
+            created_at: "2031-02-03T12:00:00Z",
+            old_values: { name: "Кава", price_minor: 6500, currency: "UAH", components: [] },
+            new_values: { name: "Кава", price_minor: 8000, currency: "UAH", components: [] },
+          },
+        ],
+        next_cursor: null,
+      } as T);
     },
   };
-  const user = userEvent.setup();
   renderWithSession(adminSession, client, <AdminAuditPage />);
 
-  expect(
-    await screen.findByRole("table", { name: "Події аудиту організації" }),
-  ).toBeInTheDocument();
-  expect(screen.getAllByText("employee.paused").length).toBeGreaterThan(0);
-  await user.type(screen.getByLabelText("Дія"), "employee.paused");
-  await user.click(screen.getByRole("button", { name: "Застосувати фільтри" }));
-
-  expect(requests.at(-1)).toContain("action=employee.paused");
-  expect(screen.getByLabelText("Мобільний список подій аудиту")).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Історія змін меню" })).toBeInTheDocument();
+  expect(await screen.findByText("chef@example.com")).toBeVisible();
+  expect(screen.getByText("65,00 UAH")).toBeVisible();
+  expect(screen.getByText("80,00 UAH")).toBeVisible();
+  expect(screen.queryByText("employee.paused")).not.toBeInTheDocument();
+  expect(requests.at(-1)).toContain("/menu-change-history?limit=50");
 });
 
 it("renders Operator Jobs and system audit without generic mutation controls", async () => {

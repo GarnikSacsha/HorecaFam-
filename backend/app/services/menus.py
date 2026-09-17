@@ -43,6 +43,7 @@ from app.services.menu_drafts import (
     _validation_error,
     get_menu_version_hierarchy,
 )
+from app.services.menu_history import record_menu_change
 
 
 @dataclass(frozen=True, slots=True)
@@ -517,6 +518,14 @@ async def _create_menu_item(
         entity_type="menu_item",
         entity_id=identity.id,
     )
+    await record_menu_change(
+        db,
+        version=version,
+        item_id=identity.id,
+        actor_user_id=actor_user_id,
+        before=None,
+        after=payload,
+    )
     await db.commit()
     return MenuItemMutationResult(
         item_version=item_version,
@@ -730,6 +739,14 @@ async def _update_menu_item(
         entity_type="menu_item",
         entity_id=item_id,
     )
+    await record_menu_change(
+        db,
+        version=version,
+        item_id=item_id,
+        actor_user_id=actor_user_id,
+        before=current,
+        after=merged,
+    )
     await db.commit()
     return MenuItemMutationResult(
         item_version=item_version,
@@ -777,6 +794,7 @@ async def delete_menu_item(
         if item_version is None:
             raise _resource_not_found()
         category_id = item_version.menu_version_category_id
+        before = await _current_payload(db, item_version=item_version)
         await db.execute(
             delete(MenuItemVersionComponent).where(
                 MenuItemVersionComponent.menu_item_version_id == item_version.id
@@ -813,6 +831,14 @@ async def delete_menu_item(
             request_id=request_id,
             entity_type="menu_item",
             entity_id=item_id,
+        )
+        await record_menu_change(
+            db,
+            version=version,
+            item_id=item_id,
+            actor_user_id=actor_user_id,
+            before=before,
+            after=None,
         )
         await db.commit()
         return MenuItemDeleteResult(delta=delta, revision=version.revision)

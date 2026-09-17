@@ -20,6 +20,7 @@ from app.main import create_app
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_TABLES = (
+    "menu_change_events",
     "attention_case_actions",
     "attention_case_sources",
     "retake_requirement_actions",

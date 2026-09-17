@@ -47,6 +47,7 @@ from app.schemas.menu import (
     MenuVersionCreate,
     MenuVersionDetail,
 )
+from app.schemas.menu_history import MenuChangeHistoryResponse
 from app.services.employee_menu import get_employee_menu_item, list_employee_menu
 from app.services.menu_drafts import (
     UNSET,
@@ -60,6 +61,7 @@ from app.services.menu_drafts import (
     update_category,
     update_section,
 )
+from app.services.menu_history import list_menu_changes
 from app.services.menu_imports import (
     confirm_menu_import,
     create_menu_import,
@@ -78,6 +80,19 @@ from app.services.menus import (
 )
 
 router = APIRouter(tags=["menus"])
+
+
+@router.get(
+    "/organizations/{organization_id}/menu-change-history", response_model=MenuChangeHistoryResponse
+)
+async def menu_change_history_route(
+    organization_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
+) -> MenuChangeHistoryResponse:
+    return await list_menu_changes(db, organization_id=organization_id, limit=limit, cursor=cursor)
 
 
 @router.get("/me/menu", response_model=EmployeeMenuResponse)

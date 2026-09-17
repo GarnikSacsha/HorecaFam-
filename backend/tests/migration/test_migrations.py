@@ -469,6 +469,7 @@ def test_metadata_contains_current_backend_tables() -> None:
         "job_attempts",
         "locations",
         "menu_categories",
+        "menu_change_events",
         "menu_component_version_translations",
         "menu_component_versions",
         "menu_components",

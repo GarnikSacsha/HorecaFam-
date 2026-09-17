@@ -1432,3 +1432,30 @@ export interface DashboardResponse {
   final_exam: { certified: number; needs_exam: number; retake: number; overdue_retake: number };
   attention: { unresolved: number; critical: number };
 }
+export interface MenuBusinessValues {
+  name: string;
+  description: string | null;
+  price_minor: number | null;
+  currency: string;
+  availability: string;
+  component_data_status: string;
+  components: Array<{ name: string; optional: boolean | null }>;
+  allergen_data_status: string;
+  allergen_codes: string[];
+}
+export interface MenuChangeEvent {
+  id: string;
+  location_id: string;
+  menu_version_id: string;
+  menu_item_id: string;
+  actor_email: string;
+  action: "created" | "updated" | "removed";
+  item_name: string;
+  old_values: MenuBusinessValues | null;
+  new_values: MenuBusinessValues | null;
+  created_at: string;
+}
+export interface MenuChangeHistoryResponse {
+  items: MenuChangeEvent[];
+  next_cursor: string | null;
+}

@@ -9,7 +9,7 @@ const links = [
   { to: "/admin/questions", label: "Банк питань" },
   { to: "/admin/results", label: "Результати" },
   { to: "/admin/attention", label: "Attention" },
-  { to: "/admin/audit", label: "Аудит" },
+  { to: "/admin/audit", label: "Історія змін" },
 ];
 
 function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {

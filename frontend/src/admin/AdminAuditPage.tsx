@@ -1,37 +1,119 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import type { AuditEventListResponse, AuditEventResponse } from "../api/contracts";
+import type {
+  MenuBusinessValues,
+  MenuChangeEvent,
+  MenuChangeHistoryResponse,
+} from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
-import { AuditEventList } from "../ui/AuditEventList";
+
+const fields: Array<[keyof MenuBusinessValues, string]> = [
+  ["name", "Назва"],
+  ["description", "Опис"],
+  ["price_minor", "Ціна"],
+  ["currency", "Валюта"],
+  ["availability", "Доступність"],
+  ["component_data_status", "Відомості про склад"],
+  ["components", "Склад"],
+  ["allergen_data_status", "Відомості про алергени"],
+  ["allergen_codes", "Алергени"],
+];
+const labels: Record<string, string> = {
+  available: "Доступно",
+  temporarily_unavailable: "Тимчасово недоступно",
+  seasonal: "Сезонна позиція",
+  discontinued: "Знято з меню",
+  unknown: "Не підтверджено",
+  confirmed_none: "Підтверджено відсутність",
+  confirmed_present: "Підтверджено наявність",
+};
+function displayValue(values: MenuBusinessValues | null, field: keyof MenuBusinessValues) {
+  const value = values?.[field];
+  if (value === null || value === undefined) return "Не вказано";
+  if (field === "price_minor")
+    return `${(Number(value) / 100).toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${values?.currency ?? ""}`;
+  if (field === "components")
+    return (
+      values?.components
+        .map(
+          (item) =>
+            `${item.name}${item.optional === true ? " (за бажанням)" : item.optional === null ? " (обов’язковість не вказана)" : ""}`,
+        )
+        .join(", ") || "Немає"
+    );
+  if (Array.isArray(value))
+    return value.filter((item) => typeof item === "string").join(", ") || "Немає";
+  return labels[String(value)] ?? String(value);
+}
+function ChangeCard({ item }: { item: MenuChangeEvent }) {
+  const changed = fields.filter(
+    ([field]) =>
+      JSON.stringify(item.old_values?.[field]) !== JSON.stringify(item.new_values?.[field]),
+  );
+  return (
+    <article className="menu-change-card">
+      <header>
+        <div>
+          <p className="eyebrow">
+            {item.action === "created"
+              ? "Додано позицію"
+              : item.action === "removed"
+                ? "Видалено з чернетки"
+                : "Змінено позицію"}
+          </p>
+          <h2>{item.item_name}</h2>
+        </div>
+        <div className="menu-change-author">
+          <strong>{item.actor_email}</strong>
+          <time dateTime={item.created_at}>
+            {new Date(item.created_at).toLocaleString("uk-UA")}
+          </time>
+        </div>
+      </header>
+      <p className="page-description">Зміни в чернетці меню</p>
+      <dl className="menu-change-fields">
+        {changed.map(([field, label]) => (
+          <div key={field}>
+            <dt>{label}</dt>
+            <dd>
+              <span>
+                <small>Було</small>
+                {item.old_values ? displayValue(item.old_values, field) : "Позиції не було"}
+              </span>
+              <span aria-hidden="true">→</span>
+              <span>
+                <small>Стало</small>
+                {item.new_values ? displayValue(item.new_values, field) : "Позицію видалено"}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </article>
+  );
+}
 
 export function AdminAuditPage() {
   const { client, session, status } = useSession();
   const organizationId = session?.organization_access.find(
     (access) => access.is_organization_admin,
   )?.organization_id;
-  const [items, setItems] = useState<AuditEventResponse[]>([]);
+  const [items, setItems] = useState<MenuChangeEvent[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [action, setAction] = useState("");
-  const [actorType, setActorType] = useState("");
-  const [appliedAction, setAppliedAction] = useState("");
-  const [appliedActorType, setAppliedActorType] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [reload, setReload] = useState(0);
   const requestPage = useCallback(
     (cursor?: string) => {
       const query = new URLSearchParams({ limit: "50" });
-      if (appliedAction) query.set("action", appliedAction);
-      if (appliedActorType) query.set("actor_type", appliedActorType);
       if (cursor) query.set("cursor", cursor);
-      return client.request<AuditEventListResponse>(
-        `/organizations/${organizationId}/audit-events?${query}`,
+      return client.request<MenuChangeHistoryResponse>(
+        `/organizations/${organizationId}/menu-change-history?${query}`,
       );
     },
-    [appliedAction, appliedActorType, client, organizationId],
+    [client, organizationId],
   );
-
   useEffect(() => {
     if (status !== "authenticated" || !organizationId) return;
     let active = true;
@@ -40,9 +122,10 @@ export function AdminAuditPage() {
         if (!active) return;
         setItems(response.items);
         setNextCursor(response.next_cursor);
+        setError(null);
       })
       .catch(() => {
-        if (active) setError("Не вдалося завантажити події аудиту. Повторіть спробу.");
+        if (active) setError("Не вдалося завантажити історію змін меню.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -50,90 +133,70 @@ export function AdminAuditPage() {
     return () => {
       active = false;
     };
-  }, [organizationId, requestPage, status]);
-
+  }, [organizationId, requestPage, status, reload]);
   const loadMore = async () => {
-    if (!nextCursor) return;
+    if (!nextCursor || loading) return;
     setLoading(true);
     setError(null);
     try {
       const response = await requestPage(nextCursor);
-      setItems((current) => [...current, ...response.items]);
+      setItems((current) => [
+        ...current,
+        ...response.items.filter((item) => !current.some((existing) => existing.id === item.id)),
+      ]);
       setNextCursor(response.next_cursor);
     } catch {
-      setError("Не вдалося завантажити наступну сторінку аудиту.");
+      setError("Не вдалося завантажити наступну сторінку історії.");
     } finally {
       setLoading(false);
     }
   };
-
-  const applyFilters = (event: FormEvent) => {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-    setAppliedAction(action.trim());
-    setAppliedActorType(actorType);
-  };
-
   return (
     <section className="admin-page operations-page" aria-labelledby="admin-audit-title">
       <div className="page-heading-row">
         <div>
           <p className="eyebrow">Контроль змін</p>
-          <h1 id="admin-audit-title">Аудит організації</h1>
+          <h1 id="admin-audit-title">Історія змін меню</h1>
           <p className="page-description">
-            Безпечна незмінна історія дій лише в поточній організації.
+            Хто та коли змінив ціни, склад, алергени й інші відомості про позиції.
           </p>
         </div>
         <LogoutButton />
       </div>
-      <form className="operations-filters" onSubmit={applyFilters}>
-        <label className="field-group">
-          <span>Дія</span>
-          <input
-            value={action}
-            onChange={(event) => setAction(event.target.value)}
-            maxLength={120}
-            placeholder="employee.paused"
-          />
-        </label>
-        <label className="field-group">
-          <span>Тип актора</span>
-          <select value={actorType} onChange={(event) => setActorType(event.target.value)}>
-            <option value="">Усі</option>
-            <option value="user">Користувач</option>
-            <option value="system">Система</option>
-            <option value="worker">Worker</option>
-            <option value="cron">Cron</option>
-          </select>
-        </label>
-        <button className="button button-secondary" type="submit">
-          Застосувати фільтри
-        </button>
-      </form>
       {error ? (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {loading && !items.length ? <p aria-live="polite">Завантажуємо події аудиту…</p> : null}
-      {!loading && !items.length && !error ? (
-        <div className="empty-state">
-          <h2>Подій за цими фільтрами немає</h2>
-          <p>Змініть фільтри або поверніться пізніше.</p>
+        <div role="alert">
+          <p className="inline-error">{error}</p>
+          {!items.length ? (
+            <button
+              className="button button-secondary"
+              onClick={() => {
+                setLoading(true);
+                setReload((value) => value + 1);
+              }}
+            >
+              Повторити
+            </button>
+          ) : null}
         </div>
       ) : null}
-      {items.length ? (
-        <AuditEventList
-          items={items}
-          tableLabel="Події аудиту організації"
-          mobileLabel="Мобільний список подій аудиту"
-        />
+      {loading && !items.length ? <p aria-live="polite">Завантажуємо історію…</p> : null}
+      {!loading && !items.length && !error ? (
+        <div className="empty-state">
+          <h2>Змін ще немає</h2>
+          <p>
+            Тут з’являться нові зміни позицій меню з автором та значеннями до і після редагування.
+            Давні зміни не відновлюються.
+          </p>
+        </div>
       ) : null}
+      <div className="menu-change-list">
+        {items.map((item) => (
+          <ChangeCard key={item.id} item={item} />
+        ))}
+      </div>
       {nextCursor ? (
         <button
           className="button button-secondary operations-load-more"
-          type="button"
           disabled={loading}
           onClick={() => void loadMore()}
         >
