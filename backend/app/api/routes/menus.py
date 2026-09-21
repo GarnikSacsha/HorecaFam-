@@ -11,6 +11,7 @@ from app.api.dependencies.auth import (
 )
 from app.api.dependencies.session import AuthenticatedSession, get_csrf_protected_session
 from app.core.clock import Clock
+from app.core.config import Settings
 from app.core.request_id import get_request_id
 from app.db.dependencies import get_db
 from app.schemas.menu import (
@@ -146,6 +147,7 @@ async def employee_menu_item_route(
     response_model=MenuReadinessResponse,
 )
 async def menu_version_readiness_route(
+    request: Request,
     organization_id: UUID,
     location_id: UUID,
     version_id: UUID,
@@ -157,6 +159,7 @@ async def menu_version_readiness_route(
         organization_id=organization_id,
         location_id=location_id,
         version_id=version_id,
+        app_env=cast(Settings, request.app.state.settings).app_env,
     )
 
 
@@ -189,6 +192,8 @@ async def menu_version_publish_route(
         expected_revision=payload.expected_revision,
         idempotency_key=idempotency_key.strip(),
         now=clock(),
+        demo_with_unknown_facts=payload.demo_with_unknown_facts,
+        app_env=cast(Settings, request.app.state.settings).app_env,
     )
 
 

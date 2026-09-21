@@ -457,6 +457,7 @@ export interface MenuReadinessResponse {
   location_id: string;
   revision: number;
   can_publish: boolean;
+  demo_publication_allowed?: boolean;
   blocking_errors: MenuReadinessIssue[];
   warnings: MenuReadinessIssue[];
   required_training_asset_count: number;

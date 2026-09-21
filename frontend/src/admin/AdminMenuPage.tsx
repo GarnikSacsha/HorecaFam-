@@ -32,7 +32,7 @@ function MenuItemEditor({
     item.price_minor === null ? "" : String(item.price_minor / 100),
   );
   return (
-    <article className="menu-item-card">
+    <article className="menu-item-card" id={`menu-item-${item.item_id}`} tabIndex={-1}>
       {editing ? (
         <form
           className="menu-inline-editor"
@@ -670,6 +670,33 @@ export function AdminMenuPage() {
               organizationId={organizationId}
               locationId={locationId}
               draft={draft}
+              itemNames={Object.fromEntries(items.map((item) => [item.item_id, item.name_uk]))}
+              onInspectItem={(id) => {
+                const target = document.getElementById(`menu-item-${id}`);
+                if (target) {
+                  target.focus();
+                  target.scrollIntoView({ block: "center" });
+                } else {
+                  const requestedGeneration = generation.current;
+                  void client
+                    .request<MenuItemResponse>(`${basePath}/items/${id}`)
+                    .then((item) => {
+                      if (requestedGeneration !== generation.current) return;
+                      setItems((current) =>
+                        current.some((row) => row.item_id === item.item_id)
+                          ? current
+                          : [...current, item],
+                      );
+                      requestAnimationFrame(() => {
+                        if (requestedGeneration !== generation.current) return;
+                        const loaded = document.getElementById(`menu-item-${item.item_id}`);
+                        loaded?.focus();
+                        loaded?.scrollIntoView({ block: "center" });
+                      });
+                    })
+                    .catch(() => setPageError("Не вдалося відкрити позицію. Оновіть меню."));
+                }
+              }}
               onDraftConfirmed={(confirmedDraft) => {
                 setDraft(confirmedDraft);
                 void refreshDraft(locationId, confirmedDraft.id);

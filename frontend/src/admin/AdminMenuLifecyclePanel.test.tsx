@@ -222,3 +222,92 @@ describe("Admin Menu import and publish lifecycle", () => {
     expect(typeof request?.options?.idempotencyKey).toBe("string");
   });
 });
+
+it("groups repeated readiness blockers and preserves affected item navigation", async () => {
+  const onInspectItem = vi.fn();
+  const issues = Array.from({ length: 308 }, (_, index) => ({
+    code: "FACTS_UNCONFIRMED",
+    message: "Склад і алергени ще не підтверджені.",
+    entity_type: "menu_item",
+    entity_id: `item-${index}`,
+  }));
+  const client: ApiClient = {
+    getSession: () => Promise.resolve(session),
+    request: <T,>() =>
+      Promise.resolve({ ...readiness, can_publish: false, blocking_errors: issues } as T),
+  };
+  const user = userEvent.setup();
+  render(
+    <SessionProvider client={client}>
+      <AdminMenuLifecyclePanel
+        organizationId="organization-1"
+        locationId="location-1"
+        draft={draft}
+        onDraftConfirmed={vi.fn()}
+        onPublished={vi.fn()}
+        onInspectItem={onInspectItem}
+      />
+    </SessionProvider>,
+  );
+  expect(await screen.findByText("Склад і алергени ще не підтверджені.")).toBeInTheDocument();
+  expect(screen.getAllByText("FACTS_UNCONFIRMED")).toHaveLength(1);
+  await user.click(screen.getByText("Показати позиції: 308"));
+  await user.click(screen.getByRole("button", { name: "Відкрити позицію item-0" }));
+  expect(onInspectItem).toHaveBeenCalledWith("item-0");
+  expect(screen.getByRole("button", { name: "Опублікувати меню" })).toBeDisabled();
+});
+
+it("requires explicit acknowledgement before non-production demo publication", async () => {
+  const requests: Array<{ path: string; options?: RequestOptions }> = [];
+  const onPublished = vi.fn();
+  const client: ApiClient = {
+    getSession: () => Promise.resolve(session),
+    request: <T,>(path: string, options?: RequestOptions) => {
+      requests.push({ path, options });
+      return Promise.resolve(
+        (path.endsWith("/readiness")
+          ? {
+              ...readiness,
+              can_publish: false,
+              demo_publication_allowed: true,
+              blocking_errors: [
+                {
+                  code: "FACTS_UNCONFIRMED",
+                  message: "Факти невідомі",
+                  entity_type: "menu_item",
+                  entity_id: "item-1",
+                },
+              ],
+            }
+          : {}) as T,
+      );
+    },
+  };
+  const user = userEvent.setup();
+  render(
+    <SessionProvider client={client}>
+      <AdminMenuLifecyclePanel
+        organizationId="organization-1"
+        locationId="location-1"
+        draft={draft}
+        onDraftConfirmed={vi.fn()}
+        onPublished={onPublished}
+      />
+    </SessionProvider>,
+  );
+  const acknowledge = await screen.findByRole("checkbox", {
+    name: /Демо: склад і алергени залишаються непідтвердженими/,
+  });
+  expect(screen.getByRole("button", { name: "Опублікувати демо" })).toBeDisabled();
+  await user.click(acknowledge);
+  await user.click(screen.getByRole("button", { name: "Опублікувати демо" }));
+  expect(
+    screen.getByRole("dialog", { name: "Опублікувати демо з непідтвердженими фактами?" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Опублікувати" }));
+  expect(onPublished).toHaveBeenCalledTimes(1);
+  expect(requests.find((row) => row.path.endsWith("/publish"))?.options?.body).toEqual({
+    expected_revision: 4,
+    demo_with_unknown_facts: true,
+  });
+});

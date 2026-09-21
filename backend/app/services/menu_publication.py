@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import AppEnvironment
 from app.core.errors import APIError
 from app.models import (
     AuditEvent,
@@ -84,6 +85,8 @@ async def _scoped_version(
 async def _readiness_for_version(
     db: AsyncSession,
     version: MenuVersion,
+    *,
+    app_env: AppEnvironment = "production",
 ) -> MenuReadinessResponse:
     blockers: list[MenuReadinessIssue] = []
     warnings: list[MenuReadinessIssue] = []
@@ -201,7 +204,7 @@ async def _readiness_for_version(
                         "UA_CONTENT_NOT_READY",
                         "Обов’язковий український текст не готовий.",
                         entity_type,
-                        row.id,
+                        row.menu_item_id if isinstance(row, MenuItemVersion) else row.id,
                     )
                 )
 
@@ -262,6 +265,11 @@ async def _readiness_for_version(
         location_id=version.location_id,
         revision=version.revision,
         can_publish=not blockers,
+        demo_publication_allowed=(
+            app_env in {"development", "test", "staging"}
+            and bool(blockers)
+            and all(issue.code == "FACTS_UNCONFIRMED" for issue in blockers)
+        ),
         blocking_errors=sorted(
             blockers,
             key=lambda value: (value.code, value.entity_type, str(value.entity_id or "")),
@@ -279,6 +287,7 @@ async def get_menu_readiness(
     organization_id: UUID,
     location_id: UUID,
     version_id: UUID,
+    app_env: AppEnvironment = "production",
 ) -> MenuReadinessResponse:
     version = await _scoped_version(
         db,
@@ -286,7 +295,7 @@ async def get_menu_readiness(
         location_id=location_id,
         version_id=version_id,
     )
-    return await _readiness_for_version(db, version)
+    return await _readiness_for_version(db, version, app_env=app_env)
 
 
 async def _persist_complete_diff(db: AsyncSession, version: MenuVersion) -> None:
@@ -377,10 +386,23 @@ async def publish_menu_version(
     expected_revision: int,
     idempotency_key: str,
     now: datetime,
+    demo_with_unknown_facts: bool = False,
+    app_env: AppEnvironment = "production",
 ) -> MenuPublishResponse:
-    fingerprint = request_fingerprint(
-        {"version_id": str(version_id), "expected_revision": expected_revision}
-    )
+    if demo_with_unknown_facts and app_env not in {"development", "test", "staging"}:
+        raise APIError(
+            status_code=403,
+            code="DEMO_PUBLICATION_FORBIDDEN",
+            message="Демонстраційна публікація недоступна в робочому середовищі.",
+        )
+    # Зберігаємо відбиток звичайних публікацій для сумісності вже прийнятих повторів.
+    fingerprint_payload: dict[str, object] = {
+        "version_id": str(version_id),
+        "expected_revision": expected_revision,
+    }
+    if demo_with_unknown_facts:
+        fingerprint_payload["demo_with_unknown_facts"] = True
+    fingerprint = request_fingerprint(fingerprint_payload)
     try:
         replay = await find_idempotency_replay(
             db,
@@ -405,8 +427,10 @@ async def publish_menu_version(
             return await _publication_response(db, version)
         if version.status != "draft" or version.revision != expected_revision:
             raise _revision_conflict()
-        readiness = await _readiness_for_version(db, version)
-        if not readiness.can_publish:
+        readiness = await _readiness_for_version(db, version, app_env=app_env)
+        if not readiness.can_publish and not (
+            demo_with_unknown_facts and readiness.demo_publication_allowed
+        ):
             raise APIError(
                 status_code=409,
                 code="MENU_NOT_READY",
@@ -450,6 +474,7 @@ async def publish_menu_version(
                 target_id=version.id,
                 old_values=None,
                 new_values={
+                    "demo_with_unknown_facts": demo_with_unknown_facts,
                     "location_id": str(location_id),
                     "previous_published_version_id": (
                         str(previous.id) if previous is not None else None

@@ -292,6 +292,7 @@ class MenuReadinessResponse(StrictMenuSchema):
     location_id: UUID
     revision: int = Field(ge=0)
     can_publish: bool
+    demo_publication_allowed: bool = False
     blocking_errors: list[MenuReadinessIssue]
     warnings: list[MenuReadinessIssue]
     required_training_asset_count: int = Field(ge=0)
@@ -301,6 +302,7 @@ class MenuReadinessResponse(StrictMenuSchema):
 
 class MenuPublishRequest(StrictMenuSchema):
     expected_revision: int = Field(ge=0)
+    demo_with_unknown_facts: bool = False
 
 
 class MenuDiffCounts(StrictMenuSchema):

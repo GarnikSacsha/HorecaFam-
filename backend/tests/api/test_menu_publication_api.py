@@ -281,3 +281,90 @@ async def test_not_ready_publish_has_no_partial_effect_and_different_key_race_ha
         )
         == 1
     )
+
+
+@pytest.mark.parametrize(
+    "production,missing_translation", [(False, False), (True, False), (False, True)]
+)
+async def test_explicit_demo_publication_preserves_unknown_facts_and_other_gates(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+    production: bool,
+    missing_translation: bool,
+) -> None:
+    organization_id, location_id, _, csrf = await arrange_admin(auth_client, auth_app, db_session)
+    draft = await arrange_ready_draft(
+        auth_client,
+        organization_id=organization_id,
+        location_id=location_id,
+        csrf=csrf,
+        key_prefix="demo-facts",
+    )
+    version_id = UUID(str(draft["id"]))
+    item = await db_session.scalar(
+        select(MenuItemVersion).where(MenuItemVersion.menu_version_id == version_id)
+    )
+    assert item is not None
+    item.component_data_status = "unknown"
+    if missing_translation:
+        translation = await db_session.scalar(
+            select(MenuItemVersionTranslation).where(
+                MenuItemVersionTranslation.menu_version_id == version_id,
+                MenuItemVersionTranslation.locale == "uk",
+            )
+        )
+        assert translation is not None
+        await db_session.delete(translation)
+    item_version_id = item.id
+    stable_item_id = str(item.menu_item_id)
+    await db_session.commit()
+    original_env = auth_app.state.settings.app_env
+    auth_app.state.settings.app_env = "production" if production else "test"
+    base = (
+        f"/api/v1/organizations/{organization_id}/locations/{location_id}"
+        f"/menu-versions/{version_id}"
+    )
+    try:
+        readiness = (await auth_client.get(f"{base}/readiness")).json()
+        assert readiness["can_publish"] is False
+        if missing_translation:
+            issue = next(
+                row for row in readiness["blocking_errors"] if row["code"] == "UA_CONTENT_NOT_READY"
+            )
+            assert issue["entity_id"] == stable_item_id
+        assert readiness.get("demo_publication_allowed") is (
+            not production and not missing_translation
+        )
+        ordinary = await auth_client.post(
+            f"{base}/publish",
+            headers=mutation_headers(csrf, key="demo-strict"),
+            json={"expected_revision": draft["revision"]},
+        )
+        assert ordinary.status_code == 409
+        headers = mutation_headers(csrf, key="demo-explicit")
+        payload = {"expected_revision": draft["revision"], "demo_with_unknown_facts": True}
+        response = await auth_client.post(f"{base}/publish", headers=headers, json=payload)
+        assert response.status_code == (403 if production else 409 if missing_translation else 200)
+        if not production and not missing_translation:
+            replay = await auth_client.post(f"{base}/publish", headers=headers, json=payload)
+            assert replay.status_code == 200
+            assert replay.json() == response.json()
+            mismatch = await auth_client.post(
+                f"{base}/publish", headers=headers, json={"expected_revision": draft["revision"]}
+            )
+            assert mismatch.status_code == 409
+            assert mismatch.json()["code"] == "IDEMPOTENCY_KEY_REUSED"
+        db_session.expire_all()
+        saved = await db_session.get_one(MenuItemVersion, item_version_id)
+        assert saved.component_data_status == "unknown"
+        audit = await db_session.scalar(
+            select(AuditEvent).where(AuditEvent.action == "menu_version_published")
+        )
+        if production or missing_translation:
+            assert audit is None
+        else:
+            assert audit is not None and audit.new_values is not None
+            assert audit.new_values["demo_with_unknown_facts"] is True
+    finally:
+        auth_app.state.settings.app_env = original_env

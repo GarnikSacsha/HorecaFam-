@@ -3399,6 +3399,27 @@ h1 {
     flex-direction: column;
   }
 }
+
+.readiness-entities {
+  max-height: 18rem;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+  list-style: none;
+}
+.readiness-entities .button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.demo-publication-notice {
+  padding: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 0.75rem;
+}
+.menu-item-card:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
 /* Підсумок залишається коротким; повний розбір відкривається окремою дією. */
 .exam-result-summary {
   display: flex;

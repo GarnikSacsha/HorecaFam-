@@ -7,6 +7,7 @@ import type {
   MenuImportDetail,
   MenuPublishResponse,
   MenuReadinessResponse,
+  MenuReadinessIssue,
   MenuVersionDetail,
 } from "../api/contracts";
 import { useSession } from "../session/SessionContext";
@@ -21,18 +22,70 @@ const actionCopy: Record<MenuFindingResolutionAction, string> = {
   exclude_source_record: "Виключити запис",
 };
 
+function ReadinessGroups({
+  issues,
+  onInspectItem,
+  itemNames,
+}: {
+  issues: MenuReadinessIssue[];
+  onInspectItem?: (id: string) => void;
+  itemNames: Record<string, string>;
+}) {
+  const groups = new Map<string, MenuReadinessIssue[]>();
+  for (const issue of issues) {
+    const key = JSON.stringify([issue.code, issue.message, issue.entity_type]);
+    groups.set(key, [...(groups.get(key) ?? []), issue]);
+  }
+  return (
+    <ul className="readiness-list">
+      {Array.from(groups, ([key, rows]) => (
+        <li key={key}>
+          <strong>{rows[0].code}</strong>
+          <span>{rows[0].message}</span>
+          <details>
+            <summary>Показати позиції: {rows.length}</summary>
+            <ul className="readiness-entities">
+              {rows.map((issue, index) => (
+                <li key={`${issue.entity_id}-${index}`}>
+                  {issue.entity_type === "menu_item" && issue.entity_id && onInspectItem ? (
+                    <button
+                      type="button"
+                      className="button button-quiet"
+                      onClick={() => onInspectItem(issue.entity_id!)}
+                    >
+                      Відкрити позицію {itemNames[issue.entity_id] ?? issue.entity_id}
+                    </button>
+                  ) : (
+                    <span>
+                      {issue.entity_type} {issue.entity_id ?? ""}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function AdminMenuLifecyclePanel({
   organizationId,
   locationId,
   draft,
   onDraftConfirmed,
   onPublished,
+  onInspectItem,
+  itemNames = {},
 }: {
   organizationId: string;
   locationId: string;
   draft: MenuVersionDetail;
   onDraftConfirmed: (draft: MenuVersionDetail) => void;
   onPublished: (result: MenuPublishResponse) => void;
+  onInspectItem?: (id: string) => void;
+  itemNames?: Record<string, string>;
 }) {
   const { client, session } = useSession();
   const [file, setFile] = useState<File | null>(null);
@@ -42,6 +95,14 @@ export function AdminMenuLifecyclePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [demoAcknowledgement, setDemoAcknowledgement] = useState<string | null>(null);
+  const snapshotKey = `${draft.id}:${draft.revision}`;
+  const readinessCurrent =
+    readiness?.menu_version_id === draft.id && readiness?.revision === draft.revision;
+  const demoSelected =
+    readinessCurrent &&
+    readiness?.demo_publication_allowed === true &&
+    demoAcknowledgement === snapshotKey;
   const base = `/organizations/${organizationId}/locations/${locationId}`;
 
   const loadReadiness = useCallback(async () => {
@@ -149,7 +210,7 @@ export function AdminMenuLifecyclePanel({
   };
 
   const publish = async () => {
-    if (!session || !readiness) return;
+    if (!session || !readiness || (!readiness.can_publish && !demoSelected)) return;
     setBusy(true);
     setError(null);
     try {
@@ -157,7 +218,10 @@ export function AdminMenuLifecyclePanel({
         `${base}/menu-versions/${draft.id}/publish`,
         {
           method: "POST",
-          body: { expected_revision: readiness.revision },
+          body: {
+            expected_revision: readiness.revision,
+            ...(demoSelected ? { demo_with_unknown_facts: true } : {}),
+          },
           csrfToken: session.csrf_token,
           idempotencyKey: createIdempotencyKey(),
         },
@@ -311,24 +375,39 @@ export function AdminMenuLifecyclePanel({
           </div>
           <p>Сервер повторно перевіряє український текст, факти, base version і ревізію.</p>
           {readiness?.blocking_errors?.length ? (
-            <ul className="readiness-list">
-              {readiness.blocking_errors.map((issue, index) => (
-                <li key={`${issue.code}-${issue.entity_id ?? index}`}>
-                  <strong>{issue.code}</strong>
-                  <span>{issue.message}</span>
-                </li>
-              ))}
-            </ul>
+            <ReadinessGroups
+              issues={readiness.blocking_errors}
+              onInspectItem={onInspectItem}
+              itemNames={itemNames}
+            />
           ) : null}
           {readiness?.warnings?.length ? (
             <details>
               <summary>Попередження: {readiness.warnings.length}</summary>
-              <ul className="readiness-list">
-                {readiness.warnings.map((issue, index) => (
-                  <li key={`${issue.code}-${issue.entity_id ?? index}`}>{issue.message}</li>
-                ))}
-              </ul>
+              <ReadinessGroups
+                issues={readiness.warnings}
+                onInspectItem={onInspectItem}
+                itemNames={itemNames}
+              />
             </details>
+          ) : null}
+          {readiness?.demo_publication_allowed ? (
+            <div className="demo-publication-notice">
+              <p>
+                Демо доступне лише поза робочим середовищем. Невідомі факти не стають підтвердженими
+                й не використовуються для питань про безпечність.
+              </p>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={demoSelected}
+                  onChange={(event) =>
+                    setDemoAcknowledgement(event.target.checked ? snapshotKey : null)
+                  }
+                />
+                Демо: склад і алергени залишаються непідтвердженими
+              </label>
+            </div>
           ) : null}
           <dl className="zero-applicability">
             <div>
@@ -347,17 +426,25 @@ export function AdminMenuLifecyclePanel({
           <button
             className="button button-primary"
             type="button"
-            disabled={!readiness?.can_publish || busy}
+            disabled={!readinessCurrent || (!readiness?.can_publish && !demoSelected) || busy}
             onClick={() => setPublishOpen(true)}
           >
-            Опублікувати меню
+            {readiness?.demo_publication_allowed ? "Опублікувати демо" : "Опублікувати меню"}
           </button>
         </section>
       </div>
       <ConfirmDialog
         open={publishOpen}
-        title="Опублікувати цю версію меню?"
-        description="Після підтвердження працівники цієї локації одразу бачитимуть нову версію. Попередня залишиться в історії."
+        title={
+          demoSelected
+            ? "Опублікувати демо з непідтвердженими фактами?"
+            : "Опублікувати цю версію меню?"
+        }
+        description={
+          demoSelected
+            ? "Працівники бачитимуть меню з непідтвердженими складом та алергенами. Воно не підтверджує безпечність страв. Перед робочим використанням факти потрібно перевірити за джерелом."
+            : "Після підтвердження працівники цієї локації одразу бачитимуть нову версію. Попередня залишиться в історії."
+        }
         confirmLabel="Опублікувати"
         busy={busy}
         onCancel={() => setPublishOpen(false)}
