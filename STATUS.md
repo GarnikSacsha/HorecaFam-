@@ -1,5 +1,26 @@
 # HoReCa Repository Status
 
+## CRA-234 API rollout completed — 2026-09-21
+
+The four local checkpoints below were subsequently pushed; verified GitHub main is `7d1f63d`.
+Denys then authorized the prepared CRA-234 next step. API deployment
+`e4ce2e9b-45b1-4692-a15a-e40b33790551` is SUCCESS (verified 12:45:08 UTC), from the sealed
+399-file source preserving CRA-237/238/240/271 and adding the existing recovery/body-limit fixes.
+Web remains `82941686-422a-4f05-a09d-c03ce43e26e5`; API settings and deploy manifest are unchanged.
+
+Post-delivery: eight public HTTP checks passed, zero failed/skipped. The original seven
+authenticated UI checks passed; after Denys supplied an Admin session at 14:00 UTC, the two
+remaining Admin checks also passed (nine total, zero failed/outstanding skips). Admin Results
+and answer review preserve the existing result; readiness confirms 4/4 lessons, Practice with
+27 distinct items, Final with 80 questions and an empty review queue. Certification, four completed lessons, persisted 95%/19-of-20
+Final result, lesson history, published Menu detail and Operator records remain available.
+No new attempt, content change, email, migration, worker/cron or configuration operation occurred.
+[Exact delivery, checks, limitations and recovery](docs/deployment/security-fixes-cra-234-delivery.md).
+
+CRA-234 and CRA-122 acceptance remain open. The missing-Admin-session limitation is resolved;
+wider staging/pilot gates remain separate. Denys subsequently authorized commit and push of this two-document checkpoint;
+earlier no-push/no-deployment statements below are dated history.
+
 ## Local source checkpoints completed — 2026-09-21
 
 Denys authorized the four-entry selective local commit map after reviewing the audit.
