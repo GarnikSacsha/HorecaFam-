@@ -1,12 +1,12 @@
 # Testing Context
 
-## Current routing — 2026-09-16
+## Current routing — 2026-09-21
 
-Use [STATUS](../../STATUS.md) and [the reconciliation ledger](reconciliation-2026-09-16.md) before the dated records below.
-September 15 CRA-233 delivery and September 16 authenticated UI evidence supersede the older
-worker-offline, mail-unsent and Employee-not-activated descriptions: one Employee is active;
-Menu and Training remain empty unpublished drafts with no assignments. CRA-234 is local-only.
-Accounts, activation, CORS application and completed migrations must not be repeated.
+Use [STATUS](../../STATUS.md) and [the reconciliation ledger](reconciliation-2026-09-21.md) before the dated records below.
+The leading STATUS checkpoint is the single current delivery/content/acceptance summary.
+The September 16 ledger is historical; the September 21 ledger includes subsequent delivery.
+Do not repeat accounts, activation, imports, publication, CORS or migrations from dated records.
+Consult the current checkpoint before choosing a source packet or executing a next operation.
 
 
 The dated implementation and verification sections below preserve their original evidence;
@@ -17,6 +17,16 @@ they do not override the current source/delivery/acceptance checkpoint.
 Current source/runtime/acceptance: [STATUS](../../STATUS.md).
 Commands, database safety and independent coverage gates: [.harness/TESTING](../../.harness/TESTING.md).
 
+- [September 21 reconciliation](reconciliation-2026-09-21.md): source/delivery/acceptance matrix,
+  fresh verification, completed selective commit map and bounded CRA-234 delivery preparation.
+- [CRA-271 delivery](../deployment/demo-ux-cra-271.md): deployed UX/history, recorded schema 0020,
+  preserved certification and exact source/rollback evidence.
+- [September 16 demo continuation](demo-continuation-2026-09-16.md): corrected hosted state,
+  documentation reconciliation and the ordered remaining user journey.
+- [CRA-238 menu picker](training-menu-picker-cra-238.md): implementation checks and later
+  authorized web delivery/Training publication evidence.
+- [CRA-237 demo publication](menu-demo-publication-cra-237.md): delivered Menu exception,
+  immutable unknown facts and dated checks.
 - [September 15 source reconciliation](training-source-reconciliation.md): 51 PostgreSQL,
   17 component and 3 browser tests passed in final GREEN runs; scoped static/build checks.
 - [Training audience editor](training-audience-editor.md): earlier scoped implementation evidence.

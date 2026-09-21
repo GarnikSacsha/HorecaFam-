@@ -1,5 +1,64 @@
 # HoReCa Repository Status
 
+## Local source checkpoints completed — 2026-09-21
+
+Denys authorized the four-entry selective local commit map after reviewing the audit.
+CRA-237 is committed as `25917f2`, CRA-238 as `381c288`, and CRA-240 as `62b0144`.
+This documentation checkpoint completes the fourth entry. These commits have not been pushed;
+the last verified remote baseline remains `9d68d9d`. No hosted operation or acceptance change occurred.
+
+The Prettier failure was CRLF line endings in `AdminTrainingPage.test.tsx`. Converting them to
+LF changed no text or logic; the normalized before/after contents are identical. Global Prettier,
+lint and typecheck now pass; the focused picker/editor rerun passed 16 tests, zero failed/skipped.
+The earlier same-session 125 backend, 128 frontend and six browser tests remain applicable:
+implementation content is unchanged. The sealed CRA-234 candidate is unchanged and still awaits
+separately authorized delivery. Full staging and owner acceptance remain open.
+
+See [the completed commit map and verification ledger](docs/testing/reconciliation-2026-09-21.md).
+The dated preparation section below records the state before local-commit authorization.
+
+## Source and acceptance reconciliation — CRA-122, 2026-09-21
+
+Denys authorized completing the audit follow-up that does not require his participation.
+Current source/delivery/acceptance matrix, exact future selective commit map and fresh checks:
+[September 21 reconciliation](docs/testing/reconciliation-2026-09-21.md).
+Local main, origin/main and the directly queried GitHub main match `9d68d9d`.
+CRA-237/238/240 are delivered but remain uncommitted in this checkout; CRA-234 is published in
+Git but remains excluded from the latest recorded deployed API. The index is empty.
+
+The original CRA-271 397-file source/ZIP was hash-verified. A separate 399-file candidate adds
+only CRA-234's six immutable source/test paths while preserving delivered fixes. It has not
+been uploaded or deployed. [Exact candidate and API-only delivery plan](docs/deployment/security-fixes-cra-234-delivery.md).
+
+The September 17 Employee/mobile/password-reset evidence and persisted 95% Final result supersede
+older missing-Employee-session instructions. Menu/Training and 80-question publication are already
+complete; do not repeat them. Full staging acceptance and Alexandra's venue/content sign-off
+remain distinct. Unknown composition/allergens remain unknown; the complete fact-review editor,
+new-format question publication, email digests and operational pilot gates remain separate.
+
+No product behavior, dependencies, hosted state, issue acceptance state or Git history changed
+in this reconciliation. Checks and limitations are reported in the linked ledger; earlier dated
+checkpoints below retain their original evidence and do not authorize repeating completed actions.
+Fresh verification: 125 backend tests, 128 Vitest tests and six three-viewport browser checks
+passed, zero failed/skipped in those runs. Ruff, mypy, frontend lint/types/build pass. Global
+Prettier still flags the pre-existing AdminTrainingPage.test.tsx formatting difference.
+Six Linear issues and three navigation documents were synchronized without acceptance changes.
+
+## Deployed demo UX correction — CRA-271, 2026-09-17
+
+Denys authorized deployment after commit/push through `9d68d9d`. Migration 0020 and scoped
+runtime privileges are applied; API `adffd5f0-2675-4ca7-916a-9b3f1d8627de` and web
+`82941686-422a-4f05-a09d-c03ce43e26e5` are SUCCESS. The isolated source preserves deployed
+CRA-237/238/240 and excludes unrelated CRA-234; raw Git HEAD was not deployed.
+
+Exact candidate checks: 32 backend and 22 frontend tests passed, zero failed/skipped;
+TypeScript/Vite build passed. Eight public HTTP checks passed. Live Admin history/results/
+answer review and certified Employee Home were verified; existing 95% / 19-of-20 result remains.
+No question republication, content edits, email sends, worker/cron rollout or extra Git actions.
+History starts with new manual Draft edits; smaller question option sets require separately
+reviewed publication. Earlier local-only/no-deploy wording below is historical.
+[Deployment evidence](docs/deployment/demo-ux-cra-271.md).
+
 ## Local demo UX correction — CRA-271, 2026-09-17
 
 Denys reported successful Employee/mobile/password-reset acceptance and supplied a passed
@@ -24,6 +83,95 @@ normal publication includes that existing ancestry. Unrelated dirty changes rema
 No deployment is authorized. Existing Published questions retain their old option counts;
 new-bank review/publication and email notifications remain separate actions. Evidence is in
 [CRA-271 evidence](docs/testing/demo-ux-followup-2026-09-17.md).
+
+## Reviewed question publication — CRA-239, 2026-09-17
+
+Denys authorized autonomous continuation of the audited demo plan. All 80 existing candidates
+were checked against the 308-item Published Menu v1 and published once through normal Admin
+batch approval. The UI confirmed `80` approved and an empty needs-review queue. Fresh readiness
+shows **4/4 lessons ready** (pools 10/24/24/22, minimum 5), **Practice 27/10 distinct menu items**
+and **Final 80/20 questions**, with rotation supported for all scopes. Unknown structured
+composition/allergen facts remain unknown; the demo bank covers 27 distinct source items.
+
+The existing active Employee already has Published Training v1 assigned, with 0/4 required
+lessons complete. No duplicate assignment or activation was created. Both available browser
+profiles have Admin sessions; no authenticated Employee session was available. Learning,
+Interactive, Practice, Final and Results acceptance therefore remain unexecuted, not passed.
+Next: ordinary Employee sign-in, then the assigned journey and owner walkthrough acceptance.
+
+This continuation changes operational question state and two documentation files only; no
+application code, deployment, dependency, migration, local commit or push. Earlier dated
+unapproved-question/readiness-blocker statements below are historical.
+[Review, verification and next-step evidence](docs/testing/demo-continuation-2026-09-16.md).
+
+## Hosted correction — CRA-240, 2026-09-16
+
+Owner-approved API deployment c346bfcb-8526-4c56-b399-0daed5154c75 is SUCCESS.
+Fresh Admin refresh and API logs confirm all three assessment-readiness endpoints return 200;
+public API health returns 200 (4 HTTP checks passed, 0 failed/skipped). Question Bank loading
+error is resolved. Existing 80 candidates remain unapproved; Practice 0/10 and Final 0/20 are
+blocked by insufficient published questions. No configured lesson assessments yet.
+[Delivery evidence](docs/deployment/readiness-fix-cra-240.md). Next: review existing candidates,
+then separately approved publication and Employee journey. No regeneration, Git commit or push.
+Earlier local-only and hosted-failure checkpoints below are historical.
+
+## Local correction — CRA-240, 2026-09-16
+
+Denys approved the local lesson-readiness fix after the CRA-239 failure. The PostgreSQL
+regression reproduced two null lesson UUID validation failures; the query now selects only
+interactive_training assessments. Relevant combined verification: 67 passed, 0 failed/skipped;
+Ruff format/check and strict mypy pass. [Scope, evidence and commit boundary](docs/testing/interactive-training-readiness-cra-240.md).
+No commit, staging data write or deployment. Hosted recovery remains unverified and CRA-239
+remains blocked pending separately approved delivery. Existing 80 candidates remain unreviewed;
+do not regenerate them. The preceding audit checkpoint below describes the unchanged hosted state.
+
+## Current checkpoint — after Training publication, 2026-09-16
+
+Denys requested the audit follow-up in order. This is documentation reconciliation under CRA-122;
+no new code, Git commit, push or deployment is performed by this checkpoint. The earlier audit
+inferred pending CRA-238 delivery from an outdated report. Subsequent source and browser checks
+established that delivery and Training publication had already completed in the preceding task.
+
+| Boundary | Latest evidence and limit |
+| --- | --- |
+| Menu | CRA-237 records Published Menu v1 from the 308-item snapshot. Unknown composition/allergen facts remain unknown; demo publication is not fact certification |
+| Training | Fresh authenticated `/admin/content` read shows Published v1 and no Draft. The preceding approved operation records four required lessons for Ofitsiant, 88 blocks and 40 menu-card occurrences |
+| Questions | CRA-239 generated 80 candidates, 0 existing and 0 stale. None approved/published. Subsequent lesson readiness returns HTTP 500 twice; Practice/Final reads return 200. UI retains stale pre-generation readiness, so displayed 0/0 and `ASSESSMENT_NOT_CONFIGURED` are not current backend readiness evidence |
+| Delivery | API remains the sealed CRA-237 candidate; web CRA-238 delivery is recorded successful. Fresh public HTML returns 200 and references `index-DEGtw7P2.js`, matching the CRA-238 smoke record. Worker has its separate earlier delivery |
+| Source | Local `main@bf4790c` is 32 commits ahead / 0 behind directly verified GitHub `fafec73`. CRA-237/238 source is uncommitted; CRA-234 is committed locally and excluded from those deployed packets |
+| Harness | Direct upstream main equals pinned `3eaa9586b4e09e70399c2600aa1808b18449a15d`. No rule or pin change is needed |
+| Acceptance | Existing Employee activation is recorded complete. Assignment, Employee assessment journey and Results acceptance remain unproven; no full regression or pilot acceptance is implied |
+
+Evidence: [CRA-237](docs/testing/menu-demo-publication-cra-237.md),
+[CRA-238 and hosted continuation](docs/testing/training-menu-picker-cra-238.md),
+[ordered next steps and reconciliation checks](docs/testing/demo-continuation-2026-09-16.md).
+Do not recreate lessons, reimport Menu, repeat activation or redeploy CRA-238 from old checklists.
+
+Next: reproduce and correct the bounded lesson-readiness failure before further publication;
+continue source/answer review of the existing 80 candidates without regenerating them,
+publish only reviewed questions, verify 5/10/20 readiness, inspect the existing Employee's
+assignment state, then complete Learning, Practice, Final and Results. Preserve unknown facts.
+CRA-234 delivery and GitHub publication retain their separate release boundaries. Real uploads,
+recovery-provider checks, cron acceptance, load, isolated restore, accessibility and venue UAT
+remain wider staging/pilot gates.
+
+<details>
+<summary>Earlier September 16 checkpoints — superseded by the current checkpoint</summary>
+
+## Latest delivery — CRA-237, 2026-09-16
+
+After the user confirmed the menu import, readiness exposed unknown-fact publication blockers.
+CRA-237 now implements grouped findings and explicit non-production demo publication while
+preserving unknown facts and strict ordinary/production rules. Denys subsequently approved
+the isolated API/web rollout and existing Draft demo publication. Both deployments succeeded;
+the authenticated Admin UI now shows Published Menu v1. The imported snapshot has 308 items.
+No reimport, fact confirmation, worker/cron/configuration/migration or Git operation occurred.
+CRA-234 remains excluded from the delivered candidate.
+Verification and exact source boundary: [CRA-237 report](docs/testing/menu-demo-publication-cra-237.md).
+The [fact-confirmation workflow](docs/testing/menu-fact-confirmation-workflow.md) defines the
+next source-based review process; the full confirmation editor remains future bounded work.
+The older empty-menu state below predates the user's successful Confirm-to-Draft action.
+
 
 ## Current product and source checkpoint — 2026-09-16
 
@@ -53,6 +201,8 @@ Linear receives a brief reconciliation update; automatic approval rejected the d
 metadata update. This repository ledger retains the full evidence without changing contracts.
 Photos, outputs, other worktrees and the pre-existing metadata-only question-generation mark
 are preserved. No production code was edited during this synchronization.
+
+</details>
 
 <details>
 <summary>Historical checkpoints — not current instructions</summary>

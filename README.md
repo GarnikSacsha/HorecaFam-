@@ -3,9 +3,10 @@
 HoReCa Training Platform for Bacara: Admin content and employee learning.
 
 Current progress, source versions and next acceptance steps: [STATUS](STATUS.md).
-The staging demo has one active Employee; Menu and Training are still empty unpublished drafts.
-The September 16 reconciliation separates delivered CRA-233 from local-only CRA-234 fixes;
-see [source, checks and commit boundaries](docs/testing/reconciliation-2026-09-16.md).
+Use that single checkpoint for delivered versions, content readiness and the next user journey.
+Detailed implementation and delivery evidence is indexed in [testing](docs/testing/README.md).
+The [September 21 reconciliation](docs/testing/reconciliation-2026-09-21.md) separates published
+source, delivered fixes, completed local checkpoints and remaining owner acceptance.
 
 ## Start here
 
@@ -21,7 +22,7 @@ Repository documentation summarizes verified local state and routes agents to th
 ## Repository map
 
 - [`backend/`](backend): Python 3.12, FastAPI, SQLAlchemy 2, asyncpg, and Alembic-managed runtime;
-  the current published source head is `0019_auth_security_budgets`.
+  the current published schema head is `0020_menu_change_history`.
 - [`frontend/`](frontend): React 19, TypeScript, Vite, Tailwind CSS, Vitest, Testing Library, and
   Playwright, including local CRA-77 security, lifecycle, audit and operator interfaces.
 - [`docs/architecture/`](docs/architecture): verified implementation architecture.

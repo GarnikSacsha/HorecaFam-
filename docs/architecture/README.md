@@ -3,10 +3,10 @@
 ## Current routing — 2026-09-16
 
 Use [STATUS](../../STATUS.md) and [the reconciliation ledger](../testing/reconciliation-2026-09-16.md) before the dated records below.
-September 15 CRA-233 delivery and September 16 authenticated UI evidence supersede the older
-worker-offline, mail-unsent and Employee-not-activated descriptions: one Employee is active;
-Menu and Training remain empty unpublished drafts with no assignments. CRA-234 is local-only.
-Accounts, activation, CORS application and completed migrations must not be repeated.
+The leading STATUS checkpoint is the single current delivery/content/acceptance summary.
+The reconciliation ledger below predates subsequent CRA-237/238 delivery and Training publication.
+Do not repeat accounts, activation, imports, publication, CORS or migrations from dated records.
+Consult the current checkpoint before choosing a source packet or executing a next operation.
 
 
 The dated implementation and verification sections below preserve their original evidence;

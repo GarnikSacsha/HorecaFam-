@@ -2,12 +2,13 @@
 
 ## Current context routing
 
-September 16: authenticated staging Dashboard confirms one active Employee and no assignments.
-Menu has zero items; Training has zero lessons, no selected Waiter audience and no Published
-Menu dependency. Invitation delivery and activation are completed evidence, not next tasks.
-See [the reconciliation ledger](docs/testing/reconciliation-2026-09-16.md) for local commits,
-deployed packet, dated checks and exclusions. CRA-234 remains local-only. Do not execute old
-bootstrap, activation, resend or migration instructions from the historical sections below.
+Use the leading [STATUS checkpoint](STATUS.md) for current delivery, content and acceptance.
+The [September 21 reconciliation](docs/testing/reconciliation-2026-09-21.md) records current
+source/delivery differences, verification and remaining boundaries. The
+[September 16 reconciliation](docs/testing/reconciliation-2026-09-16.md) retains earlier commit
+evidence; implementation and delivery are indexed in [testing](docs/testing/README.md).
+Do not execute bootstrap, activation, resend, import or publication instructions from historical
+sections without checking the current checkpoint and the existing records first.
 
 Use [STATUS](STATUS.md) for the single current source/runtime/acceptance checkpoint.
 Use [AGENTS](AGENTS.md) and [.harness/START-HERE](.harness/START-HERE.md) for working rules;
