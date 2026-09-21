@@ -970,6 +970,7 @@ async def get_interactive_training_readiness(
         (
             await db.execute(
                 select(AssessmentVersion, AssessmentReadiness)
+                .join(Assessment, Assessment.id == AssessmentVersion.assessment_id)
                 .join(
                     AssessmentReadiness,
                     AssessmentReadiness.assessment_version_id == AssessmentVersion.id,
@@ -977,6 +978,7 @@ async def get_interactive_training_readiness(
                 .where(
                     AssessmentVersion.training_version_id == training_version_id,
                     AssessmentVersion.status == "published",
+                    Assessment.assessment_type == "interactive_training",
                 )
                 .order_by(AssessmentVersion.lesson_version_id)
             )
