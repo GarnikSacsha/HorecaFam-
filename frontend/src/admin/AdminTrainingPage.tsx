@@ -19,6 +19,7 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusPill } from "../ui/States";
 import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
 import { AdminTrainingAudiencePanel } from "./AdminTrainingAudiencePanel";
+import { AdminTrainingMenuPicker } from "./AdminTrainingMenuPicker";
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 
@@ -151,6 +152,7 @@ export function AdminTrainingPage() {
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonMinutes, setLessonMinutes] = useState("");
   const [blockType, setBlockType] = useState<TrainingContentBlockType>("text");
+  const [menuSelection, setMenuSelection] = useState<{ scope: string; id: string } | null>(null);
   const [blockText, setBlockText] = useState("");
   const [blockSecondaryText, setBlockSecondaryText] = useState("");
   const [assetFile, setAssetFile] = useState<File | null>(null);
@@ -166,6 +168,9 @@ export function AdminTrainingPage() {
   );
   const selectedLesson =
     lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0] ?? null;
+
+  const menuScope = `${organizationId}:${locationId}:${draft?.id}:${draft?.menu_version_id}:${selectedLesson?.id}`;
+  const selectedMenuItem = menuSelection?.scope === menuScope ? menuSelection.id : "";
 
   const applyDetail = useCallback((detail: TrainingVersionDetail) => {
     setDraft(detail);
@@ -417,7 +422,9 @@ export function AdminTrainingPage() {
     if (blockType === "callout")
       return { tone: "info", title_uk: blockSecondaryText || null, text_uk: blockText };
     if (blockType === "menu_item_card")
-      return { menu_item_id: blockText.trim(), note_uk: blockSecondaryText || null };
+      return selectedMenuItem
+        ? { menu_item_id: selectedMenuItem, note_uk: blockSecondaryText || null }
+        : null;
     if (blockType === "image")
       return uploadedAsset
         ? { asset_id: uploadedAsset.id, alt_uk: blockText, caption_uk: blockSecondaryText || null }
@@ -438,6 +445,7 @@ export function AdminTrainingPage() {
         body: { expected_revision: draft.revision, type: blockType, payload },
         csrfToken: session.csrf_token,
       });
+      setMenuSelection(null);
       setBlockText("");
       setBlockSecondaryText("");
     });
@@ -869,23 +877,36 @@ export function AdminTrainingPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="field-group training-grow">
-                    <label htmlFor="block-text">
-                      {blockType === "external_video"
-                        ? "YouTube URL"
-                        : blockType === "menu_item_card"
-                          ? "ID позиції меню"
+                  {blockType === "menu_item_card" ? (
+                    draft.menu_version_id ? (
+                      <AdminTrainingMenuPicker
+                        key={menuScope}
+                        client={client}
+                        base={`/organizations/${organizationId}/locations/${locationId}/menu-versions/${draft.menu_version_id}`}
+                        value={selectedMenuItem}
+                        disabled={busy}
+                        onChange={(id) => setMenuSelection({ scope: menuScope, id })}
+                      />
+                    ) : (
+                      <p>Спочатку прив’яжіть опубліковане меню.</p>
+                    )
+                  ) : (
+                    <div className="field-group training-grow">
+                      <label htmlFor="block-text">
+                        {blockType === "external_video"
+                          ? "YouTube URL"
                           : blockType === "list"
                             ? "Пункти, кожен з нового рядка"
                             : "Основний текст українською"}
-                    </label>
-                    <textarea
-                      id="block-text"
-                      value={blockText}
-                      onChange={(event) => setBlockText(event.target.value)}
-                      required
-                    />
-                  </div>
+                      </label>
+                      <textarea
+                        id="block-text"
+                        value={blockText}
+                        onChange={(event) => setBlockText(event.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
                   {(blockType === "callout" ||
                     blockType === "menu_item_card" ||
                     blockType === "image" ||
@@ -942,7 +963,11 @@ export function AdminTrainingPage() {
                       </span>
                     </fieldset>
                   ) : null}
-                  <button className="button button-primary" type="submit" disabled={busy}>
+                  <button
+                    className="button button-primary"
+                    type="submit"
+                    disabled={busy || (blockType === "menu_item_card" && !selectedMenuItem)}
+                  >
                     Додати блок
                   </button>
                 </form>

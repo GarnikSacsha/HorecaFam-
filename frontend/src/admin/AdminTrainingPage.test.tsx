@@ -601,3 +601,62 @@ describe("Admin Training workspace", () => {
     expect(screen.getByRole("button", { name: "Оновити дані" })).toBeEnabled();
   });
 });
+
+it("selects a menu card by name from the bound menu", async () => {
+  const requests: Array<{ path: string; options?: RequestOptions }> = [];
+  const fallback = trainingClient(requests);
+  const client: ApiClient = {
+    ...fallback,
+    request: <T,>(path: string, options?: RequestOptions) => {
+      if (path.includes("/menu-versions/menu-version-1")) {
+        requests.push({ path, options });
+        return Promise.resolve(
+          (path.includes("/items?")
+            ? {
+                revision: 1,
+                next_cursor: null,
+                items: [
+                  {
+                    item_id: "chosen-item",
+                    version_id: "menu-version-1",
+                    category_id: "cat",
+                    name_uk: "Суп дня",
+                    source_item_key: "dish-1",
+                  },
+                ],
+              }
+            : {
+                revision: 1,
+                sections: [{ name_uk: "Їжа", categories: [{ id: "cat", name_uk: "Супи" }] }],
+              }) as T,
+        );
+      }
+      return fallback.request<T>(path, options);
+    },
+  };
+  render(
+    <SessionProvider client={client}>
+      <MemoryRouter>
+        <AdminTrainingPage />
+      </MemoryRouter>
+    </SessionProvider>,
+  );
+  const user = userEvent.setup();
+  await screen.findByRole("heading", { name: "Супи" });
+  await user.selectOptions(screen.getByLabelText("Тип блока"), "menu_item_card");
+  expect(screen.queryByLabelText("ID позиції меню")).not.toBeInTheDocument();
+  await user.selectOptions(await screen.findByLabelText("Позиція меню"), "chosen-item");
+  await user.click(screen.getByRole("button", { name: "Салати0 блоків" }));
+  expect(screen.getByRole("button", { name: "Додати блок" })).toBeDisabled();
+  await screen.findByRole("option", { name: /Суп дня/ });
+  await user.selectOptions(screen.getByLabelText("Позиція меню"), "chosen-item");
+  await user.click(screen.getByRole("button", { name: "Додати блок" }));
+  expect(
+    requests.find((r) => r.options?.method === "POST" && r.path.endsWith("/content-blocks"))
+      ?.options?.body,
+  ).toEqual({
+    expected_revision: 4,
+    type: "menu_item_card",
+    payload: { menu_item_id: "chosen-item", note_uk: null },
+  });
+});
