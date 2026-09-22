@@ -1,5 +1,70 @@
 # HoReCa Repository Status
 
+## CRA-272 authorized local checkpoints — 2026-09-22
+
+Denys explicitly approved the two-entry local commit map. Implementation and tests are
+committed as `4504cc0` on `codex/cra-272-authored-final`, branched from `4b45108` in the
+isolated worktree. This three-document checkpoint records the second mapped outcome.
+The original main checkout remains unchanged. Earlier uncommitted/approval-pending
+statements below describe preparation before this authorization.
+
+Before the code commit, all 12 staged paths matched the checked worktree and sealed
+405-file candidate; manifest revalidation and staged diff checks passed. The previous
+52 passed / 0 failed / 0 skipped gate, Ruff and mypy apply to unchanged code; tests were
+not rerun just to commit it. Documentation links, exact inventory and diff hygiene are
+checked separately. Candidate SHA-256 remains unchanged.
+
+No push, PR, deployment, Linear write or content publication. Photos and outputs remain
+untracked and excluded. Next: separately authorize remote publication/delivery as needed,
+with a fresh remote/live baseline check; actual source/lesson UUID mapping and content
+operations retain their separate gates. CRA-272 remains In Progress.
+
+## CRA-272 delivery preparation and rollover regression — 2026-09-22
+
+Fresh worktree review found that curated rotation forgot the previous completed exam
+when an AssessmentVersion changed. A real PostgreSQL regression reproduced repeated
+questions; selection now avoids the previous completed attempt across the stable
+Assessment's versions while usage frequency remains version-scoped. Historical results,
+certification, legacy selection and active snapshots retain their contracts.
+
+Fresh final gate: **52 passed, 0 failed, 0 skipped**; Ruff check/format (273 files),
+mypy (250 source files), and diff whitespace checks pass. Earlier same-session 51-test
+baseline and 1-test GREEN overlap; prior-task 97/45/26 results are not new-session runs.
+
+Sealed local API candidate has 405 files, preserving the already delivered CRA-234
+baseline with exactly 12 CRA-272 overlay paths. A separate private local package holds
+60 authoring drafts, 240 draft rationales and a fail-closed compiler; all 60 real
+application UUID/Published lesson bindings remain unresolved. No content is published.
+
+[Exact candidate identity, checks, two-commit map, content order and recovery](docs/deployment/authored-final-exam-cra-272.md).
+Only final_exam_attempts.py and the authored integration regression were changed beyond
+the inherited implementation, plus these reports. No Git index change, commit, push,
+hosted mutation or deployment. Direct GitHub baseline read failed due to the local
+network proxy; hosted baseline needs a fresh check before delivery. CRA-272 stays
+In Progress. Next approval-ready step: the two selective local commits in the report.
+
+## CRA-272 local authored questions and Final quotas — 2026-09-22
+
+Denys authorized the local API extension and implementation on September 21.
+Source-linked authored description candidates now use existing Admin review; approved
+authored questions enter Final only through explicit creation of a curated AssessmentVersion.
+New Final versions use category-bound quotas 10/4/3/3, per-bucket readiness, rotation based
+on previous attempts and usage, and quota-preserving critical-retake replacement.
+Old active attempts resume their snapshots; historical results and certification survive
+new-version creation. The existing 70% pass threshold and final-only feedback are unchanged.
+
+Checks: 97-test adjacent regression, 45-test focused follow-up, and 26-test final publication-
+boundary gate all passed with zero failures/skips in their final runs; suites overlap.
+An additional expanded lifecycle rerun passed and preserves 95% plus certification after
+another version is created. Ruff check/format (273 files), mypy (250 source files), and diff
+whitespace checks pass. Initial RED/setup failures and exact scope are recorded in
+[the verification and selective commit map](docs/testing/authored-final-exam.md).
+
+No dependency, migration, frontend change, commit, push, hosted write or deployment.
+The reviewed 60-question content remains a local package; current published exam is unchanged.
+Delivery and source/lesson mapping, candidate review, and explicit new-bank publication are
+separate next steps. CRA-272 remains In Progress pending owner acceptance/delivery decisions.
+
 ## CRA-234 API rollout completed — 2026-09-21
 
 The four local checkpoints below were subsequently pushed; verified GitHub main is `7d1f63d`.
