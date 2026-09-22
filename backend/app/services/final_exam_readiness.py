@@ -21,7 +21,7 @@ from app.models import (
     QuestionVersion,
     TrainingVersion,
 )
-from app.schemas.assessment import FinalExamReadinessResponse
+from app.schemas.assessment import FinalExamQuotaPolicy, FinalExamReadinessResponse
 
 FINAL_EXAM_QUESTION_COUNT = 20
 FINAL_EXAM_ROTATION_TARGET = 40
@@ -31,6 +31,7 @@ SUPPORTED_FINAL_EXAM_FAMILIES = {
     "menu.components.missing",
     "menu.allergens",
     "menu.description",
+    "menu.description.authored",
 }
 
 
@@ -64,9 +65,38 @@ def select_final_exam_questions(
     candidates: list[FinalExamPoolCandidate],
     *,
     previous_question_ids: list[UUID],
+    policy: FinalExamQuotaPolicy | None = None,
+    question_usage: dict[UUID, int] | None = None,
+) -> list[FinalExamPoolCandidate]:
+    if policy is not None:
+        allowed = set(policy.question_version_ids)
+        result: list[FinalExamPoolCandidate] = []
+        for bucket in policy.buckets:
+            categories = {str(value) for value in bucket.category_ids}
+            pool = list(
+                {
+                    row.question_version_id: row
+                    for row in candidates
+                    if row.section_key in categories and row.question_version_id in allowed
+                }.values()
+            )
+            if len(pool) < bucket.count:
+                return []
+            result.extend(
+                _select_questions(pool, previous_question_ids, bucket.count, question_usage)
+            )
+        return result
+    return _select_questions(candidates, previous_question_ids, FINAL_EXAM_QUESTION_COUNT)
+
+
+def _select_questions(
+    candidates: list[FinalExamPoolCandidate],
+    previous_question_ids: list[UUID],
+    count: int,
+    question_usage: dict[UUID, int] | None = None,
 ) -> list[FinalExamPoolCandidate]:
     unique = {row.question_version_id: row for row in candidates}
-    if len(unique) < FINAL_EXAM_QUESTION_COUNT:
+    if len(unique) < count:
         return []
 
     previous = set(previous_question_ids)
@@ -77,11 +107,12 @@ def select_final_exam_questions(
     used_families: set[str] = set()
     used_mechanics: set[str] = set()
 
-    while remaining and len(selected) < FINAL_EXAM_QUESTION_COUNT:
+    while remaining and len(selected) < count:
 
-        def rank(row: FinalExamPoolCandidate) -> tuple[int, int, int, int, int, int, str]:
+        def rank(row: FinalExamPoolCandidate) -> tuple[int, int, int, int, int, int, int, str]:
             return (
                 0 if row.question_version_id not in previous else 1,
+                (question_usage or {}).get(row.question_version_id, 0),
                 0 if row.menu_item_key not in used_items else 1,
                 0 if row.section_key not in used_sections else 1,
                 0 if row.family not in used_families else 1,
@@ -98,6 +129,67 @@ def select_final_exam_questions(
         used_families.add(chosen.family)
         used_mechanics.add(chosen.mechanic)
     return selected
+
+
+def quota_policy(configuration: dict[str, object]) -> FinalExamQuotaPolicy | None:
+    if configuration.get("strategy") == "curated_category_quotas_v1":
+        return FinalExamQuotaPolicy.model_validate(configuration)
+    return None
+
+
+def required_question_replacement_index(
+    selected: list[FinalExamPoolCandidate],
+    required: FinalExamPoolCandidate,
+    policy: FinalExamQuotaPolicy | None,
+) -> int:
+    if policy is None:
+        return len(selected) - 1
+    bucket = next(
+        (
+            bucket
+            for bucket in policy.buckets
+            if required.section_key in {str(value) for value in bucket.category_ids}
+        ),
+        None,
+    )
+    return next(
+        (
+            index
+            for index in reversed(range(len(selected)))
+            if bucket is not None
+            and selected[index].section_key in {str(value) for value in bucket.category_ids}
+        ),
+        -1,
+    )
+
+
+def quota_readiness(
+    candidates: list[FinalExamPoolCandidate],
+    policy: FinalExamQuotaPolicy,
+) -> tuple[str, bool, list[str], list[str]]:
+    allowed = set(policy.question_version_ids)
+    counts = [
+        (
+            bucket.count,
+            len(
+                {
+                    row.question_version_id
+                    for row in candidates
+                    if row.question_version_id in allowed
+                    and row.section_key in {str(value) for value in bucket.category_ids}
+                }
+            ),
+        )
+        for bucket in policy.buckets
+    ]
+    blocked = any(available < required for required, available in counts)
+    rotation = all(available >= required * 2 for required, available in counts)
+    return (
+        "blocked" if blocked else "ready" if rotation else "warning",
+        rotation,
+        ["INSUFFICIENT_BUCKET_POOL"] if blocked else [],
+        ["REPEAT_ROTATION_LIMITED"] if not blocked and not rotation else [],
+    )
 
 
 def _not_found() -> APIError:
@@ -144,11 +236,14 @@ async def ensure_final_exam_readiness(
         await db.flush()
 
     version = await db.scalar(
-        select(AssessmentVersion).where(
+        select(AssessmentVersion)
+        .where(
             AssessmentVersion.assessment_id == assessment.id,
             AssessmentVersion.training_version_id == training_version_id,
             AssessmentVersion.status == "published",
         )
+        .order_by(AssessmentVersion.version_number.desc())
+        .limit(1)
     )
     if version is None:
         version_number = (
@@ -181,6 +276,13 @@ async def ensure_final_exam_readiness(
         db.add(version)
         await db.flush()
 
+    policy = quota_policy(version.sampling_configuration)
+    # Авторський банк потрапляє у Final лише через явне створення нової версії.
+    families = (
+        SUPPORTED_FINAL_EXAM_FAMILIES
+        if policy is not None
+        else (SUPPORTED_FINAL_EXAM_FAMILIES - {"menu.description.authored"})
+    )
     eligible_rows = list(
         (
             await db.execute(
@@ -209,7 +311,7 @@ async def ensure_final_exam_readiness(
                     QuestionVersion.organization_id == organization_id,
                     QuestionVersion.location_id == location_id,
                     QuestionVersion.status == "published",
-                    QuestionGenerationRule.code.in_(SUPPORTED_FINAL_EXAM_FAMILIES),
+                    QuestionGenerationRule.code.in_(families),
                 )
             )
         ).all()
@@ -224,6 +326,8 @@ async def ensure_final_exam_readiness(
     }
     eligible: dict[UUID, tuple[QuestionVersion, UUID, UUID, str]] = {}
     for question, menu_item_id, category_id, family in eligible_rows:
+        if policy is not None and question.id not in policy.question_version_ids:
+            continue
         eligible[question.id] = (question, menu_item_id, category_id, family)
         pool = current_pools.get(question.id)
         values = {
@@ -264,13 +368,29 @@ async def ensure_final_exam_readiness(
     status, rotation_supported, blocking_codes, warning_codes = derive_final_exam_readiness_state(
         len(candidates)
     )
-    evidence = {
+    if policy is not None:
+        status, rotation_supported, blocking_codes, warning_codes = quota_readiness(
+            candidates, policy
+        )
+    evidence: dict[str, object] = {
         "distinct_question_count": len(candidates),
         "distinct_menu_item_count": len({row.menu_item_key for row in candidates}),
         "section_count": len({row.section_key for row in candidates}),
         "families": sorted({row.family for row in candidates}),
         "mechanics": sorted({row.mechanic for row in candidates}),
     }
+    if policy is not None:
+        evidence["buckets"] = [
+            {
+                "key": bucket.key,
+                "required_count": bucket.count,
+                "eligible_count": sum(
+                    row.section_key in {str(value) for value in bucket.category_ids}
+                    for row in candidates
+                ),
+            }
+            for bucket in policy.buckets
+        ]
     basis = json.dumps(
         [
             {
@@ -284,6 +404,8 @@ async def ensure_final_exam_readiness(
         sort_keys=True,
         separators=(",", ":"),
     ).encode()
+    if policy is not None:
+        basis += policy.model_dump_json().encode()
     values = {
         "status": status,
         "eligible_count": len(candidates),
@@ -314,6 +436,7 @@ async def get_final_exam_readiness(
     organization_id: UUID,
     location_id: UUID,
     training_version_id: UUID,
+    assessment_version_id: UUID | None = None,
 ) -> FinalExamReadinessResponse:
     training_version = await db.scalar(
         select(TrainingVersion).where(
@@ -334,6 +457,7 @@ async def get_final_exam_readiness(
             )
             .where(
                 AssessmentVersion.training_version_id == training_version_id,
+                *([AssessmentVersion.id == assessment_version_id] if assessment_version_id else []),
                 AssessmentVersion.status == "published",
                 Assessment.assessment_type == "menu_final_exam",
             )

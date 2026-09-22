@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Literal, cast
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
@@ -48,6 +48,8 @@ from app.services.employee_follow_up import (
 )
 from app.services.final_exam_readiness import (
     FinalExamPoolCandidate,
+    quota_policy,
+    required_question_replacement_index,
     select_final_exam_questions,
 )
 from app.services.idempotency import (
@@ -232,6 +234,8 @@ async def _ready_version(
                 AssessmentVersion.training_version_id == assignment.training_version_id,
                 AssessmentVersion.status == "published",
             )
+            .order_by(AssessmentVersion.version_number.desc())
+            .limit(1)
         )
     ).first()
     return None if row is None else row._tuple()
@@ -320,10 +324,14 @@ async def get_final_exam_summary(
     active_attempt = None
     if ready is not None:
         active = await db.scalar(
-            select(AssessmentAttempt).where(
+            select(AssessmentAttempt)
+            .join(
+                AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id
+            )
+            .where(
                 AssessmentAttempt.employee_profile_id == employee_profile_id,
                 AssessmentAttempt.assignment_id == assignment.id,
-                AssessmentAttempt.assessment_version_id == ready[1].id,
+                AssessmentVersion.assessment_id == ready[0].id,
                 AssessmentAttempt.status == "in_progress",
             )
         )
@@ -487,6 +495,42 @@ async def start_or_resume_final_exam_attempt(
         raise _not_found()
     if assignment.status != "completed":
         raise _error(409, "TRAINING_INCOMPLETE", "Спочатку завершіть навчання.")
+    # Готовність нового банку не скасовує вже зафіксовану спробу старої версії.
+    active = await db.scalar(
+        select(AssessmentAttempt)
+        .join(AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id)
+        .join(Assessment, Assessment.id == AssessmentVersion.assessment_id)
+        .where(
+            AssessmentAttempt.employee_profile_id == employee_profile_id,
+            AssessmentAttempt.assignment_id == assignment.id,
+            Assessment.assessment_type == "menu_final_exam",
+            AssessmentAttempt.status == "in_progress",
+        )
+        .with_for_update(of=AssessmentAttempt)
+    )
+    if active is not None and now >= active.expires_at:
+        active.status = "expired"
+        active.invalidation_code = "INACTIVITY_TIMEOUT"
+        await db.flush()
+    elif active is not None:
+        await reserve_idempotency(
+            db,
+            organization_id=organization_id,
+            actor_user_id=actor_user_id,
+            action="final_exam_attempt_start",
+            key=idempotency_key,
+            fingerprint=fingerprint,
+            resource_type="assessment_attempt",
+            resource_id=active.id,
+            response_status=200,
+            now=now,
+        )
+        await db.commit()
+        return FinalExamAttemptStartResponse(
+            attempt=await _attempt_response(db, active, session_id=session_id),
+            created=False,
+            replayed=False,
+        )
     ready = await _ready_version(db, assignment)
     if ready is None or ready[2].status not in {"ready", "warning"}:
         raise _error(409, "ASSESSMENT_NOT_READY", "Фінальний іспит ще готується.")
@@ -522,10 +566,12 @@ async def start_or_resume_final_exam_attempt(
             raise _error(409, "PRACTICE_ELIGIBILITY_REQUIRED", "Спочатку пройдіть Practice.")
     version = ready[1]
     attempt = await db.scalar(
-        select(AssessmentAttempt).where(
+        select(AssessmentAttempt)
+        .join(AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id)
+        .where(
             AssessmentAttempt.employee_profile_id == employee_profile_id,
             AssessmentAttempt.assignment_id == assignment.id,
-            AssessmentAttempt.assessment_version_id == version.id,
+            AssessmentVersion.assessment_id == ready[0].id,
             AssessmentAttempt.status == "in_progress",
         )
     )
@@ -536,6 +582,26 @@ async def start_or_resume_final_exam_attempt(
         await db.flush()
         attempt = None
     if attempt is None:
+        usage = (
+            dict(
+                (
+                    await db.execute(
+                        select(AttemptQuestion.question_version_id, func.count())
+                        .join(AssessmentAttempt, AssessmentAttempt.id == AttemptQuestion.attempt_id)
+                        .where(
+                            AssessmentAttempt.employee_profile_id == employee_profile_id,
+                            AssessmentAttempt.assessment_version_id == version.id,
+                            AssessmentAttempt.status == "completed",
+                        )
+                        .group_by(AttemptQuestion.question_version_id)
+                    )
+                )
+                .tuples()
+                .all()
+            )
+            if quota_policy(version.sampling_configuration) is not None
+            else {}
+        )
         rows = list(
             (
                 await db.execute(
@@ -576,6 +642,35 @@ async def start_or_resume_final_exam_attempt(
             question.id: (pool, question, menu_item_id, category_id, family)
             for pool, question, menu_item_id, category_id, family in rows
         }
+        policy = quota_policy(version.sampling_configuration)
+        previous_ids = await _previous_order(
+            db,
+            employee_profile_id=employee_profile_id,
+            assessment_version_id=version.id,
+        )
+        if policy is not None:
+            # Зміна версії не обнуляє пріоритет уникнення попередньої спроби цього іспиту.
+            previous_attempt_id = await db.scalar(
+                select(AssessmentAttempt.id)
+                .join(
+                    AssessmentVersion,
+                    AssessmentVersion.id == AssessmentAttempt.assessment_version_id,
+                )
+                .where(
+                    AssessmentAttempt.employee_profile_id == employee_profile_id,
+                    AssessmentVersion.assessment_id == version.assessment_id,
+                    AssessmentAttempt.status == "completed",
+                )
+                .order_by(AssessmentAttempt.completed_at.desc(), AssessmentAttempt.id.desc())
+                .limit(1)
+            )
+            previous_ids = list(
+                await db.scalars(
+                    select(AttemptQuestion.question_version_id).where(
+                        AttemptQuestion.attempt_id == previous_attempt_id
+                    )
+                )
+            )
         selected = select_final_exam_questions(
             [
                 FinalExamPoolCandidate(
@@ -588,11 +683,9 @@ async def start_or_resume_final_exam_attempt(
                 )
                 for _pool, question, menu_item_id, category_id, family in by_id.values()
             ],
-            previous_question_ids=await _previous_order(
-                db,
-                employee_profile_id=employee_profile_id,
-                assessment_version_id=version.id,
-            ),
+            previous_question_ids=previous_ids,
+            policy=policy,
+            question_usage=usage,
         )
         if authorized_requirement is not None and authorized_requirement.reason == "critical_error":
             source_identity = (
@@ -664,7 +757,14 @@ async def start_or_resume_final_exam_attempt(
                     ) in by_id.values()
                     if question.id == replacement_id
                 )
-                selected[-1] = replacement
+                replace_index = required_question_replacement_index(
+                    selected, replacement, quota_policy(version.sampling_configuration)
+                )
+                if replace_index < 0:
+                    raise _error(
+                        409, "RETAKE_TARGET_UNAVAILABLE", "Ціль не відповідає квотам іспиту."
+                    )
+                selected[replace_index] = replacement
         if len(selected) != 20:
             raise _error(409, "ASSESSMENT_NOT_READY", "Фінальний іспит ще готується.")
         attempt = AssessmentAttempt(

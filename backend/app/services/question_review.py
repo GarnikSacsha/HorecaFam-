@@ -193,7 +193,13 @@ async def ensure_practice_readiness(
                     QuestionCandidate.training_version_id == training_version_id,
                     QuestionVersion.status == "published",
                     QuestionGenerationRule.code.in_(
-                        ["menu.components", "menu.allergens", "menu.category", "menu.description"]
+                        [
+                            "menu.components",
+                            "menu.allergens",
+                            "menu.category",
+                            "menu.description",
+                            "menu.description.authored",
+                        ]
                     ),
                 )
             )
@@ -475,6 +481,7 @@ def _validated_payloads(
         edited.prompt_payload.options != current_prompt.options
         or edited.prompt_payload.selection_mode != current_prompt.selection_mode
         or edited.answer_payload != current_answer
+        or edited.explanation_payload.authoring != current_explanation.authoring
     ):
         raise _provenance_invalid()
     return edited.prompt_payload, edited.answer_payload, edited.explanation_payload
