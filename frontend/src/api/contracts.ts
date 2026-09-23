@@ -806,6 +806,7 @@ export interface EmployeeTrainingContentBlock {
   payload: Record<string, unknown>;
   content_locale: "uk" | "en";
   translation_fallback: boolean;
+  menu_item?: EmployeeMenuItemSummary | null;
 }
 
 export interface EmployeeTrainingHomeResponse {
@@ -823,6 +824,7 @@ export interface EmployeeTrainingModuleDetail extends EmployeeTrainingModuleSumm
 }
 
 export interface EmployeeTrainingLessonDetail extends EmployeeTrainingLessonSummary {
+  module_id?: string;
   content_blocks: EmployeeTrainingContentBlock[];
 }
 

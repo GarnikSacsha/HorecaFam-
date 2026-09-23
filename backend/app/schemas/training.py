@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.enums import ContentBlockType
+from app.schemas.menu import EmployeeMenuItemSummary
 
 YOUTUBE_VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
@@ -509,6 +510,7 @@ class EmployeeTrainingContentBlock(StrictTrainingSchema):
     payload: dict[str, object]
     content_locale: Literal["uk", "en"]
     translation_fallback: bool
+    menu_item: EmployeeMenuItemSummary | None = None
 
 
 class EmployeeTrainingHomeResponse(StrictTrainingSchema):
@@ -528,6 +530,7 @@ class EmployeeTrainingModuleDetail(EmployeeTrainingModuleSummary):
 
 
 class EmployeeTrainingLessonDetail(EmployeeTrainingLessonSummary):
+    module_id: UUID
     content_blocks: list[EmployeeTrainingContentBlock]
 
 

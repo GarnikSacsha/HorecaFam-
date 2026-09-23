@@ -23,6 +23,7 @@ from app.models import (
     MenuVersionCategoryTranslation,
     MenuVersionSection,
     MenuVersionSectionTranslation,
+    TrainingVersionMenuDependency,
 )
 from app.schemas.menu import (
     EmployeeMenuAllergen,
@@ -253,6 +254,33 @@ def _item_statement(version_id: UUID, preferred_locale: str) -> Any:
         )
         .where(MenuItemVersion.menu_version_id == version_id)
     )
+
+
+async def training_menu_summaries(
+    db: AsyncSession,
+    *,
+    training_version_id: UUID,
+    item_ids: set[UUID],
+    preferred_locale: str,
+) -> dict[UUID, EmployeeMenuItemSummary]:
+    # Виклик дозволений лише після перевірки призначення; читаємо його точну залежність.
+    if not item_ids:
+        return {}
+    version_id = await db.scalar(
+        select(TrainingVersionMenuDependency.menu_version_id).where(
+            TrainingVersionMenuDependency.training_version_id == training_version_id
+        )
+    )
+    if version_id is None:
+        return {}
+    rows = (
+        await db.execute(
+            _item_statement(version_id, preferred_locale).where(
+                MenuItemVersion.menu_item_id.in_(item_ids)
+            )
+        )
+    ).all()
+    return {row[1]: _item_summary(row, preferred_locale) for row in rows}
 
 
 async def list_employee_menu(

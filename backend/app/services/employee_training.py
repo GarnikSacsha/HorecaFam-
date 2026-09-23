@@ -30,6 +30,7 @@ from app.schemas.training import (
     EmployeeTrainingModuleSummary,
     EmployeeTrainingSummary,
 )
+from app.services.employee_menu import training_menu_summaries
 from app.services.practice_results import has_final_exam_eligibility
 from app.services.private_storage import PrivateStorage
 from app.services.training_assets import ACCESS_EXPIRES_SECONDS
@@ -349,6 +350,13 @@ async def get_employee_training_lesson(
             )
         ).all()
     )
+    menu_items = await training_menu_summaries(
+        db,
+        training_version_id=version.id,
+        item_ids={block.menu_item_id for block in blocks if block.menu_item_id is not None},
+        preferred_locale=requested_locale,
+    )
+    module_version = await db.get_one(TrainingModuleVersion, lesson.training_module_version_id)
     block_responses: list[EmployeeTrainingContentBlock] = []
     for block in blocks:
         translation = await db.scalar(
@@ -375,10 +383,12 @@ async def get_employee_training_lesson(
                 payload=payload,
                 content_locale=localized.content_locale,
                 translation_fallback=localized.translation_fallback,
+                menu_item=menu_items.get(block.menu_item_id) if block.menu_item_id else None,
             )
         )
     return EmployeeTrainingLessonDetail(
         **summary.model_dump(),
+        module_id=module_version.training_module_id,
         content_blocks=block_responses,
     )
 
