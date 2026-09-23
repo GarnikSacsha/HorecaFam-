@@ -13,6 +13,7 @@ from app.models import (
     TrainingModule,
     TrainingModuleTranslation,
     TrainingModuleVersion,
+    TrainingRollout,
     TrainingVersion,
     TrainingVersionMenuDependency,
 )
@@ -109,10 +110,27 @@ async def list_training_versions(
         ).all()
     )
     summaries = [await training_version_summary(db, version) for version in versions]
+    published = next((item for item in summaries if item.status == "published"), None)
+    rollout_id = None
+    if published is not None and published.base_version_id is not None:
+        rollout_id = await db.scalar(
+            select(TrainingRollout.id)
+            .where(
+                TrainingRollout.organization_id == organization_id,
+                TrainingRollout.location_id == location_id,
+                TrainingRollout.training_id == published.training_id,
+                TrainingRollout.from_version_id == published.base_version_id,
+                TrainingRollout.to_version_id == published.id,
+                TrainingRollout.status != "cancelled",
+            )
+            .order_by(TrainingRollout.created_at.desc(), TrainingRollout.id.desc())
+            .limit(1)
+        )
     return TrainingVersionCollection(
-        published=next((item for item in summaries if item.status == "published"), None),
+        published=published,
         draft=next((item for item in summaries if item.status == "draft"), None),
         archived=[item for item in summaries if item.status == "archived"],
+        rollout_id=rollout_id,
     )
 
 

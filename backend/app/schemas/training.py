@@ -318,6 +318,7 @@ class TrainingVersionCollection(StrictTrainingSchema):
     published: TrainingVersionSummary | None
     draft: TrainingVersionSummary | None
     archived: list[TrainingVersionSummary]
+    rollout_id: UUID | None = None
 
 
 class TrainingModuleMutationResponse(StrictTrainingSchema):

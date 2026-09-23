@@ -205,11 +205,13 @@ export function AdminTrainingPage() {
       if (!organizationId || !selectedLocationId) return;
       setLoading(true);
       setError(null);
+      setRolloutId(null);
       try {
         const nextCollection = await client.request<TrainingVersionCollection>(
           `/organizations/${organizationId}/locations/${selectedLocationId}/training-versions`,
         );
         setCollection(nextCollection);
+        setRolloutId(nextCollection.rollout_id ?? null);
         if (nextCollection.draft) {
           await refreshDraft(selectedLocationId, nextCollection.draft.id);
         } else {
@@ -531,9 +533,9 @@ export function AdminTrainingPage() {
         csrfToken: session.csrf_token,
         idempotencyKey: createIdempotencyKey(),
       });
-      setRolloutId(result.rollout_id);
       setPublishOpen(false);
       await loadWorkspace(locationId);
+      setRolloutId(result.rollout_id);
     } catch (caught) {
       setPublishOpen(false);
       if (caught instanceof ApiError && caught.code === "REVISION_CONFLICT") {
@@ -1016,6 +1018,7 @@ export function AdminTrainingPage() {
 
       {rolloutId && session && organizationId && locationId ? (
         <AdminTrainingRolloutPanel
+          key={`${organizationId}:${locationId}:${rolloutId}`}
           client={client}
           csrfToken={session.csrf_token}
           locationId={locationId}

@@ -195,6 +195,44 @@ async def prepare_confirmable_rollout(
     assert refreshed.status_code == 200
 
 
+@pytest.mark.parametrize("status", ["draft", "preview_ready", "completed", "cancelled"])
+async def test_version_collection_recovers_current_rollout_without_mutation(
+    auth_client: AsyncClient,
+    auth_app: FastAPI,
+    db_session: AsyncSession,
+    status: str,
+) -> None:
+    org, location, admin_id, _, rollout, _, _ = await arrange_rollout_context(
+        auth_client, auth_app, db_session
+    )
+    rollout.status = status
+    if status in ("preview_ready", "completed"):
+        rollout.previewed_at = FIXED_NOW
+    if status == "completed":
+        rollout.confirmed_at = FIXED_NOW
+        rollout.confirmed_by_user_id = admin_id
+        rollout.processing_at = FIXED_NOW
+        rollout.completed_at = FIXED_NOW
+    await db_session.commit()
+    response = await auth_client.get(
+        f"/api/v1/organizations/{org}/locations/{location}/training-versions"
+    )
+    assert response.status_code == 200
+    assert response.json()["rollout_id"] == (None if status == "cancelled" else str(rollout.id))
+    assert await db_session.scalar(select(func.count(TrainingRollout.id))) == 1
+    assert await db_session.scalar(select(func.count(TrainingAssignment.id))) == 1
+    assert await db_session.scalar(select(func.count(LessonCompletion.id))) == 3
+
+    target = await db_session.get_one(TrainingVersion, rollout.to_version_id)
+    target.status = "archived"
+    target.archived_at = FIXED_NOW
+    await db_session.commit()
+    response = await auth_client.get(
+        f"/api/v1/organizations/{org}/locations/{location}/training-versions"
+    )
+    assert response.json()["rollout_id"] is None
+
+
 async def test_admin_creates_draft_training_rollout_idempotently(
     auth_client: AsyncClient,
     auth_app: FastAPI,

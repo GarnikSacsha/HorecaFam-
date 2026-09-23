@@ -1,5 +1,18 @@
 # HoReCa Repository Status
 
+## Training rollout panel recovery — local, 2026-09-23
+
+Denys authorized fixing the Admin panel lost after navigation during the content update.
+The version collection now returns the scoped persisted rollout ID; the editor restores it
+on reopening and clears it when changing location. No migration or automatic employee mutation.
+PostgreSQL API tests: 18 passed; frontend focused tests: 19 passed; zero failed/skipped in final
+runs. Types/build/lint/mypy pass. Patch is local, not committed or deployed.
+[Scope, commit map, RED/GREEN and hosted continuation](docs/testing/training-rollout-recovery-2026-09-23.md).
+
+Hosted content v3 and the existing 60-question bank/Final configuration are published ready.
+The employee transfer with preserved completion still awaits the restored confirmation panel.
+Earlier pre-publication notes below are historical.
+
 ## CRA-275 lesson category UX — local checkpoint, 2026-09-23
 
 This isolated worktree started clean at old detached `4b45108`. The verified delivered

@@ -612,6 +612,7 @@ export interface TrainingVersionCollection {
   published: TrainingVersionSummary | null;
   draft: TrainingVersionSummary | null;
   archived: TrainingVersionSummary[];
+  rollout_id?: string | null;
 }
 
 export interface TrainingReadinessIssue {

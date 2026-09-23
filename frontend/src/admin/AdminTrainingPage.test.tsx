@@ -422,6 +422,60 @@ describe("Admin Training workspace", () => {
     vi.unstubAllGlobals();
   });
 
+  it("restores the saved rollout after reopening without publishing or confirming", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const base = trainingClient(requests);
+    const client: ApiClient = {
+      getSession: () => base.getSession(),
+      request: <T,>(path: string, options?: RequestOptions) => {
+        requests.push({ path, options });
+        if (path.endsWith("/locations"))
+          return Promise.resolve([
+            { id: "location-1", name: "Хрещатик", status: "active" },
+            { id: "location-2", name: "Поділ", status: "active" },
+          ] as T);
+        if (path.endsWith("/locations/location-2/training-versions"))
+          return Promise.resolve({ ...collection, draft: null, rollout_id: null } as T);
+        if (path.endsWith("/training-versions"))
+          return Promise.resolve({ ...collection, draft: null, rollout_id: "saved-rollout" } as T);
+        if (path.endsWith("/training-rollouts/saved-rollout"))
+          return Promise.resolve({
+            id: "saved-rollout",
+            status: "preview_ready",
+            revision: 4,
+            from_version: { version_number: 2 },
+            to_version: { version_number: 3 },
+            rules: [],
+            employee_impacts: [],
+            impact_counts: { employee_count: 2, unresolved_rule_count: 0 },
+            is_stale: false,
+            previewed_at: "2030-08-28T11:00:00Z",
+          } as T);
+        return base.request<T>(path, options);
+      },
+    };
+    const page = () =>
+      render(
+        <SessionProvider client={client}>
+          <MemoryRouter>
+            <AdminTrainingPage />
+          </MemoryRouter>
+        </SessionProvider>,
+      );
+    const first = page();
+    expect(await screen.findByRole("button", { name: "Підтвердити перенесення" })).toBeEnabled();
+    first.unmount();
+    page();
+    expect(await screen.findByRole("button", { name: "Підтвердити перенесення" })).toBeEnabled();
+    expect(screen.getByText("2 працівників")).toBeInTheDocument();
+    await userEvent.setup().selectOptions(screen.getByLabelText("Локація"), "location-2");
+    expect(screen.queryByRole("heading", { name: "Перенесення прогресу" })).not.toBeInTheDocument();
+    expect(requests.some(({ path }) => path.includes("location-2/training-rollouts"))).toBe(false);
+    expect(requests.filter(({ options }) => options?.method && options.method !== "GET")).toEqual(
+      [],
+    );
+  });
+
   it("previews changed lessons, records the preserve choice and confirms rollout", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const base = trainingClient(requests);
