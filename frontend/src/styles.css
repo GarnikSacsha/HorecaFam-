@@ -2433,6 +2433,77 @@ h1 {
   line-height: 1.72;
 }
 
+.lesson-contents {
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 1.1rem;
+  background: var(--surface-raised);
+}
+
+.lesson-contents ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 0.35rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.7rem 0 0;
+}
+
+.lesson-contents a {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.lesson-contents a:hover {
+  background: var(--info-soft);
+}
+
+.lesson-contents-count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lesson-category-heading {
+  scroll-margin-top: 2rem;
+  padding-top: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.lesson-content .learning-menu-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  padding: 1.25rem;
+}
+
+.lesson-content .learning-menu-card button {
+  min-height: 44px;
+}
+
+.lesson-card-excerpt {
+  color: var(--text-muted);
+  max-width: 65ch;
+}
+
+.lesson-snapshot-details {
+  padding: 0 1.25rem 0.8rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.lesson-snapshot-details summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-block: 0.6rem;
+}
+
 .lesson-completion-panel {
   display: grid;
   gap: 0.85rem;

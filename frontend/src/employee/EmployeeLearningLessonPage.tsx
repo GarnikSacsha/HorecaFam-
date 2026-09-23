@@ -94,12 +94,12 @@ function TrainingBlock({
     const text = textValue(payload, "text_uk");
     if (!text) return null;
     return payload.level === 3 ? (
-      <section>
+      <section id={`block-${block.id}`} tabIndex={-1} className="lesson-category-heading">
         <h3>{text}</h3>
         {fallback}
       </section>
     ) : (
-      <section>
+      <section id={`block-${block.id}`} tabIndex={-1} className="lesson-category-heading">
         <h2>{text}</h2>
         {fallback}
       </section>
@@ -107,6 +107,15 @@ function TrainingBlock({
   }
   if (block.type === "text") {
     const text = textValue(payload, "text_uk");
+    if (text && /^Варіант(?:и)? [ув] навчальному знімку[: (]/u.test(text)) {
+      return (
+        <details className="lesson-snapshot-details">
+          <summary>Варіанти та дані знімка</summary>
+          <p className="learning-prose">{text}</p>
+          {fallback}
+        </details>
+      );
+    }
     return text ? (
       <section>
         <p className="learning-prose">{text}</p>
@@ -141,15 +150,27 @@ function TrainingBlock({
   if (block.type === "menu_item_card") {
     const itemId = textValue(payload, "menu_item_id");
     const note = textValue(payload, "note_uk");
+    const item = block.menu_item;
     if (!itemId) return null;
     return (
       <aside className="learning-menu-card" id={`block-${block.id}`} tabIndex={-1}>
-        <p className="eyebrow">Пов’язана позиція меню</p>
+        <p className="eyebrow">
+          {item ? `${item.section_name} · ${item.category_name}` : "Пов’язана позиція меню"}
+        </p>
+        {item ? <h3>{item.name}</h3> : null}
+        {item?.description_excerpt ? (
+          <p className="lesson-card-excerpt">{item.description_excerpt}</p>
+        ) : null}
         {note ? <p>{note}</p> : null}
-        <button className="text-link" type="button" onClick={() => onMenuItemOpen(itemId)}>
-          Відкрити позицію в меню
+        <button
+          className="text-link"
+          type="button"
+          aria-label={item ? `Відкрити ${item.name}` : undefined}
+          onClick={() => onMenuItemOpen(itemId)}
+        >
+          {item ? "Опис та деталі →" : "Відкрити позицію в меню"}
         </button>
-        {fallback}
+        <FallbackNote visible={block.translation_fallback || Boolean(item?.translation_fallback)} />
       </aside>
     );
   }
@@ -295,10 +316,23 @@ export function EmployeeLearningLessonPage() {
     window.requestAnimationFrame(() => menuReturnFocusRef.current?.focus({ preventScroll: true }));
   }, []);
 
+  const modulePath = lesson?.module_id
+    ? `/employee/learning/modules/${encodeURIComponent(lesson.module_id)}`
+    : "/employee/learning";
+  const contents: Array<{ id: string; title: string; count: number }> = [];
+  for (const block of lesson?.content_blocks ?? []) {
+    if (block.type === "heading" && block.payload.level !== 3) {
+      const title = textValue(block.payload, "text_uk");
+      if (title) contents.push({ id: block.id, title, count: 0 });
+    } else if (block.type === "menu_item_card" && contents.length) {
+      contents[contents.length - 1].count += 1;
+    }
+  }
+
   return (
     <article className="employee-learning-page learning-reader lesson-reader">
-      <Link className="learning-back-link" to="/employee/learning">
-        ← До навчальних модулів
+      <Link className="learning-back-link" to={modulePath}>
+        {lesson?.module_id ? "← До уроків модуля" : "← До навчальних модулів"}
       </Link>
       {error ? (
         <div className="inline-error" role="alert">
@@ -320,6 +354,26 @@ export function EmployeeLearningLessonPage() {
             ) : null}
             <FallbackNote visible={lesson.translation_fallback} />
           </header>
+          {contents.length ? (
+            <nav className="lesson-contents" aria-label="Зміст уроку">
+              <p className="eyebrow">У цьому уроці</p>
+              <ol>
+                {contents.map((entry) => (
+                  <li key={entry.id}>
+                    <a
+                      href={`#block-${entry.id}`}
+                      onClick={() =>
+                        document.getElementById(`block-${entry.id}`)?.focus({ preventScroll: true })
+                      }
+                    >
+                      <span>{entry.title}</span>
+                      <span className="lesson-contents-count">{entry.count}</span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          ) : null}
           <div className="lesson-content">
             {lesson.content_blocks.map((block) => (
               <TrainingBlock
@@ -407,8 +461,8 @@ export function EmployeeLearningLessonPage() {
                       : "Ознайомився"}
             </button>
             {completionState === "success" ? (
-              <Link className="completion-next-link" to="/employee/learning">
-                Повернутися до навчання
+              <Link className="completion-next-link" to={modulePath}>
+                {lesson.module_id ? "Повернутися до уроків" : "Повернутися до навчання"}
               </Link>
             ) : null}
           </section>
