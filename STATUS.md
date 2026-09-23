@@ -1,5 +1,33 @@
 # HoReCa Repository Status
 
+## CRA-275 lesson category UX — local checkpoint, 2026-09-23
+
+This isolated worktree started clean at old detached `4b45108`. The verified delivered
+CRA-275 420-file archive `adc1717bd07190431d3dd6080bd21358c46d3bc3d0c326580b36a52dba0d6ff3`
+was reconciled here before implementation; 55 inherited source differences are recorded
+separately from the nine new UX paths. Other dirty worktrees and original release packets
+remain untouched. Do not mistake HEAD or the broad Git diff for the new feature alone.
+
+Local lesson reader now has assignment-bound Menu summaries, direct module return,
+named cards, heading contents/counts and compact snapshot variant details. A local-only
+308-item, 32-category proposal preserves four stable lessons and separates retained review
+sources. Published Training and existing employee state are unchanged.
+
+Verification: backend 10/0/0 and overlapping 20/0/0; full Vitest 150/0/0; targeted browser
+6/0/0 across three viewports; content checks 377/0/0. Types/build/lint/format/Ruff/mypy pass.
+No refreshed full backend coverage or full browser gate is claimed. Fresh staging browser
+read confirmed assigned v2, four completions and the existing reader problem.
+
+Linear issue creation hit the workspace limit. After explicit permission, the evidence comment
+was saved and read back in CRA-275 (`ca175040-af90-4652-91b4-64992a389de5`). Denys then
+authorized commit, push and autodeploy. The four-boundary map below is being checkpointed;
+provider inspection confirmed API/web currently have no GitHub source. Connect only these two
+existing staging services to the reviewed GitHub main after push; keep their build/runtime
+settings. Hosted content mutation and acceptance-state changes remain outside this delivery.
+[Scope, exact paths, audit reconciliation, RED/GREEN and remaining publication gates](docs/testing/lesson-category-ux-cra-275.md).
+
+Earlier checkpoints below are historical and do not authorize repeating completed deliveries.
+
 ## CRA-234 API rollout completed — 2026-09-21
 
 The four local checkpoints below were subsequently pushed; verified GitHub main is `7d1f63d`.
