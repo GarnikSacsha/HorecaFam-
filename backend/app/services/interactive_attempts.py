@@ -18,6 +18,7 @@ from app.models import (
     AuditEvent,
     EmployeeProfile,
     LessonCompletion,
+    LessonQuestionCycleItem,
     LessonVersion,
     OrganizationMembership,
     QuestionCandidate,
@@ -43,6 +44,13 @@ from app.services.idempotency import (
     find_idempotency_replay,
     request_fingerprint,
     reserve_idempotency,
+)
+from app.services.interactive_cycles import (
+    cycle_summary,
+    ensure_cycle,
+    lesson_attempts,
+    lock_employee,
+    resumable_attempt,
 )
 
 ATTEMPT_INACTIVITY = timedelta(days=7)
@@ -350,6 +358,8 @@ async def _assessment_ready(
                 AssessmentVersion.lesson_version_id == lesson_version.id,
                 AssessmentVersion.status == "published",
             )
+            .order_by(AssessmentVersion.version_number.desc())
+            .limit(1)
         )
     ).first()
     if row is None or row[1].status not in {"ready", "warning"}:
@@ -515,6 +525,7 @@ async def start_or_resume_interactive_attempt(
     request_id: UUID,
     now: datetime,
 ) -> InteractiveAttemptStartResponse:
+    await lock_employee(db, organization_id, location_id, employee_profile_id)
     await _require_active_training_participation(
         db,
         organization_id=organization_id,
@@ -553,21 +564,31 @@ async def start_or_resume_interactive_attempt(
         employee_profile_id=employee_profile_id,
         lesson_id=lesson_id,
     )
-    assessment_version, _readiness = await _assessment_ready(
-        db,
-        assignment=assignment,
-        lesson_version=lesson_version,
+    attempts = await lesson_attempts(
+        db, organization_id, location_id, employee_profile_id, lesson_id
     )
-    attempt = await db.scalar(
-        select(AssessmentAttempt).where(
-            AssessmentAttempt.employee_profile_id == employee_profile_id,
-            AssessmentAttempt.assignment_id == assignment.id,
-            AssessmentAttempt.assessment_version_id == assessment_version.id,
-            AssessmentAttempt.status == "in_progress",
-        )
-    )
+    attempt = await resumable_attempt(db, attempts, now)
     created = False
     if attempt is None:
+        assessment_version, _readiness = await _assessment_ready(
+            db,
+            assignment=assignment,
+            lesson_version=lesson_version,
+        )
+        cycle = await ensure_cycle(
+            db, organization_id, location_id, employee_profile_id, lesson_id, now
+        )
+        state = await cycle_summary(
+            db,
+            organization_id=organization_id,
+            location_id=location_id,
+            employee_id=employee_profile_id,
+            lesson_id=lesson_id,
+            assessment_version_id=assessment_version.id,
+            now=now,
+        )
+        if state.status in {"exhausted", "restart_required"} and state.eligible_count >= 5:
+            raise _error(409, "INTERACTIVE_CYCLE_EXHAUSTED", "Почніть новий цикл явно.")
         pool_rows = list(
             (
                 await db.execute(
@@ -584,23 +605,35 @@ async def start_or_resume_interactive_attempt(
                 )
             ).all()
         )
-        selected = select_attempt_questions(
+        used = set(
+            await db.scalars(
+                select(LessonQuestionCycleItem.question_id).where(
+                    LessonQuestionCycleItem.cycle_id == cycle.id
+                )
+            )
+        )
+        unique_rows: dict[UUID, tuple[AssessmentQuestionPool, QuestionVersion]] = {}
+        for pool, question in sorted(
+            pool_rows, key=lambda row: (-row[1].version_number, str(row[1].id))
+        ):
+            if question.question_id not in used:
+                unique_rows.setdefault(question.question_id, (pool, question))
+        if len({question.question_id for _, question in pool_rows}) < 5:
+            raise _not_ready()
+        selected = _ordered_selection(
             [
                 PoolCandidate(
                     question_version_id=question.id,
                     coverage_key=pool.coverage_key,
                     mechanic=pool.mechanic,
                 )
-                for pool, question in pool_rows
+                for pool, question in unique_rows.values()
             ],
-            previous_order=await _previous_order(
-                db,
-                employee_profile_id=employee_profile_id,
-                assessment_version_id=assessment_version.id,
-            ),
+            0,
+            min(5, len(unique_rows)),
         )
-        if len(selected) != 5:
-            raise _not_ready()
+        if not selected:
+            raise _error(409, "INTERACTIVE_CYCLE_EXHAUSTED", "Усі питання пройдено.")
         row_by_id = {question.id: (pool, question) for pool, question in pool_rows}
         attempt = AssessmentAttempt(
             organization_id=organization_id,
@@ -611,7 +644,7 @@ async def start_or_resume_interactive_attempt(
             assessment_version_id=assessment_version.id,
             status="in_progress",
             presentation_locale=presentation_locale,
-            question_count=5,
+            question_count=len(selected),
             snapshot_schema_version=1,
             started_at=now,
             last_activity_at=now,
@@ -627,6 +660,22 @@ async def start_or_resume_interactive_attempt(
                 pool=pool,
                 question_version=question,
                 position=position,
+            )
+            snapshot_id = await db.scalar(
+                select(AttemptQuestion.id).where(
+                    AttemptQuestion.attempt_id == attempt.id, AttemptQuestion.position == position
+                )
+            )
+            if snapshot_id is None:
+                raise RuntimeError("Question snapshot is unavailable")
+            db.add(
+                LessonQuestionCycleItem(
+                    cycle_id=cycle.id,
+                    question_id=question.question_id,
+                    question_version_id=question.id,
+                    attempt_question_id=snapshot_id,
+                    origin="reserved",
+                )
             )
         db.add(
             AttemptDeviceLease(
@@ -648,7 +697,7 @@ async def start_or_resume_interactive_attempt(
                 old_values=None,
                 new_values={
                     "assessment_version_id": str(assessment_version.id),
-                    "question_count": 5,
+                    "question_count": len(selected),
                     "presentation_locale": presentation_locale,
                 },
                 request_id=request_id,

@@ -522,6 +522,13 @@ export interface EmployeeMenuResponse {
 }
 
 export interface EmployeeMenuItemDetail extends EmployeeMenuItemSummary {
+  source_note?: {
+    source_date: string;
+    guest_description: string;
+    composition: string | null;
+    allergen_labels: string[];
+    verification_status: "unverified";
+  } | null;
   description: string | null;
   components: Array<{
     name: string;
@@ -560,6 +567,7 @@ export interface TrainingContentBlockResponse {
 
 export interface TrainingLessonResponse {
   id: string;
+  lesson_version_id?: string;
   position: number;
   title_uk: string;
   description_uk: string | null;
@@ -860,6 +868,12 @@ export interface QuestionCandidateAnswerPayload {
 export interface QuestionCandidateExplanationPayload {
   locale: "uk";
   text: string;
+  authoring?: {
+    menu_version_id: string;
+    menu_item_version_id: string;
+    source_quote: string;
+    option_rationales: Record<string, string>;
+  } | null;
 }
 
 export interface QuestionCandidateSource {
@@ -1384,7 +1398,7 @@ export interface InteractiveAttemptTakeoverResponse {
 export interface InteractiveResult {
   id: string;
   correct_count: number;
-  total_count: 5;
+  total_count: number;
   score_basis_points: number;
   knowledge_level: InteractiveKnowledgeLevel;
   pass_status: null;
@@ -1406,13 +1420,25 @@ export interface InteractiveResultSummary {
   assessment_version_id: string;
   completed_at: string;
   correct_count: number;
-  total_count: 5;
+  total_count: number;
   score_basis_points: number;
   knowledge_level: InteractiveKnowledgeLevel;
   is_current: boolean;
 }
 
+export interface LessonQuestionCycle {
+  id: string | null;
+  number: number;
+  status: "available" | "in_progress" | "exhausted" | "restart_required";
+  eligible_count: number;
+  answered_count: number;
+  reserved_count: number;
+  remaining_count: number;
+  can_restart: boolean;
+}
+
 export interface LessonInteractiveTrainingSummary {
+  cycle?: LessonQuestionCycle | null;
   lesson_id: string;
   lesson_version_id: string;
   assessment_version_id: string | null;

@@ -9,7 +9,7 @@ import type {
   SessionResponse,
 } from "../api/contracts";
 import { SessionProvider } from "../session/SessionContext";
-import { EmployeeMenuPage } from "./EmployeeMenuPage";
+import { EmployeeMenuPage, MenuDetail } from "./EmployeeMenuPage";
 
 const session: SessionResponse = {
   user: { id: "user-1", email: "employee@example.com", preferred_locale: "en" },
@@ -70,6 +70,32 @@ const detail: EmployeeMenuItemDetail = {
 };
 
 describe("Employee published Menu", () => {
+  it("separates guest wording and source annotations from confirmed allergens", () => {
+    render(
+      <MemoryRouter>
+        <MenuDetail
+          item={{
+            ...detail,
+            source_note: {
+              source_date: "2026-08-20",
+              guest_description: "Можу запропонувати борщ.",
+              composition: "Буряк, капуста.",
+              allergen_labels: ["Позначка джерела"],
+              verification_status: "unverified",
+            },
+          }}
+          loading={false}
+          onClose={() => {}}
+          returnTo={null}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "Як розповісти гостю" })).toBeInTheDocument();
+    expect(screen.getByText("Можу запропонувати борщ.")).toBeInTheDocument();
+    expect(screen.getByText("Молоко")).toBeInTheDocument();
+    expect(screen.getByText("Позначка джерела")).toBeInTheDocument();
+    expect(screen.getByText(/Повноту відомостей не підтверджено/)).toBeInTheDocument();
+  });
   it.each([
     "https://example.com",
     "//example.com",
@@ -130,7 +156,7 @@ describe("Employee published Menu", () => {
       await screen.findByText(`Позиція ${last}`);
     }
     expect(screen.getAllByText(/^Позиція \d+$/)).toHaveLength(308);
-    expect(screen.queryByRole("button", { name: "Показати ще" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Показати ще", { selector: "button" })).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

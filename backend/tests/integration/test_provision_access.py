@@ -1,10 +1,16 @@
 import asyncio
+import logging
 import os
 import subprocess
 import sys
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
+import pytest_asyncio
+from alembic import command
+from alembic.config import Config
 from httpx import AsyncClient
 from sqlalchemy import func, select, text
 from sqlalchemy.engine import make_url
@@ -21,6 +27,30 @@ from app.operations.provision_access import (
 )
 from app.security.passwords import PasswordManager
 from tests.factories.identity import make_organization, make_user
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest_asyncio.fixture
+async def reviewed_provisioning_database(
+    db_session: AsyncSession, test_database_settings: Settings
+) -> AsyncIterator[None]:
+    # Одноразовий CLI перевіряємо на справжній погодженій схемі, не підмінюючи її номер.
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", test_database_settings.database_url)
+    logger = logging.getLogger("app.errors")
+    was_disabled = logger.disabled
+    await db_session.rollback()
+    try:
+        await asyncio.to_thread(command.downgrade, config, "0019_auth_security_budgets")
+        yield
+    finally:
+        await db_session.rollback()
+        try:
+            await asyncio.to_thread(command.upgrade, config, "head")
+        finally:
+            logger.disabled = was_disabled
 
 
 @pytest.mark.integration
@@ -127,6 +157,7 @@ async def test_provisioning_refuses_production_even_when_confirmation_matches(
 
 
 @pytest.mark.integration
+@pytest.mark.usefixtures("reviewed_provisioning_database")
 async def test_target_matches_real_database_and_rejects_revision_and_identity(
     db_session: AsyncSession,
     test_database_settings: Settings,
@@ -154,6 +185,25 @@ async def test_target_matches_real_database_and_rejects_revision_and_identity(
             await check()
     finally:
         await db_session.rollback()
+
+
+@pytest.mark.integration
+async def test_current_head_is_not_implicitly_authorized_for_one_time_provisioning(
+    db_session: AsyncSession, test_database_settings: Settings
+) -> None:
+    url = make_url(test_database_settings.database_url)
+    revision = await db_session.scalar(text("SELECT version_num FROM alembic_version"))
+    assert revision != "0019_auth_security_budgets"
+    with pytest.raises(ProvisioningError, match="reviewed migration revision"):
+        await verify_target(
+            db_session,
+            settings=test_database_settings,
+            environment="test",
+            host=str(url.host),
+            database=str(url.database),
+            database_user=str(url.username),
+        )
+    assert await db_session.scalar(select(func.count()).select_from(User)) == 0
 
 
 @pytest.mark.integration
@@ -304,6 +354,7 @@ async def test_concurrent_operator_apply_converges(
 
 
 @pytest.mark.integration
+@pytest.mark.usefixtures("reviewed_provisioning_database")
 async def test_real_module_cli_dry_run(
     db_session: AsyncSession,
     test_database_settings: Settings,

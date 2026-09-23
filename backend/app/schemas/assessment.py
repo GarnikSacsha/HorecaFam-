@@ -106,9 +106,23 @@ class CandidateAnswerPayload(StrictAssessmentSchema):
     correct_option_keys: list[str] = Field(min_length=1, max_length=20)
 
 
+class AuthoredDescriptionEvidence(StrictAssessmentSchema):
+    menu_version_id: UUID
+    menu_item_version_id: UUID
+    source_quote: str = Field(min_length=1, max_length=4000)
+    option_rationales: dict[str, str] = Field(min_length=4, max_length=4)
+
+    @model_validator(mode="after")
+    def rationales_are_bounded(self) -> "AuthoredDescriptionEvidence":
+        if any(not value.strip() or len(value) > 1000 for value in self.option_rationales.values()):
+            raise ValueError("Every option requires a bounded review rationale")
+        return self
+
+
 class CandidateExplanationPayload(StrictAssessmentSchema):
     locale: Literal["uk"] = "uk"
     text: str = Field(min_length=1, max_length=1000)
+    authoring: AuthoredDescriptionEvidence | None = Field(default=None, exclude=True)
 
 
 class CandidateSource(StrictAssessmentSchema):
@@ -155,6 +169,56 @@ class CandidateEditedPayload(StrictAssessmentSchema):
     prompt_payload: CandidatePromptPayload
     answer_payload: CandidateAnswerPayload
     explanation_payload: CandidateExplanationPayload
+
+
+class AuthoredQuestionRequest(CandidateEditedPayload):
+    training_version_id: UUID
+    lesson_version_id: UUID
+
+    @model_validator(mode="after")
+    def authored_description_is_unambiguous(self) -> "AuthoredQuestionRequest":
+        keys = {option.stable_key for option in self.prompt_payload.options}
+        answers = self.answer_payload.correct_option_keys
+        evidence = self.explanation_payload.authoring
+        if (
+            len(keys) != 4
+            or self.prompt_payload.selection_mode != "single"
+            or len(answers) != 1
+            or answers[0] not in keys
+            or evidence is None
+            or set(evidence.option_rationales) != keys
+        ):
+            raise ValueError("Authored descriptions require four evidenced options and one answer")
+        return self
+
+
+class FinalExamQuotaBucket(StrictAssessmentSchema):
+    key: Literal["food", "drinks", "desserts", "other"]
+    count: int = Field(ge=1, le=20)
+    category_ids: list[UUID] = Field(min_length=1, max_length=100)
+
+
+class FinalExamQuotaPolicy(StrictAssessmentSchema):
+    strategy: Literal["curated_category_quotas_v1"] = "curated_category_quotas_v1"
+    question_version_ids: list[UUID] = Field(min_length=20, max_length=500)
+    buckets: list[FinalExamQuotaBucket] = Field(min_length=4, max_length=4)
+
+    @model_validator(mode="after")
+    def quotas_are_disjoint(self) -> "FinalExamQuotaPolicy":
+        counts = {bucket.key: bucket.count for bucket in self.buckets}
+        categories = [value for bucket in self.buckets for value in bucket.category_ids]
+        if (
+            counts != {"food": 10, "drinks": 4, "desserts": 3, "other": 3}
+            or len(categories) != len(set(categories))
+            or len(self.question_version_ids) != len(set(self.question_version_ids))
+        ):
+            raise ValueError("Final quotas require disjoint categories and unique question IDs")
+        return self
+
+
+class FinalExamVersionRequest(StrictAssessmentSchema):
+    expected_assessment_version_id: UUID
+    policy: FinalExamQuotaPolicy
 
 
 class QuestionCandidateApproveRequest(StrictAssessmentSchema):
@@ -696,7 +760,7 @@ class InteractiveAnswerRequest(StrictAssessmentSchema):
 class InteractiveResultResponse(StrictAssessmentSchema):
     id: UUID
     correct_count: int = Field(ge=0, le=5)
-    total_count: Literal[5] = 5
+    total_count: int = Field(default=5, ge=1, le=5)
     score_basis_points: int = Field(ge=0, le=10000)
     knowledge_level: Literal["very_weak", "weak", "good", "strong"]
     pass_status: None = None
@@ -718,10 +782,25 @@ class InteractiveResultSummaryResponse(StrictAssessmentSchema):
     assessment_version_id: UUID
     completed_at: datetime
     correct_count: int = Field(ge=0, le=5)
-    total_count: Literal[5] = 5
+    total_count: int = Field(default=5, ge=1, le=5)
     score_basis_points: int = Field(ge=0, le=10000)
     knowledge_level: Literal["very_weak", "weak", "good", "strong"]
     is_current: bool
+
+
+class LessonQuestionCycleResponse(StrictAssessmentSchema):
+    id: UUID | None
+    number: int = Field(ge=1)
+    status: Literal["available", "in_progress", "exhausted", "restart_required"]
+    eligible_count: int = Field(ge=0)
+    answered_count: int = Field(ge=0)
+    reserved_count: int = Field(ge=0)
+    remaining_count: int = Field(ge=0)
+    can_restart: bool
+
+
+class LessonQuestionCycleRestartRequest(StrictAssessmentSchema):
+    expected_cycle_id: UUID | None
 
 
 class LessonInteractiveTrainingSummaryResponse(StrictAssessmentSchema):
@@ -736,3 +815,4 @@ class LessonInteractiveTrainingSummaryResponse(StrictAssessmentSchema):
     latest: InteractiveResultSummaryResponse | None
     best: InteractiveResultSummaryResponse | None
     history: list[InteractiveResultSummaryResponse]
+    cycle: LessonQuestionCycleResponse | None = None

@@ -18,6 +18,7 @@ import type {
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { LoadingState, StatusPill } from "../ui/States";
+import { AdminAuthoredQuestions } from "./AdminAuthoredQuestions";
 
 type CandidateFilter = QuestionCandidateStatus | "all";
 
@@ -209,6 +210,20 @@ function CandidateCard({
           <p className="candidate-explanation">
             <strong>Пояснення:</strong> {candidate.explanation_payload.text}
           </p>
+          {candidate.explanation_payload.authoring && (
+            <div className="candidate-provenance">
+              <h4>Підстави авторського питання</h4>
+              <blockquote>{candidate.explanation_payload.authoring.source_quote}</blockquote>
+              <ul>
+                {candidate.prompt_payload.options.map((option) => (
+                  <li key={option.stable_key}>
+                    <strong>{option.text}:</strong>{" "}
+                    {candidate.explanation_payload.authoring?.option_rationales[option.stable_key]}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       )}
 
@@ -256,7 +271,7 @@ function CandidateCard({
             className="button button-quiet"
             type="button"
             onClick={() => setEditing(true)}
-            disabled={busy}
+            disabled={busy || !!candidate.explanation_payload.authoring}
           >
             Редагувати
           </button>
@@ -508,6 +523,7 @@ export function AdminQuestionBankPage() {
           <label htmlFor="question-location">Локація</label>
           <select
             id="question-location"
+            disabled={busy || loading}
             value={locationId}
             onChange={(event) => {
               setLocationId(event.target.value);
@@ -555,6 +571,20 @@ export function AdminQuestionBankPage() {
         <p className="success-message" aria-live="polite">
           {notice}
         </p>
+      ) : null}
+
+      {organizationId && locationId && menuVersionId && trainingVersion && session ? (
+        <AdminAuthoredQuestions
+          key={`${organizationId}/${locationId}/${trainingVersion.id}/${menuVersionId}`}
+          client={client}
+          base={`/organizations/${organizationId}/locations/${locationId}`}
+          csrfToken={session.csrf_token}
+          menuId={menuVersionId}
+          trainingId={trainingVersion.id}
+          disabled={busy || loading}
+          onBusy={setBusy}
+          onRefresh={() => loadWorkspace(locationId, candidateFilter)}
+        />
       ) : null}
 
       <section className="question-readiness" aria-labelledby="readiness-title">

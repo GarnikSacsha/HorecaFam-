@@ -34,6 +34,7 @@ from app.schemas.menu import (
     EmployeeMenuSectionSummary,
     EmployeeMenuSummary,
 )
+from app.services.menu_source_notes import menu_source_note
 
 
 def _not_found() -> APIError:
@@ -429,4 +430,12 @@ async def get_employee_menu_item(
         components=components,
         allergen_data_status=item.allergen_data_status,
         allergens=allergens,
+        source_note=menu_source_note(
+            source_kind=item.source_kind,
+            source_reference=item.source_reference,
+            source_item_key=item.source_item_key,
+            name=summary.name,
+            description=description,
+            locale=summary.content_locale,
+        ),
     )

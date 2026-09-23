@@ -3,8 +3,10 @@ from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import LessonVersion
 from app.services.private_storage import ObjectMetadata, UploadTarget
 from tests.api.test_menu_admin_api import arrange_admin, mutation_headers
 
@@ -100,6 +102,18 @@ async def test_admin_training_api_supports_draft_hierarchy_and_content(
     assert lesson.status_code == 200
     lesson_id = UUID(lesson.json()["lesson"]["id"])
     assert lesson.json()["revision"] == 2
+    detail = await auth_client.get(f"{versions_url}/{version_id}")
+    lesson_version = await db_session.scalar(
+        select(LessonVersion).where(
+            LessonVersion.lesson_id == lesson_id,
+            LessonVersion.training_module_version_id == module_id,
+        )
+    )
+    assert lesson_version is not None
+    assert detail.json()["modules"][0]["lessons"][0].get("lesson_version_id") == str(
+        lesson_version.id
+    ), "Admin authoring must receive the version ID, not the stable lesson ID"
+    assert lesson_version.id != lesson_id
 
     block = await auth_client.post(
         f"{versions_url}/{version_id}/lessons/{lesson_id}/content-blocks",

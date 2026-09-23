@@ -17,6 +17,7 @@ from app.models import AuditEvent
 from app.schemas.assessment import (
     AdminEmployeeResultsDetailResponse,
     AdminResultsOverviewResponse,
+    AuthoredQuestionRequest,
     FinalExamAnswerRequest,
     FinalExamAnswerResponse,
     FinalExamAttemptResponse,
@@ -27,6 +28,7 @@ from app.schemas.assessment import (
     FinalExamHistoryResponse,
     FinalExamReadinessResponse,
     FinalExamSummaryResponse,
+    FinalExamVersionRequest,
     InteractiveAnswerRequest,
     InteractiveAnswerResponse,
     InteractiveAttemptResponse,
@@ -34,6 +36,8 @@ from app.schemas.assessment import (
     InteractiveAttemptTakeoverResponse,
     InteractiveTrainingReadinessResponse,
     LessonInteractiveTrainingSummaryResponse,
+    LessonQuestionCycleResponse,
+    LessonQuestionCycleRestartRequest,
     PracticeAnswerRequest,
     PracticeAnswerResponse,
     PracticeAttemptResponse,
@@ -66,6 +70,7 @@ from app.services.final_exam_attempts import (
     start_or_resume_final_exam_attempt,
     takeover_final_exam_attempt,
 )
+from app.services.final_exam_configuration import create_final_exam_version
 from app.services.final_exam_readiness import (
     ensure_final_exam_readiness,
     get_final_exam_readiness,
@@ -85,6 +90,7 @@ from app.services.interactive_attempts import (
     start_or_resume_interactive_attempt,
     takeover_interactive_attempt,
 )
+from app.services.interactive_cycles import restart_lesson_cycle
 from app.services.interactive_history import get_lesson_interactive_training_summary
 from app.services.practice_answers import save_practice_answer
 from app.services.practice_attempts import (
@@ -94,6 +100,7 @@ from app.services.practice_attempts import (
     takeover_practice_attempt,
 )
 from app.services.practice_results import finish_practice_attempt, get_practice_history
+from app.services.question_authoring import create_authored_question
 from app.services.question_generation import generate_question_candidates
 from app.services.question_review import (
     approve_question_candidate,
@@ -107,6 +114,65 @@ from app.services.question_review import (
 )
 
 router = APIRouter(tags=["assessments"])
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/question-candidates/authored",
+    response_model=QuestionCandidateResponse,
+)
+async def create_authored_question_route(
+    organization_id: UUID,
+    location_id: UUID,
+    payload: AuthoredQuestionRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str, Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*")
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> QuestionCandidateResponse:
+    return await create_authored_question(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        payload=payload,
+        actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/final-exam/versions",
+    response_model=FinalExamReadinessResponse,
+)
+async def create_final_exam_version_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: FinalExamVersionRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str, Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*")
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamReadinessResponse:
+    return await create_final_exam_version(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        training_version_id=version_id,
+        payload=payload,
+        actor_user_id=authorization.user.id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
+    )
 
 
 @router.get(
@@ -522,6 +588,7 @@ async def finish_practice_attempt_route(
 )
 async def get_lesson_interactive_training_summary_route(
     lesson_id: UUID,
+    request: Request,
     authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LessonInteractiveTrainingSummaryResponse:
@@ -533,6 +600,37 @@ async def get_lesson_interactive_training_summary_route(
         employee_profile_id=employee_profile_id,
         lesson_id=lesson_id,
         session_id=authorization.session.id,
+        now=cast(Clock, request.app.state.clock)(),
+    )
+
+
+@router.post(
+    "/me/training/lessons/{lesson_id}/interactive-training/cycles/restart",
+    response_model=LessonQuestionCycleResponse,
+)
+async def restart_interactive_cycle_route(
+    lesson_id: UUID,
+    payload: LessonQuestionCycleRestartRequest,
+    request: Request,
+    idempotency_key: Annotated[
+        str, Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*")
+    ],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> LessonQuestionCycleResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await restart_lesson_cycle(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        actor_user_id=authorization.user.id,
+        lesson_id=lesson_id,
+        expected_cycle_id=payload.expected_cycle_id,
+        idempotency_key=idempotency_key.strip(),
+        request_id=UUID(get_request_id()),
+        now=cast(Clock, request.app.state.clock)(),
     )
 
 

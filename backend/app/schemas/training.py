@@ -267,6 +267,7 @@ class TrainingContentBlockResponse(StrictTrainingSchema):
 
 class TrainingLessonResponse(StrictTrainingSchema):
     id: UUID
+    lesson_version_id: UUID
     position: int
     title_uk: str
     description_uk: str | None

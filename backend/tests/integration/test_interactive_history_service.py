@@ -260,7 +260,10 @@ async def test_new_assessment_scope_retains_old_history_but_resets_current_lates
     assert any(
         item.attempt_id == old_attempt.id and not item.is_current for item in summary.history
     )
-    assert summary.active_attempt is None
+    assert summary.active_attempt is not None
+    assert summary.active_attempt.id == context.attempt.id
+    assert summary.active_attempt.assessment_version_id == context.persistence.assessment_version.id
+    assert summary.cycle is not None and summary.cycle.status == "in_progress"
 
 
 @pytest.mark.integration

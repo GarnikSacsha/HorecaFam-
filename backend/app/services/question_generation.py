@@ -1022,6 +1022,10 @@ async def candidate_source_fingerprint_is_current(
     candidate: QuestionCandidate,
 ) -> bool:
     rule_row = await db.get(QuestionGenerationRule, candidate.generation_rule_id)
+    if rule_row is not None and rule_row.code == "menu.description.authored":
+        from app.services.question_authoring import authored_source_is_current
+
+        return rule_row.status == "active" and await authored_source_is_current(db, candidate)
     dependency = await db.scalar(
         select(TrainingVersionMenuDependency).where(
             TrainingVersionMenuDependency.training_version_id == candidate.training_version_id

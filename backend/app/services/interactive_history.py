@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -23,6 +24,7 @@ from app.schemas.assessment import (
     LessonInteractiveTrainingSummaryResponse,
 )
 from app.services.interactive_attempts import get_interactive_attempt
+from app.services.interactive_cycles import cycle_summary, lesson_attempts, resumable_attempt
 
 HISTORY_LIMIT = 20
 
@@ -123,7 +125,7 @@ def _result_summary(
         assessment_version_id=attempt.assessment_version_id,
         completed_at=result.completed_at,
         correct_count=result.correct_count,
-        total_count=5,
+        total_count=result.total_count,
         score_basis_points=result.score_basis_points,
         knowledge_level=result.knowledge_level,
         is_current=attempt.assessment_version_id == current_assessment_version_id,
@@ -138,7 +140,9 @@ async def get_lesson_interactive_training_summary(
     employee_profile_id: UUID,
     lesson_id: UUID,
     session_id: UUID,
+    now: datetime | None = None,
 ) -> LessonInteractiveTrainingSummaryResponse:
+    now = now or datetime.now(UTC)
     participation, assignment, lesson_version = await _current_scope(
         db,
         organization_id=organization_id,
@@ -201,25 +205,20 @@ async def get_lesson_interactive_training_summary(
 
     current_assessment_id = assessment.id if assessment is not None else None
     active_attempt = None
-    if current_assessment_id is not None:
-        active = await db.scalar(
-            select(AssessmentAttempt).where(
-                AssessmentAttempt.organization_id == organization_id,
-                AssessmentAttempt.employee_profile_id == employee_profile_id,
-                AssessmentAttempt.assignment_id == assignment.id,
-                AssessmentAttempt.assessment_version_id == current_assessment_id,
-                AssessmentAttempt.status == "in_progress",
-            )
+    active = await resumable_attempt(
+        db,
+        await lesson_attempts(db, organization_id, location_id, employee_profile_id, lesson_id),
+        now,
+    )
+    if active is not None:
+        active_attempt = await get_interactive_attempt(
+            db,
+            organization_id=organization_id,
+            location_id=location_id,
+            employee_profile_id=employee_profile_id,
+            attempt_id=active.id,
+            session_id=session_id,
         )
-        if active is not None:
-            active_attempt = await get_interactive_attempt(
-                db,
-                organization_id=organization_id,
-                location_id=location_id,
-                employee_profile_id=employee_profile_id,
-                attempt_id=active.id,
-                session_id=session_id,
-            )
 
     history_rows = list(
         (
@@ -286,16 +285,27 @@ async def get_lesson_interactive_training_summary(
                 current_assessment_version_id=current_assessment_id,
             )
 
+    cycle = await cycle_summary(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_id=employee_profile_id,
+        lesson_id=lesson_id,
+        assessment_version_id=current_assessment_id,
+        now=now,
+    )
+    cycle.can_restart = cycle.can_restart and availability == "ready"
     return LessonInteractiveTrainingSummaryResponse(
         lesson_id=lesson_id,
         lesson_version_id=lesson_version.id,
         assessment_version_id=current_assessment_id,
         availability=availability,
-        can_start=availability == "ready",
+        can_start=availability == "ready" and cycle.status in {"available", "in_progress"},
         reason_codes=reason_codes,
         readiness_status=readiness.status if readiness is not None else None,
         active_attempt=active_attempt,
         latest=latest,
         best=best,
         history=history,
+        cycle=cycle,
     )

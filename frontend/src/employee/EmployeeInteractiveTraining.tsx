@@ -24,7 +24,7 @@ interface EmployeeInteractiveTrainingProps {
   preferredLocale: "uk" | "en";
 }
 
-type BusyAction = "start" | "answer" | "takeover" | null;
+type BusyAction = "start" | "answer" | "takeover" | "restart" | null;
 
 const knowledgeLabels: Record<InteractiveKnowledgeLevel, string> = {
   very_weak: "Потрібно повторити",
@@ -134,7 +134,7 @@ function AvailabilityMessage({ summary }: { summary: LessonInteractiveTrainingSu
   if (summary.readiness_status === "warning") {
     return (
       <p className="interactive-warning" role="status">
-        Тренування готове, але наступна спроба може містити знайомі питання.
+        Банк питань обмежений. Повторення доступне лише після явного початку нового циклу.
       </p>
     );
   }
@@ -326,6 +326,8 @@ export function EmployeeInteractiveTraining({
   const [error, setError] = useState<string | null>(null);
   const [deviceConflict, setDeviceConflict] = useState(false);
   const startKey = useRef(createIdempotencyKey());
+  const restartKey = useRef(createIdempotencyKey());
+  const restartExpected = useRef<{ id: string | null } | null>(null);
   const takeoverKey = useRef(createIdempotencyKey());
   const answerKeys = useRef<Record<string, string>>({});
   const errorRef = useRef<HTMLDivElement>(null);
@@ -339,22 +341,26 @@ export function EmployeeInteractiveTraining({
     setDeviceConflict(!nextAttempt.writable);
   }, []);
 
-  const loadSummary = useCallback(async () => {
-    if (!lessonCompleted) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await client.request<LessonInteractiveTrainingSummary>(
-        `/me/training/lessons/${lessonId}/interactive-training`,
-      );
-      setSummary(response);
-      if (response.active_attempt) openAttempt(response.active_attempt);
-    } catch {
-      setError("Не вдалося завантажити тренування. Спробуйте ще раз.");
-    } finally {
-      setLoading(false);
-    }
-  }, [client, lessonCompleted, lessonId, openAttempt]);
+  const loadSummary = useCallback(
+    async (restoreAttempt = true) => {
+      if (!lessonCompleted) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await client.request<LessonInteractiveTrainingSummary>(
+          `/me/training/lessons/${lessonId}/interactive-training`,
+        );
+        setSummary(response);
+        if (restoreAttempt && response.active_attempt) openAttempt(response.active_attempt);
+      } catch {
+        setSummary(null);
+        setError("Не вдалося завантажити тренування. Спробуйте ще раз.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [client, lessonCompleted, lessonId, openAttempt],
+  );
 
   useEffect(() => {
     // Стан тренування є серверним знімком; локально не вгадуємо доступність.
@@ -394,7 +400,9 @@ export function EmployeeInteractiveTraining({
       setMatching({});
       startKey.current = createIdempotencyKey();
     } catch (caught) {
-      if (caught instanceof ApiError && caught.code === "ASSESSMENT_NOT_READY") {
+      if (caught instanceof ApiError && caught.code === "INTERACTIVE_CYCLE_EXHAUSTED") {
+        await loadSummary();
+      } else if (caught instanceof ApiError && caught.code === "ASSESSMENT_NOT_READY") {
         setError("Тренування ще готується. Матеріал уроку залишається доступним.");
       } else {
         setError("Не вдалося почати тренування. Спробуйте ще раз.");
@@ -470,6 +478,7 @@ export function EmployeeInteractiveTraining({
       );
       setReviewQuestionId(activeQuestion.id);
       setResult(response.result);
+      if (response.result) await loadSummary(false);
     } catch (caught) {
       if (
         caught instanceof ApiError &&
@@ -479,7 +488,9 @@ export function EmployeeInteractiveTraining({
         setAttempt((current) => (current ? { ...current, writable: false } : current));
         setError("Спроба відкрита на іншому пристрої. Відповідь не збережено.");
       } else if (caught instanceof ApiError && caught.code === "ATTEMPT_EXPIRED") {
-        setError("Термін цієї спроби минув. Почніть нове тренування.");
+        setAttempt(null);
+        await loadSummary();
+        setError("Термін цієї спроби минув. Почніть новий цикл.");
       } else {
         setError("Відповідь не збережено. Ваш вибір залишився — спробуйте ще раз.");
       }
@@ -535,6 +546,38 @@ export function EmployeeInteractiveTraining({
     await startAttempt();
   };
 
+  const restartCycle = async () => {
+    if (busy || !summary?.cycle?.can_restart || isPaused) return;
+    setBusy("restart");
+    setError(null);
+    restartExpected.current ??= { id: summary.cycle.id };
+    try {
+      await client.request(`/me/training/lessons/${lessonId}/interactive-training/cycles/restart`, {
+        method: "POST",
+        csrfToken,
+        idempotencyKey: restartKey.current,
+        body: { expected_cycle_id: restartExpected.current.id },
+      });
+      restartKey.current = createIdempotencyKey();
+      restartExpected.current = null;
+      setAttempt(null);
+      setResult(null);
+      setActiveQuestionId(null);
+      setReviewQuestionId(null);
+      await loadSummary();
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.code === "REVISION_CONFLICT") {
+        restartKey.current = createIdempotencyKey();
+        restartExpected.current = null;
+        await loadSummary();
+      } else {
+        setError("Не вдалося почати новий цикл. Спробуйте ще раз.");
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const canSubmit = activeQuestion ? Boolean(answerPayload(activeQuestion)) : false;
 
   return (
@@ -542,7 +585,7 @@ export function EmployeeInteractiveTraining({
       <div className="interactive-training-heading">
         <p className="eyebrow">Практика після уроку</p>
         <h2 id="interactive-training-title">Інтерактивне тренування</h2>
-        <p>П’ять коротких питань із поясненням після кожної підтвердженої відповіді.</p>
+        <p>До п’яти коротких питань із поясненням після кожної підтвердженої відповіді.</p>
       </div>
 
       {!lessonCompleted ? (
@@ -568,6 +611,27 @@ export function EmployeeInteractiveTraining({
       ) : null}
 
       {summary ? <AvailabilityMessage summary={summary} /> : null}
+      {!loading && summary?.cycle && summary.availability === "ready" ? (
+        <div className="interactive-availability" role="status">
+          {summary.cycle.status === "exhausted" ? <strong>Усі питання пройдено</strong> : null}
+          {summary.cycle.status === "restart_required" ? (
+            <strong>Попередню спробу не завершено. Для продовження почніть новий цикл.</strong>
+          ) : null}
+          {summary.cycle.status === "available" ? (
+            <span>Нових питань: {summary.cycle.remaining_count}</span>
+          ) : null}
+          {summary.cycle.can_restart ? (
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={Boolean(busy)}
+              onClick={() => void restartCycle()}
+            >
+              {busy === "restart" ? "Починаємо цикл…" : "Почати новий цикл"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {deviceConflict && attempt && !isPaused ? (
         <div className="interactive-device-card">
@@ -586,9 +650,14 @@ export function EmployeeInteractiveTraining({
 
       {attempt && activeQuestion && !result ? (
         <article className="interactive-attempt" aria-labelledby={`question-${activeQuestion.id}`}>
-          <div className="interactive-progress" aria-label={`Питання ${activePosition} з 5`}>
-            <span>{activePosition} з 5</span>
-            <progress max={5} value={activePosition} />
+          <div
+            className="interactive-progress"
+            aria-label={`Питання ${activePosition} з ${attempt.questions.length}`}
+          >
+            <span>
+              {activePosition} з {attempt.questions.length}
+            </span>
+            <progress max={attempt.questions.length} value={activePosition} />
           </div>
           {attempt.presentation_locale !== preferredLocale ? (
             <p className="interactive-locale-note" role="status">
@@ -671,17 +740,19 @@ export function EmployeeInteractiveTraining({
               </ul>
             </div>
           ) : (
-            <p>Усі відповіді правильні. Можете повторити тренування для закріплення.</p>
+            <p>Усі відповіді правильні.</p>
           )}
           <div className="interactive-final-actions">
-            <button
-              className="button button-primary"
-              disabled={!summary?.can_start || isPaused || busy === "start"}
-              onClick={() => void retryAttempt()}
-              type="button"
-            >
-              {busy === "start" ? "Готуємо спробу…" : "Повторити тренування"}
-            </button>
+            {summary?.can_start && !loading ? (
+              <button
+                className="button button-primary"
+                disabled={!summary?.can_start || isPaused || busy === "start"}
+                onClick={() => void retryAttempt()}
+                type="button"
+              >
+                {busy === "start" ? "Готуємо спробу…" : "Наступні питання"}
+              </button>
+            ) : null}
             <Link className="button button-secondary" to="/employee/learning">
               Продовжити навчання
             </Link>
@@ -689,7 +760,7 @@ export function EmployeeInteractiveTraining({
         </section>
       ) : null}
 
-      {summary?.can_start && !attempt && !isPaused ? (
+      {summary?.can_start && !attempt && !isPaused && !loading ? (
         <button
           className="button button-primary interactive-start-button"
           disabled={busy === "start"}
@@ -699,7 +770,7 @@ export function EmployeeInteractiveTraining({
           {busy === "start"
             ? "Готуємо спробу…"
             : summary.latest
-              ? "Повторити тренування"
+              ? "Наступні питання"
               : "Почати тренування"}
         </button>
       ) : null}

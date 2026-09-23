@@ -785,8 +785,17 @@ class EmployeeMenuAllergen(StrictMenuSchema):
     label: str
 
 
+class EmployeeMenuSourceNote(StrictMenuSchema):
+    source_date: str
+    guest_description: str
+    composition: str | None
+    allergen_labels: list[str]
+    verification_status: Literal["unverified"] = "unverified"
+
+
 class EmployeeMenuItemDetail(EmployeeMenuItemSummary):
     description: str | None
     components: list[EmployeeMenuComponent]
     allergen_data_status: FactDataStatus
     allergens: list[EmployeeMenuAllergen]
+    source_note: EmployeeMenuSourceNote | None = None

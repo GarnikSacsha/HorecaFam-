@@ -2513,10 +2513,20 @@ h1 {
   background: var(--warning-soft);
 }
 
-.learning-menu-card a {
+.learning-menu-card a,
+.learning-menu-card button {
   width: fit-content;
   color: var(--brand-provisional-strong);
   font-weight: 800;
+}
+
+.learning-menu-card button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .learning-media {

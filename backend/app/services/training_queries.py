@@ -209,6 +209,7 @@ async def get_training_version_detail(
             lesson_responses.append(
                 TrainingLessonResponse(
                     id=lesson_version.lesson_id,
+                    lesson_version_id=lesson_version.id,
                     position=lesson_version.position,
                     title_uk=uk_lesson.title,
                     description_uk=uk_lesson.description,

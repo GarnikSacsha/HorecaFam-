@@ -395,12 +395,7 @@ describe("Employee Training reference", () => {
     expect(screen.getByRole("button", { name: "Ознайомився" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Інтерактивне тренування" })).toBeInTheDocument();
     expect(screen.getByText("Спочатку завершіть урок")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Відкрити позицію в меню" })).toHaveAttribute(
-      "href",
-      expect.stringMatching(
-        /^\/employee\/menu\?item=menu-item-1&returnTo=%2Femployee%2Flearning%2Flessons%2Flesson-1%23block-/,
-      ),
-    );
+    expect(screen.getByRole("button", { name: "Відкрити позицію в меню" })).toBeInTheDocument();
     expect(requests.some((path) => path.includes("/assets/asset-1/access"))).toBe(true);
   });
 

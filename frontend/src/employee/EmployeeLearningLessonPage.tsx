@@ -5,12 +5,14 @@ import type {
   EmployeeTrainingAssetAccessResponse,
   EmployeeTrainingContentBlock,
   EmployeeTrainingLessonDetail,
+  EmployeeMenuItemDetail,
   LessonCompletionResponse,
 } from "../api/contracts";
 import { ApiError, createIdempotencyKey } from "../api/client";
 import type { ApiClient } from "../api/client";
 import { useSession } from "../session/SessionContext";
 import { EmployeeInteractiveTraining } from "./EmployeeInteractiveTraining";
+import { MenuDetail } from "./EmployeeMenuPage";
 
 function textValue(payload: Record<string, unknown>, key: string): string | null {
   const value = payload[key];
@@ -79,11 +81,12 @@ function TrainingImageBlock({
 function TrainingBlock({
   block,
   client,
+  onMenuItemOpen,
 }: {
   block: EmployeeTrainingContentBlock;
   client: ApiClient;
+  onMenuItemOpen: (itemId: string) => void;
 }) {
-  const { lessonId } = useParams<{ lessonId: string }>();
   const payload = block.payload;
   const fallback = <FallbackNote visible={block.translation_fallback} />;
 
@@ -143,11 +146,9 @@ function TrainingBlock({
       <aside className="learning-menu-card" id={`block-${block.id}`} tabIndex={-1}>
         <p className="eyebrow">Пов’язана позиція меню</p>
         {note ? <p>{note}</p> : null}
-        <Link
-          to={`/employee/menu?item=${encodeURIComponent(itemId)}&returnTo=${encodeURIComponent(`/employee/learning/lessons/${lessonId}#block-${block.id}`)}`}
-        >
+        <button className="text-link" type="button" onClick={() => onMenuItemOpen(itemId)}>
           Відкрити позицію в меню
-        </Link>
+        </button>
         {fallback}
       </aside>
     );
@@ -194,8 +195,21 @@ export function EmployeeLearningLessonPage() {
   const [completionResponse, setCompletionResponse] = useState<LessonCompletionResponse | null>(
     null,
   );
+  const [menuItem, setMenuItem] = useState<EmployeeMenuItemDetail | null>(null);
+  const [menuItemLoading, setMenuItemLoading] = useState(false);
+  const [menuItemError, setMenuItemError] = useState<string | null>(null);
+  const menuRequest = useRef(0);
+  const requestedMenuItem = useRef<string | null>(null);
+  const menuReturnFocusRef = useRef<HTMLElement | null>(null);
   const idempotencyKey = useRef(createIdempotencyKey());
   const locale = session?.user.preferred_locale === "en" ? "en" : "uk";
+
+  useEffect(
+    () => () => {
+      menuRequest.current += 1;
+    },
+    [lessonId],
+  );
 
   useEffect(() => {
     if (!lesson || !hash.startsWith("#block-")) return;
@@ -252,6 +266,35 @@ export function EmployeeLearningLessonPage() {
     }
   };
 
+  const openMenuItem = async (itemId: string) => {
+    const request = ++menuRequest.current;
+    requestedMenuItem.current = itemId;
+    setMenuItemLoading(true);
+    setMenuItem(null);
+    setMenuItemError(null);
+    try {
+      const item = await client.request<EmployeeMenuItemDetail>(
+        `/me/menu/items/${encodeURIComponent(itemId)}`,
+      );
+      if (request === menuRequest.current) setMenuItem(item);
+    } catch {
+      if (request === menuRequest.current) {
+        setMenuItemError("Не вдалося завантажити деталі позиції.");
+        menuReturnFocusRef.current?.focus({ preventScroll: true });
+      }
+    } finally {
+      if (request === menuRequest.current) setMenuItemLoading(false);
+    }
+  };
+
+  const closeMenuItem = useCallback(() => {
+    menuRequest.current += 1;
+    setMenuItemLoading(false);
+    setMenuItemError(null);
+    setMenuItem(null);
+    window.requestAnimationFrame(() => menuReturnFocusRef.current?.focus({ preventScroll: true }));
+  }, []);
+
   return (
     <article className="employee-learning-page learning-reader lesson-reader">
       <Link className="learning-back-link" to="/employee/learning">
@@ -279,9 +322,31 @@ export function EmployeeLearningLessonPage() {
           </header>
           <div className="lesson-content">
             {lesson.content_blocks.map((block) => (
-              <TrainingBlock key={block.id} block={block} client={client} />
+              <TrainingBlock
+                key={block.id}
+                block={block}
+                client={client}
+                onMenuItemOpen={(itemId) => {
+                  menuReturnFocusRef.current = document.activeElement as HTMLElement | null;
+                  void openMenuItem(itemId);
+                }}
+              />
             ))}
           </div>
+          {menuItemError ? (
+            <div className="inline-error" role="alert">
+              <p>{menuItemError}</p>
+              <button
+                className="button button-quiet"
+                type="button"
+                onClick={() => {
+                  if (requestedMenuItem.current) void openMenuItem(requestedMenuItem.current);
+                }}
+              >
+                Повторити
+              </button>
+            </div>
+          ) : null}
           <section className="lesson-completion-panel" aria-labelledby="lesson-completion-title">
             <p className="eyebrow">Завершення уроку</p>
             <h2 id="lesson-completion-title">Підтвердьте ознайомлення</h2>
@@ -354,6 +419,14 @@ export function EmployeeLearningLessonPage() {
               lessonCompleted={lesson.completed}
               lessonId={lesson.id}
               preferredLocale={locale}
+            />
+          ) : null}
+          {menuItem || menuItemLoading ? (
+            <MenuDetail
+              item={menuItem}
+              loading={menuItemLoading}
+              onClose={closeMenuItem}
+              returnTo={null}
             />
           ) : null}
         </>

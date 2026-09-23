@@ -263,11 +263,11 @@ describe("Admin Menu workspace", () => {
     await screen.findByText("Позиція 100");
     expect(screen.queryByText("Позиція 101")).not.toBeInTheDocument();
     for (const last of [200, 300, 308]) {
-      await user.click(screen.getByRole("button", { name: "Показати ще" }));
+      await user.click(screen.getByText("Показати ще", { selector: "button" }));
       await screen.findByText(`Позиція ${last}`);
     }
     expect(screen.getAllByText(/^Позиція \d+$/)).toHaveLength(308);
-    expect(screen.queryByRole("button", { name: "Показати ще" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Показати ще", { selector: "button" })).not.toBeInTheDocument();
     expect(requests.some(({ path }) => path.includes("cursor=opaque%3A100"))).toBe(true);
   });
 

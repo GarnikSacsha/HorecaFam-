@@ -605,7 +605,7 @@ class AssessmentAttempt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="status_allowed",
         ),
         CheckConstraint("presentation_locale IN ('uk', 'en')", name="locale_allowed"),
-        CheckConstraint("question_count IN (5, 10, 20)", name="question_count_allowed"),
+        CheckConstraint("question_count IN (1, 2, 3, 4, 5, 10, 20)", name="question_count_allowed"),
         CheckConstraint("snapshot_schema_version >= 1", name="snapshot_schema_version_positive"),
         CheckConstraint("expires_at > started_at", name="expiry_after_start"),
         CheckConstraint(
@@ -814,14 +814,14 @@ class AttemptResult(UUIDPrimaryKeyMixin, Base):
         UniqueConstraint("attempt_id", name="uq_attempt_results_attempt"),
         UniqueConstraint("id", "attempt_id", name="uq_attempt_results_source_scope"),
         CheckConstraint("correct_count BETWEEN 0 AND total_count", name="correct_count_range"),
-        CheckConstraint("total_count IN (5, 10, 20)", name="total_count_allowed"),
+        CheckConstraint("total_count IN (1, 2, 3, 4, 5, 10, 20)", name="total_count_allowed"),
         CheckConstraint("score_basis_points BETWEEN 0 AND 10000", name="score_range"),
         CheckConstraint(
             "knowledge_level IN ('very_weak', 'weak', 'good', 'strong')",
             name="knowledge_level_allowed",
         ),
         CheckConstraint(
-            "(total_count IN (5, 10) AND pass_status IS NULL) OR "
+            "(total_count IN (1, 2, 3, 4, 5, 10) AND pass_status IS NULL) OR "
             "(total_count = 20 AND pass_status IN ('passed', 'failed'))",
             name="pass_status_matches_count",
         ),

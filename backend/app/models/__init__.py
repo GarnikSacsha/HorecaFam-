@@ -101,6 +101,7 @@ from app.models.identity import (
 )
 from app.models.invitations import ApiIdempotencyRecord, Invitation, InvitationRateLimitBucket
 from app.models.jobs import BackgroundJob, EmailDelivery, JobAttempt
+from app.models.lesson_question_cycles import LessonQuestionCycle, LessonQuestionCycleItem
 from app.models.menu import (
     Allergen,
     Menu,
@@ -197,6 +198,8 @@ __all__ = [
     "FactDataStatus",
     "GenerationRuleStatus",
     "LessonCompletion",
+    "LessonQuestionCycle",
+    "LessonQuestionCycleItem",
     "LessonCompletionSource",
     "LifecycleStatus",
     "Lesson",

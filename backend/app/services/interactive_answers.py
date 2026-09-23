@@ -84,6 +84,7 @@ async def _result_response(
     return InteractiveResultResponse(
         id=result.id,
         correct_count=result.correct_count,
+        total_count=result.total_count,
         score_basis_points=result.score_basis_points,
         knowledge_level=result.knowledge_level,
         completed_at=attempt.completed_at,
@@ -215,11 +216,11 @@ async def _complete_attempt(
         )
         or 0
     )
-    score_basis_points = correct_count * 2000
+    score_basis_points = correct_count * 10000 // attempt.question_count
     result = AttemptResult(
         attempt_id=attempt.id,
         correct_count=correct_count,
-        total_count=5,
+        total_count=attempt.question_count,
         score_basis_points=score_basis_points,
         knowledge_level=knowledge_level(score_basis_points),
         pass_status=None,
@@ -358,7 +359,7 @@ async def submit_interactive_answer(
         )
         or 0
     )
-    if answer_count == 5:
+    if answer_count == attempt.question_count:
         await _complete_attempt(db, attempt, now=now)
         db.add(
             AuditEvent(

@@ -69,6 +69,78 @@ function renderTraining(client: ApiClient, lessonCompleted = true) {
 }
 
 describe("Employee Interactive Training", () => {
+  it("shows the actual denominator for a three-question remainder", async () => {
+    const client: ApiClient = {
+      getSession: () => Promise.reject(new Error("unused")),
+      request: <T,>() =>
+        Promise.resolve({
+          ...emptySummary,
+          active_attempt: { ...attempt, questions: attempt.questions.slice(0, 3) },
+        } as T),
+    };
+    renderTraining(client);
+    expect(await screen.findByText("1 з 3")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("max", "3");
+  });
+
+  it("requires explicit restart after exhaustion and does not auto-start", async () => {
+    const user = userEvent.setup();
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    let restarted = false;
+    const cycle = {
+      id: "cycle-1",
+      number: 1,
+      status: "exhausted",
+      eligible_count: 8,
+      reserved_count: 8,
+      answered_count: 8,
+      remaining_count: 0,
+      can_restart: true,
+    };
+    const client: ApiClient = {
+      getSession: () => Promise.reject(new Error("unused")),
+      request: <T,>(path: string, options?: RequestOptions) => {
+        requests.push({ path, options });
+        if (path.endsWith("/cycles/restart")) {
+          restarted = true;
+          return Promise.resolve({
+            ...cycle,
+            id: "cycle-2",
+            number: 2,
+            status: "available",
+            remaining_count: 8,
+          } as T);
+        }
+        return Promise.resolve({
+          ...emptySummary,
+          can_start: restarted,
+          cycle: restarted
+            ? {
+                ...cycle,
+                id: "cycle-2",
+                number: 2,
+                status: "available",
+                can_restart: false,
+                remaining_count: 8,
+              }
+            : cycle,
+        } as T);
+      },
+    };
+    renderTraining(client);
+    expect(await screen.findByText("Усі питання пройдено")).toBeInTheDocument();
+    expect(requests.filter(({ options }) => options?.method === "POST")).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: "Почати новий цикл" }));
+    await screen.findByRole("button", { name: "Почати тренування" });
+    const mutations = requests.filter(({ options }) => options?.method === "POST");
+    expect(mutations).toHaveLength(1);
+    expect(mutations[0].options).toMatchObject({
+      csrfToken: "csrf-safe",
+      body: { expected_cycle_id: "cycle-1" },
+    });
+    expect(mutations[0].options?.idempotencyKey).toBeTruthy();
+  });
+
   it("uses exclusive radio selection for description recognition without changing answer wire format", async () => {
     const user = userEvent.setup();
     const requests: RequestOptions[] = [];
@@ -334,7 +406,7 @@ describe("Employee Interactive Training", () => {
     expect(screen.getByRole("heading", { name: "Що варто повторити" })).toBeInTheDocument();
     expect(screen.getByText("Питання 3")).toBeInTheDocument();
     expect(screen.getByText("Питання 5")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Повторити тренування" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Наступні питання" })).toBeEnabled();
     expect(screen.getByRole("link", { name: "Продовжити навчання" })).toHaveAttribute(
       "href",
       "/employee/learning",

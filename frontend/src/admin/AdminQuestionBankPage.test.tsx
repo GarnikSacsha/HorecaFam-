@@ -213,6 +213,14 @@ function renderPage(client: ApiClient) {
 }
 
 describe("Admin Question Bank", () => {
+  it("offers authored import and explicit Final publication without starting mutations", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    renderPage(questionBankClient(requests));
+    expect(await screen.findByRole("button", { name: "Імпорт авторських питань" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Нова версія Final Exam" })).toBeEnabled();
+    expect(requests.filter(({ options }) => options?.method === "POST")).toHaveLength(0);
+  });
+
   it("shows exact queue counts, provenance and lesson readiness, then generates for exact versions", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const user = userEvent.setup();

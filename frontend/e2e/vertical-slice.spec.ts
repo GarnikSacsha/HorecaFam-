@@ -197,6 +197,11 @@ test("admin invitation, pending setup, activation and active employee home", asy
       return;
     }
 
+    if (method === "GET" && pathname === `/organizations/${organization.id}/invitations`) {
+      await route.fulfill({ json: { items: [], next_cursor: null } });
+      return;
+    }
+
     if (method === "POST" && pathname === `/organizations/${organization.id}/invitations`) {
       assertProtectedMutation(request, true);
       await route.fulfill({
@@ -288,7 +293,9 @@ test("admin invitation, pending setup, activation and active employee home", asy
 
   await page.getByLabel("Електронна пошта нового працівника").fill("new@example.com");
   await page.getByRole("button", { name: "Надіслати запрошення" }).click();
-  await expect(page.getByRole("status")).toContainText("new@example.com");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Запрошення створено для new@example.com" }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Вийти", exact: true }).click();
   await page.goto("/invite?token=invitation-safe");

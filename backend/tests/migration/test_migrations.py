@@ -511,6 +511,8 @@ def test_metadata_contains_current_backend_tables() -> None:
         "assets",
         "lesson_content_block_translations",
         "lesson_content_blocks",
+        "lesson_question_cycles",
+        "lesson_question_cycle_items",
         "lesson_translations",
         "lesson_versions",
         "lessons",

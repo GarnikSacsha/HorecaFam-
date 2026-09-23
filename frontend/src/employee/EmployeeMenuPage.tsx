@@ -27,7 +27,7 @@ function formatPrice(item: EmployeeMenuItemSummary): string {
   }).format(item.price_minor / 100);
 }
 
-function MenuDetail({
+export function MenuDetail({
   item,
   loading,
   onClose,
@@ -50,7 +50,7 @@ function MenuDetail({
       }
       if (event.key !== "Tab") return;
       const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], summary, [tabindex]:not([tabindex="-1"])',
       );
       if (!focusable?.length) return;
       const first = focusable[0];
@@ -102,7 +102,14 @@ function MenuDetail({
         {item ? (
           <>
             <p className="menu-detail-price">{formatPrice(item)}</p>
-            <p>{item.description ?? "Опис для цієї позиції не додано."}</p>
+            {item.source_note ? (
+              <section>
+                <h3>Як розповісти гостю</h3>
+                <p className="learning-prose">{item.source_note.guest_description}</p>
+              </section>
+            ) : (
+              <p>{item.description ?? "Опис для цієї позиції не додано."}</p>
+            )}
             <div className="menu-detail-facts">
               <section>
                 <h3>Склад</h3>
@@ -116,8 +123,13 @@ function MenuDetail({
                     ))}
                   </ul>
                 ) : (
-                  <p>Компоненти не вказані.</p>
+                  <p>{item.source_note?.composition ?? "Компоненти не вказані."}</p>
                 )}
+                {!item.components.length && item.source_note?.composition ? (
+                  <p className="menu-fallback-note">
+                    Перелік із джерела; повноту складу не підтверджено.
+                  </p>
+                ) : null}
               </section>
               <section>
                 <h3>Алергени</h3>
@@ -133,7 +145,31 @@ function MenuDetail({
                   <p>Підтверджених алергенів немає.</p>
                 )}
               </section>
+              {item.source_note ? (
+                <section>
+                  <h3>Позначки алергенів у джерелі</h3>
+                  {item.source_note.allergen_labels.length ? (
+                    <ul>
+                      {item.source_note.allergen_labels.map((label) => (
+                        <li key={label}>{label}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>У джерелі немає позначок. Це не означає відсутність алергенів.</p>
+                  )}
+                  <p className="menu-fallback-note">
+                    Джерело: {item.source_note.source_date}. Повноту відомостей не підтверджено;
+                    уточніть у закладі.
+                  </p>
+                </section>
+              ) : null}
             </div>
+            {item.source_note && item.description ? (
+              <details>
+                <summary>Оригінальний опис</summary>
+                <p className="learning-prose">{item.description}</p>
+              </details>
+            ) : null}
           </>
         ) : null}
       </div>
