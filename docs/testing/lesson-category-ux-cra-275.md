@@ -1,5 +1,14 @@
 # CRA-275 — аудит і локальна структура уроків, 2026-09-23
 
+Current continuation: [September 25 checklist](menu-detail-polish-2026-09-25.md).
+Published v4 and its completed rollout supersede v3 wording below; draft v5 has no
+content edits. Employee polish and approved Admin identity display are local only.
+
+## Superseding delivery checkpoint — verified 2026-09-24
+
+The four source checkpoints are published and delivered, followed by rollout-panel recovery 60bf159. API/web GitHub source connection is complete. Training v3 is assigned; four completions and certification are preserved. The full 308-item category content proposal remains distinct from the narrower published v3 cleanup. Earlier uncommitted/no-delivery/no-content-mutation statements below are dated history. [Current reconciliation](reconciliation-2026-09-24.md).
+
+
 ## Подальша авторизація доставки
 
 Після локального checkpoint Denys дозволив запис у Linear: comment

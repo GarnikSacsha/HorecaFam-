@@ -1,5 +1,34 @@
 # Testing Context
 
+## Local Git checkpoint — 2026-09-28
+
+The approved selective map now records Employee a162b6a, Admin 6658901 and LF 02a2329;
+this documentation commit completes it. Same-source 160 unit / 87 browser passes remain
+valid; suites were not repeated for Git-only actions. Exact staged checks passed.
+[Source map and acceptance boundaries](reconciliation-2026-09-28.md).
+
+## Current routing — 2026-09-28
+
+[Audit follow-up](reconciliation-2026-09-28.md): full frontend 160/0/0 and Playwright
+87/0/0; types/lint/format/build pass after the stale E2E expectation and CRLF correction.
+The same-session preceding backend audit passed 994/0/0 with all independent coverage
+gates; it was not rerun for this frontend-only continuation. The report records the
+initial failures, exact commands, selective commit boundaries and remaining approvals.
+
+## Current routing — 2026-09-25
+
+[Delivered web and cleaned draft](../deployment/menu-polish-cra-275-2026-09-25.md):
+SUCCESS, HTTP10/0/0, live Admin/Employee checks and eight verified draft removals.
+Published v4 remains active; v5 publication and recovery require separate approval.
+
+[September 25 Menu polish and Admin identity](menu-detail-polish-2026-09-25.md) owns
+the current local checks, approved scope and remaining task checklist under CRA-275.
+[September 24 reconciliation and student acceptance](reconciliation-2026-09-24.md)
+records published v4 and assessment recovery. The September 25 delivery report supersedes
+its preparation state: frontend fixes are delivered and draft v5 has 81 cards after eight
+verified duplicate removals. Publication and rollout remain pending separate approval.
+
+
 ## Current routing — 2026-09-21
 
 Use [STATUS](../../STATUS.md) and [the reconciliation ledger](reconciliation-2026-09-21.md) before the dated records below.
