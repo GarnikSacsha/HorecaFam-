@@ -5,7 +5,7 @@ import { vi } from "vitest";
 
 import type { ApiClient, RequestOptions } from "../api/client";
 import { ApiError } from "../api/client";
-import type { SessionResponse } from "../api/contracts";
+import type { SessionResponse, TrainingVersionDetail } from "../api/contracts";
 import { SessionProvider } from "../session/SessionContext";
 import { AdminTrainingPage } from "./AdminTrainingPage";
 import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
@@ -192,6 +192,49 @@ function trainingClient(
 }
 
 describe("Admin Training workspace", () => {
+  it("identifies existing cards from the bound menu without changing their bindings", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const fallback = trainingClient(requests);
+    const client: ApiClient = {
+      ...fallback,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.includes("/menu-versions/menu-version-1/items?"))
+          return Promise.resolve({
+            revision: 3,
+            next_cursor: null,
+            items: [{ item_id: "bound-item", name_uk: "Матча-клауд", source_item_key: "1720026" }],
+          } as T);
+        if (!options?.method && path.endsWith("/training-version-1")) {
+          const copy = structuredClone(detail) as TrainingVersionDetail;
+          copy.modules[0].lessons[0].content_blocks = [
+            {
+              id: "menu-block",
+              type: "menu_item_card",
+              position: 0,
+              payload: {},
+              menu_item_id: "bound-item",
+              asset: null,
+            },
+          ];
+          return Promise.resolve(copy as T);
+        }
+        return fallback.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    expect(await screen.findByText("Матча-клауд")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByText("Прив’язка до меню"));
+    expect(screen.getByText(/bound-item/)).toBeInTheDocument();
+    expect(screen.getByText(/1720026/)).toBeInTheDocument();
+    expect(requests.every(({ options }) => !options?.method)).toBe(true);
+  });
+
   it.each([
     ["missing", "Спочатку опублікуйте меню цієї локації, потім повторіть прив’язування."],
     ["stale", "Чернетку вже змінили в іншій сесії. Локальний текст збережено на екрані."],

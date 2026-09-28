@@ -20,6 +20,7 @@ import { StatusPill } from "../ui/States";
 import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
 import { AdminTrainingAudiencePanel } from "./AdminTrainingAudiencePanel";
 import { AdminTrainingMenuPicker } from "./AdminTrainingMenuPicker";
+import { useTrainingMenuItems } from "./useTrainingMenuItems";
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 
@@ -171,6 +172,15 @@ export function AdminTrainingPage() {
 
   const menuScope = `${organizationId}:${locationId}:${draft?.id}:${draft?.menu_version_id}:${selectedLesson?.id}`;
   const selectedMenuItem = menuSelection?.scope === menuScope ? menuSelection.id : "";
+  const hasMenuCards = lessons.some((lesson) =>
+    lesson.content_blocks.some((block) => block.type === "menu_item_card"),
+  );
+  const menuItems = useTrainingMenuItems(
+    client,
+    organizationId && locationId && draft?.menu_version_id && hasMenuCards
+      ? `/organizations/${organizationId}/locations/${locationId}/menu-versions/${draft.menu_version_id}`
+      : null,
+  );
 
   const applyDetail = useCallback((detail: TrainingVersionDetail) => {
     setDraft(detail);
@@ -806,6 +816,18 @@ export function AdminTrainingPage() {
                   busy={busy}
                   onSave={saveLesson}
                 />
+                {menuItems.error && (
+                  <div role="alert">
+                    Не вдалося завантажити назви позицій меню.{" "}
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={menuItems.retry}
+                    >
+                      Повторити завантаження назв
+                    </button>
+                  </div>
+                )}
                 {selectedLesson.content_blocks.length ? (
                   <ol className="training-block-list">
                     {[...selectedLesson.content_blocks]
@@ -814,6 +836,33 @@ export function AdminTrainingPage() {
                         <li key={block.id} className="training-block-card">
                           <div>
                             <strong>{blockLabels[block.type]}</strong>
+                            {block.type === "menu_item_card" && (
+                              <>
+                                <p>
+                                  {menuItems.loading
+                                    ? "Завантажуємо назву…"
+                                    : menuItems.error
+                                      ? "Не вдалося завантажити назву позиції."
+                                      : (menuItems.items.get(block.menu_item_id ?? "")?.name_uk ??
+                                        "Позицію не знайдено у прив’язаній версії меню.")}
+                                </p>
+                                <details>
+                                  <summary>Прив’язка до меню</summary>
+                                  <p>Позиція: {block.menu_item_id ?? "Прив’язка відсутня"}</p>
+                                  <p>Версія меню: {draft.menu_version_id ?? "Не прив’язано"}</p>
+                                  {menuItems.items.get(block.menu_item_id ?? "")
+                                    ?.source_item_key && (
+                                    <p>
+                                      Код джерела:{" "}
+                                      {
+                                        menuItems.items.get(block.menu_item_id ?? "")
+                                          ?.source_item_key
+                                      }
+                                    </p>
+                                  )}
+                                </details>
+                              </>
+                            )}
                             <pre>{JSON.stringify(block.payload, null, 2)}</pre>
                           </div>
                           <div className="icon-actions">
