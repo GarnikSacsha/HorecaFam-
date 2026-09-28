@@ -1,5 +1,18 @@
 # HoReCa Repository Status
 
+## Approved API runtime dependency correction — 2026-09-28
+
+PR #1 merged as 811ea05; web delivery succeeded with 11/0/0 public smoke. The new API
+could not start because a fresh SQLAlchemy 2.1.1 production install lacked greenlet.
+Denys explicitly authorized the minimal sqlalchemy[asyncio] extra, corrective commit,
+push/merge and API delivery. The accepted version range and application code stay intact.
+
+Clean-install RED reproduced the missing dependency. GREEN: installed-package async,
+app lifespan and real API process health checks 3/0/0; existing health tests 2/0/0;
+pip check passed. [Exact scope, commands/evidence and delivery boundary](docs/testing/sqlalchemy-asyncio-runtime-2026-09-28.md).
+This is the pre-delivery checkpoint. Post-merge runtime outcome is recorded in Linear
+CRA-275/START HERE. v5 publication and employee rollout remain separate.
+
 ## Approved local source checkpoints — 2026-09-28
 
 Denys approved the prepared four-entry local commit map with “Погнали дальше”.
