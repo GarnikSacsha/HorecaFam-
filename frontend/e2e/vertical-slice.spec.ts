@@ -650,6 +650,11 @@ test("admin JSON review confirm and atomic menu publication", async ({ page }) =
   await page.getByRole("button", { name: /Борщ/ }).click();
   const itemDialog = page.getByRole("dialog", { name: "Борщ" });
   await expect(itemDialog).toContainText("Борщ на яловичому бульйоні.");
-  await expect(itemDialog).toContainText("Сметана (за бажанням)");
-  await expect(itemDialog).toContainText("Молоко");
+  await expect(itemDialog).toContainText(/325\s*грн/);
+  await expect(itemDialog).not.toContainText("Сметана (за бажанням)");
+  await expect(itemDialog.getByRole("heading", { name: "Склад", exact: true })).toHaveCount(0);
+  await expect(itemDialog.getByText("Молоко", { exact: true })).toHaveCount(1);
+  await itemDialog.getByRole("button", { name: "Закрити", exact: true }).click();
+  await expect(itemDialog).not.toBeVisible();
+  await expect(page.getByRole("button", { name: /Борщ/ })).toBeFocused();
 });

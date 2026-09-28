@@ -1,5 +1,103 @@
 # HoReCa Repository Status
 
+## Approved local source checkpoints — 2026-09-28
+
+Denys approved the prepared four-entry local commit map with “Погнали дальше”.
+Completed source checkpoints: Employee a162b6a, Admin 6658901, frontend LF policy
+02a2329. This documentation checkpoint completes the map; no push, deployment or
+hosted data operation is included. The source is now recoverable in local Git.
+Earlier “uncommitted” paragraphs below describe the preparation state.
+
+The exact source was already verified: 160 unit and 87 browser tests passed with zero
+failures/skips; types/lint/format/build passed. Source has not changed since those gates,
+so application tests were not repeated solely for committing. Each commit's exact
+staged inventory and whitespace checks passed. Next: separately approve publication
+of this four-commit branch; content-v5 and rollout gates remain independent.
+
+[Commit map and evidence](docs/testing/reconciliation-2026-09-28.md).
+
+## Audit follow-up — local quality gates green, 2026-09-28
+
+Denys authorized executing the audit plan in order under CRA-275. Worktree 5c12 on
+codex/cra-275-lesson-category-ux remains at 60bf159 with delivered Employee/Admin
+overlays uncommitted. The old dirty main checkout is preserved.
+
+Corrected the outdated composition expectation in the menu-publication E2E scenario;
+publication/readback, description, price, allergens, close and focus remain checked.
+Added frontend-only LF attributes and normalized CRLF without extra source diffs.
+Fresh follow-up: 160 unit tests and 87 Playwright executions passed, zero failures/skips;
+Prettier, ESLint, TypeScript and build passed. Earlier same-session audit backend:
+994/0/0; coverage 94.38% statements, 81.38% branches, 89.71% critical aggregate.
+Backend was not modified or rerun for this frontend/test/documentation continuation.
+
+Latest hosted evidence remains September 25: web fixes delivered, draft v5 cleaned to
+81 cards, published/assigned v4 and progress preserved. No new hosted content read or
+mutation is claimed here. Current documentation reconciled; source checkpoint and v5
+publication/assessment recovery/rollout remain separate approvals. CRA-275 stays open.
+[Exact selective map, checks and next sequence](docs/testing/reconciliation-2026-09-28.md).
+
+The dated checkpoints below retain historical evidence; use this leading checkpoint
+and the September 25 delivery report for the current source/content boundary.
+
+## Web delivered; draft v5 cleaned — 2026-09-25
+
+Explicitly approved web-only packet reached SUCCESS as 3b7d4c5c-fc69-40cc-a151-407091abd4cb.
+Public smoke 10/0/0 with exact JS/CSS hashes; live Admin names and Employee bowl/close/focus
+passed. Employee Home retains assigned v4, 4/4 and certification. Eight pairs matched
+exact item/version bindings; only redundant v5 blocks removed. Reload confirms 81 cards
+(31/20/13/17), blocks45/37/25/33, preserved variants and zero Admin error alerts.
+Published v4 remains active. No API deployment, attempt, publication, rollout, commit or
+push. [Delivery evidence](docs/deployment/menu-polish-cra-275-2026-09-25.md).
+Next: separate approval for v5 publication, assessment recovery and preserved-progress
+rollout. Earlier local-only/preparation checkpoints below are historical.
+
+## Web candidate prepared — 2026-09-25
+
+The two local CRA-275 UI fixes now have an isolated 135-file frontend delivery packet.
+Manifest/ZIP checks pass; separate candidate types/build pass and all eight emitted
+artifacts match the working build. Fresh Railway read confirms API/web SUCCESS at
+60bf159 and web root /frontend. No upload/deploy/Git operation or content edit occurred.
+[Exact candidate, checks and approval boundary](docs/deployment/menu-polish-cra-275-2026-09-25.md).
+Next: separate approval for this web-only delivery, then live binding verification.
+
+## Menu polish and Admin card identity — local, 2026-09-25
+
+Denys authorized the screenshot correction and stepwise audit follow-up under CRA-275.
+The shared item dialog now omits composition and source-administration copy, retains
+one deduplicated allergen-label list, and hides empty fact sections. API facts/statuses
+are unchanged. Earlier Employee gate: full frontend 153/0/0, focused browser 6/0/0;
+types/lint/scoped format/build and source-backed local bowl preview passed.
+Admin access is resolved: published v4 remains active and an unchanged draft v5 exists
+(45/37/27/39 blocks). Denys approved extending CRA-275 to identify existing Admin cards.
+Local editor now resolves names from the bound Menu version and exposes binding details;
+pagination, retry and stale-scope isolation are covered. Latest combined frontend gate:
+160 passed / 0 failed / 0 skipped; focused Admin gate 24/0/0, final loader rerun 6/0/0
+(overlapping). Typecheck, final full ESLint, scoped format and build pass; 146 documentation
+links verified, zero broken. No duplicate has been removed.
+No commit, push or deployment. Next: deliver the reviewed frontend under separate
+authorization, verify eight bindings, prepare the draft correction, then separately
+approve publication/assessment recovery/rollout. Cross-version Practice history remains
+a contract question, not proven data loss. [Current checks and task checklist](docs/testing/menu-detail-polish-2026-09-25.md).
+
+## Published v4 follow-up — 2026-09-24
+
+Explicitly authorized v4 publication and rollout completed for two employees with 4/4 and 0/4 progress preserved. All four revised lessons are live. A missing assessment configuration was recovered through the existing import of the same 60 authored questions and unchanged Final quotas (10/4/3/3, 70%). Reload confirms lessons 4/4 available, Practice ready 60/10 and Final ready 60/20. Employee certification and Final history remain unchanged. Previous-version Practice history is not shown by the current-version history query; persistence was not independently queried. See the latest reconciliation section for evidence and limitations. Earlier draft/pending-approval and v3-only text below is historical.
+
+## Current verified checkpoint — 2026-09-24
+
+Denys authorized audit follow-up and completion of the existing Menu/lesson experience, without new features. CRA-275 is the bounded continuation; broader CRA-122 operational acceptance remains separate.
+
+Fresh read-only reconciliation confirms GitHub main and both successful staging API/web deployments use commit `60bf1599324040e62c5cea12725df17d111cdb50`. GitHub source is connected to the existing API/web services. The current implementation workspace is registered worktree `5c12`, branch `codex/cra-275-lesson-category-ux`. The old dirty main checkout at `4b45108` and worktree `6b30` are preserved historical workspaces, not the current candidate.
+
+Training v3 is already assigned in the live Employee UI: four of four required lessons completed, 100% progress and certification preserved. Final history retains 20/20 from September 22 and 19/20 from September 17. The persisted-rollout-panel fix is committed, published and deployed; the saved delivery evidence records completed rollout for two employees with 100% and 0% progress preserved. Do not repeat publication, employee transfer, account setup or deployment from older instructions.
+
+Named Menu cards, guest descriptions/source labels, compact variant details and module return are delivered. The 308-item/32-category restructuring packet is still only a proposal: live Food begins with a retained lemonade review card and has no category-heading contents. Preserve question-source links and immutable history when preparing a content correction. Unknown composition/allergens remain unverified.
+
+Fresh focused audit checks: backend 20 passed / 0 failed / 0 skipped; frontend 20/0/0 after an initial sandbox startup failure; public HTTP 6/0/0; diff whitespace checks passed in three worktrees. These are not refreshed full coverage or full staging acceptance. All five cron services still have no deployment or schedule; worker uses a separately delivered artifact.
+
+This checkpoint supersedes dated local-only/no-delivery/pending-rollout wording below. Owner acceptance and issue statuses are not automatically changed. Student verification is complete: frontend 151/0/0 and browser checks 6/0/0; live Dessert cycle and Practice passed with history preserved. The current ledger contains a minimal four-lesson content preview. Content follow-up is now prepared as hosted draft v4 in Bacara Demo: all four lessons have category/review headings, review content last and corrected up-to-five wording, with all 89 card occurrences preserved. Admin access is available. Four lesson readbacks after reload passed; readiness is Ready with zero UI error alerts. Publication confirmation was rejected by automatic approval review pending separate explicit authorization. Published/assigned v3 and progress remain unchanged. See the final continuation section of the reconciliation ledger. No new function, dependency, migration, commit, push or deployment is implied.
+
+
 ## Training rollout panel recovery — local, 2026-09-23
 
 Denys authorized fixing the Admin panel lost after navigation during the content update.

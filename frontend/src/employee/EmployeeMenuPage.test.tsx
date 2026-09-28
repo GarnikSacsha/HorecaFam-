@@ -70,7 +70,7 @@ const detail: EmployeeMenuItemDetail = {
 };
 
 describe("Employee published Menu", () => {
-  it("separates guest wording and source annotations from confirmed allergens", () => {
+  it("shows one allergen list without composition or source administration copy", () => {
     render(
       <MemoryRouter>
         <MenuDetail
@@ -80,7 +80,7 @@ describe("Employee published Menu", () => {
               source_date: "2026-08-20",
               guest_description: "Можу запропонувати борщ.",
               composition: "Буряк, капуста.",
-              allergen_labels: ["Позначка джерела"],
+              allergen_labels: ["Молоко", "Соя"],
               verification_status: "unverified",
             },
           }}
@@ -93,8 +93,44 @@ describe("Employee published Menu", () => {
     expect(screen.getByRole("heading", { name: "Як розповісти гостю" })).toBeInTheDocument();
     expect(screen.getByText("Можу запропонувати борщ.")).toBeInTheDocument();
     expect(screen.getByText("Молоко")).toBeInTheDocument();
-    expect(screen.getByText("Позначка джерела")).toBeInTheDocument();
-    expect(screen.getByText(/Повноту відомостей не підтверджено/)).toBeInTheDocument();
+    expect(screen.getAllByText("Молоко")).toHaveLength(1);
+    expect(screen.getByText("Соя")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "Алергени" })).toHaveLength(1);
+    expect(screen.queryByRole("heading", { name: "Склад" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Позначки алергенів|Повноту відомостей|Джерело:/),
+    ).not.toBeInTheDocument();
+  });
+  it.each([true, false])("omits empty fact sections when source notes exist: %s", (withSource) => {
+    render(
+      <MemoryRouter>
+        <MenuDetail
+          item={{
+            ...detail,
+            components: [],
+            allergen_data_status: "unknown",
+            allergens: [],
+            source_note: withSource
+              ? {
+                  source_date: "2026-08-20",
+                  guest_description: "Тунець, рис, авокадо.",
+                  composition: null,
+                  allergen_labels: [],
+                  verification_status: "unverified",
+                }
+              : null,
+          }}
+          loading={false}
+          onClose={() => {}}
+          returnTo={null}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole("heading", { name: "Склад" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Алергени" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Компоненти не вказані|підтверджено|алергенів немає/),
+    ).not.toBeInTheDocument();
   });
   it.each([
     "https://example.com",
@@ -278,7 +314,7 @@ describe("Employee published Menu", () => {
     await user.click(screen.getByRole("button", { name: /Борщ/ }));
     const dialog = await screen.findByRole("dialog", { name: "Борщ" });
     expect(dialog).toHaveTextContent("Борщ на яловичому бульйоні.");
-    expect(dialog).toHaveTextContent("Сметана (за бажанням)");
+    expect(dialog).not.toHaveTextContent("Сметана (за бажанням)");
     expect(dialog).toHaveTextContent("Молоко");
     expect(dialog).not.toHaveTextContent("source_reference");
   });

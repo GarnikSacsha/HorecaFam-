@@ -1,5 +1,15 @@
 # Training rollout panel recovery — 2026-09-23
 
+Current continuation: [September 25 checklist](menu-detail-polish-2026-09-25.md).
+The panel recovery is delivered. Subsequent v4 publication/rollout and assessment
+recovery completed; draft v5 remains unpublished and unedited. Do not repeat transfers
+from this historical report. Current frontend changes are still local.
+
+## Superseding delivery checkpoint — verified 2026-09-24
+
+The patch is committed, published and delivered as 60bf159. API/web are SUCCESS at this same commit. Saved delivery evidence records completed v3 rollout for two employees; fresh Employee read confirms v3 and preserved 4/4 completion, certification and Final history. Earlier local-only and pending-rollout wording below is historical. Do not repeat publication or transfer. [Current reconciliation](reconciliation-2026-09-24.md).
+
+
 Denys requested fixing the lost Admin rollout panel after the approved lesson-content
 correction. This is the bounded recovery follow-up to CRA-275, not a new content rewrite.
 

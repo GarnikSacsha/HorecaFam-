@@ -1,5 +1,37 @@
 # HoReCa Project Context
 
+## Current source checkpoint — 2026-09-28
+
+The approved four-entry local commit map is completed by the documentation checkpoint.
+Employee a162b6a, Admin 6658901 and LF 02a2329 preserve the tested delivered source.
+No push or new deployment. See [the ledger](docs/testing/reconciliation-2026-09-28.md)
+for verification and remaining boundaries. Older uncommitted-source wording is history.
+
+## Current routing — 2026-09-28
+
+[Audit follow-up and selective source map](docs/testing/reconciliation-2026-09-28.md)
+owns the fresh 160-unit/87-browser passing gates and local LF/test corrections.
+Worktree 5c12 retains delivered Employee/Admin overlays over 60bf159; no new commit or
+push. Latest hosted content remains the September 25 evidence below. Source checkpoint,
+v5 publication/recovery/rollout and broader CRA-122 acceptance are still separate gates.
+
+## Current routing — 2026-09-25
+
+Latest: [web delivery and cleaned draft](docs/deployment/menu-polish-cra-275-2026-09-25.md).
+Both UI fixes are delivered; v5 now has 81 cards after eight exact-binding duplicate
+removals. Published/assigned v4 is preserved. Publication and assessment/rollout recovery
+await separate authorization. The local-only preparation paragraph below is historical.
+
+Use [September 25 polish and task checklist](docs/testing/menu-detail-polish-2026-09-25.md)
+and the leading STATUS checkpoint. Git baseline is 60bf159; the delivered web packet also
+contains eight uncommitted Employee/Admin source/test overlays preserved in worktree 5c12.
+Training v4 is published and assigned with assessments recovered. Draft v5 is cleaned to
+81 cards; Admin names and Employee polish are delivered. Git checkpoint, v5 publication
+and preserved-progress rollout remain separate pending boundaries.
+[September 24 reconciliation](docs/testing/reconciliation-2026-09-24.md)
+retains publication/progress evidence. Do not repeat historical transfers or imports.
+
+
 ## Current context routing
 
 Use the leading [STATUS checkpoint](STATUS.md) for current delivery, content and acceptance.
