@@ -40,6 +40,12 @@ export function MenuDetail({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const allergenLabels = Array.from(
+    new Set([
+      ...(item?.allergens.map((allergen) => allergen.label) ?? []),
+      ...(item?.source_note?.allergen_labels ?? []),
+    ]),
+  );
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -110,60 +116,18 @@ export function MenuDetail({
             ) : (
               <p>{item.description ?? "Опис для цієї позиції не додано."}</p>
             )}
-            <div className="menu-detail-facts">
-              <section>
-                <h3>Склад</h3>
-                {item.components.length ? (
-                  <ul>
-                    {item.components.map((component) => (
-                      <li key={`${component.position}-${component.name}`}>
-                        {component.name}
-                        {component.optional ? " (за бажанням)" : ""}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>{item.source_note?.composition ?? "Компоненти не вказані."}</p>
-                )}
-                {!item.components.length && item.source_note?.composition ? (
-                  <p className="menu-fallback-note">
-                    Перелік із джерела; повноту складу не підтверджено.
-                  </p>
-                ) : null}
-              </section>
-              <section>
-                <h3>Алергени</h3>
-                {item.allergen_data_status === "unknown" ? (
-                  <p>Інформацію про алергени ще не підтверджено.</p>
-                ) : item.allergens.length ? (
-                  <ul>
-                    {item.allergens.map((allergen) => (
-                      <li key={allergen.code}>{allergen.label}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>Підтверджених алергенів немає.</p>
-                )}
-              </section>
-              {item.source_note ? (
+            {allergenLabels.length ? (
+              <div className="menu-detail-facts">
                 <section>
-                  <h3>Позначки алергенів у джерелі</h3>
-                  {item.source_note.allergen_labels.length ? (
-                    <ul>
-                      {item.source_note.allergen_labels.map((label) => (
-                        <li key={label}>{label}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>У джерелі немає позначок. Це не означає відсутність алергенів.</p>
-                  )}
-                  <p className="menu-fallback-note">
-                    Джерело: {item.source_note.source_date}. Повноту відомостей не підтверджено;
-                    уточніть у закладі.
-                  </p>
+                  <h3>Алергени</h3>
+                  <ul>
+                    {allergenLabels.map((label) => (
+                      <li key={label}>{label}</li>
+                    ))}
+                  </ul>
                 </section>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             {item.source_note && item.description ? (
               <details>
                 <summary>Оригінальний опис</summary>

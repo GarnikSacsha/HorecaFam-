@@ -96,7 +96,8 @@ describe("Lesson menu overlay", () => {
     await user.click(trigger);
     expect(await screen.findByRole("dialog", { name: "Пломбір" })).toBeInTheDocument();
     expect(screen.getByTestId("location")).toHaveTextContent("/employee/learning/lessons/lesson-1");
-    expect(screen.getByText("Інформацію про алергени ще не підтверджено.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Алергени" })).not.toBeInTheDocument();
+    expect(screen.getByText("Вершковий пломбір.")).toBeInTheDocument();
     expect(requests.filter((p) => p.startsWith("/me/menu"))).toEqual(["/me/menu/items/item-1"]);
     expect(requests.some((p) => p.endsWith("/complete"))).toBe(false);
     await user.keyboard("{Escape}");

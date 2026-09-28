@@ -86,9 +86,11 @@ test("lesson opens menu details in place and preserves keyboard focus and scroll
   const dialog = page.getByRole("dialog", { name: "Пломбір" });
   await expect(dialog).toBeVisible();
   await expect(page).toHaveURL(/\/employee\/learning\/lessons\/lesson-1$/);
-  await expect(dialog).toContainText("Інформацію про алергени ще не підтверджено.");
+  await expect(dialog.getByRole("heading", { name: "Склад", exact: true })).toHaveCount(0);
   await expect(dialog).toContainText("Можу запропонувати вершковий пломбір.");
-  await expect(dialog).toContainText("Повноту відомостей не підтверджено");
+  await expect(dialog).not.toContainText("підтверджено");
+  await expect(dialog).not.toContainText("Джерело:");
+  await expect(dialog.getByRole("heading", { name: "Алергени", exact: true })).toHaveCount(1);
   await expect(dialog.getByText("Молоко", { exact: true })).toBeVisible();
   const close = dialog.getByRole("button", { name: "Закрити", exact: true });
   await expect(close).toBeFocused();
