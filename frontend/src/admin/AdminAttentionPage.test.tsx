@@ -136,4 +136,7 @@ it("renders responsive queues, acknowledges and creates a proposed requirement e
   expect(create?.options?.csrfToken).toBe("csrf-safe");
   expect(create?.options?.idempotencyKey).toBeTruthy();
   expect(create?.options?.body).not.toHaveProperty("target_assessment_id");
+  expect(screen.getByRole("button", { name: /Критична помилка.*Проєкт/ })).toBeInTheDocument();
+  expect(screen.queryByText("critical_error")).not.toBeInTheDocument();
+  expect(screen.queryByText("acknowledged")).not.toBeInTheDocument();
 });

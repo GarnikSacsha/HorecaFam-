@@ -26,7 +26,7 @@ function isMfaEnrollmentRequired(
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { client, session, setSession, status } = useSession();
+  const { client, session, setSession, status, sessionNotice } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FieldError[]>([]);
@@ -69,6 +69,7 @@ export function LoginPage() {
         <BacaraLogo />
         <p className="eyebrow">Доступ до навчання</p>
         <h1 id="login-title">Увійдіть до свого простору</h1>
+        {sessionNotice ? <p role="status">{sessionNotice}</p> : null}
         <p className="form-intro">Використайте робочу адресу, на яку вас запросив адміністратор.</p>
         <form className="form-stack" onSubmit={(event) => void handleSubmit(event)} noValidate>
           <ErrorSummary errors={errors} />

@@ -1,5 +1,27 @@
 # HoReCa Repository Status
 
+## Manual QA fixes — committed, pushed and additionally tested, 2026-10-06
+
+Denys authorized correcting four observed Admin/Employee defects after manual QA:
+saved Final Exam review after reload, revoked-session handling, empty search copy,
+and technical lifecycle/retake labels. Implemented locally on
+`codex/fix-sqlalchemy-asyncio` at the `362183a` baseline. Denys authorized commit,
+push and additional tests. Four selective source checkpoints were pushed:
+`9bc263a`, `4a0ea58`, `403767f`, `142788f`; remote SHA readback matched.
+Post-push checks: full browser 87/0/0, auth/session/lifecycle PostgreSQL 40/0/0,
+public staging HTTP 4/0/0. Fresh pre-commit focused frontend 19/0/0 and Final Exam
+PostgreSQL 26/0/0 also passed. Final evidence is a documentation-only checkpoint.
+No PR, merge or deployment; staging API/web still run main at `1bd3840`.
+Delivery and authenticated acceptance of the new fixes remain the next gate.
+
+The only added API is an active-employee, ownership-scoped read of a completed
+Final Exam result. Existing grading and stored history remain unchanged. Final
+Vitest: 166/0/0; Final Exam service regression: 25 passed; corrected PostgreSQL API
+acceptance: 1/0/0. Types/lint/format, mypy and build passed. Browser acceptance:
+18/0/0 across desktop, compact and mobile, including review after reload without
+resubmitting the exam. [Scope, selective commit map and complete evidence](docs/testing/manual-qa-fixes-2026-10-06.md).
+Earlier checkpoints below describe historical source and delivery states.
+
 ## Approved API runtime dependency correction — 2026-09-28
 
 PR #1 merged as 811ea05; web delivery succeeded with 11/0/0 public smoke. The new API

@@ -62,6 +62,35 @@ function adminClient(
 }
 
 describe("Admin Employee flow", () => {
+  it("distinguishes an empty search from an empty team", async () => {
+    const client = adminClient(<T,>(path: string) =>
+      Promise.resolve(
+        (path.includes("/employees")
+          ? { items: path.includes("?query=") ? [] : [pendingEmployee], next_cursor: null }
+          : path.includes("/invitations")
+            ? { items: [], next_cursor: null }
+            : { name: "Bacara" }) as T,
+      ),
+    );
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminEmployeesPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    await screen.findByRole("table", { name: "Працівники" });
+    await user.type(screen.getByRole("searchbox", { name: "Пошук" }), "missing");
+    await user.click(screen.getByRole("button", { name: "Знайти" }));
+    expect(
+      await screen.findByRole("heading", { name: "За вашим запитом нікого не знайдено" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Працівників ще немає")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Скинути пошук" }));
+    expect(await screen.findByRole("table", { name: "Працівники" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+  });
   it("shows Final Exam status without turning employee results into a leaderboard", async () => {
     const results: AdminResultsOverviewResponse = {
       items: [

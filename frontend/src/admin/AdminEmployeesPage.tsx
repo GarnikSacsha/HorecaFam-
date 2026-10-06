@@ -114,6 +114,7 @@ export function AdminEmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteErrors, setInviteErrors] = useState<ReturnType<typeof formErrors>>([]);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
@@ -123,6 +124,8 @@ export function AdminEmployeesPage() {
   const loadEmployees = useCallback(
     async (search = "") => {
       if (!organizationId) return;
+      setLoading(true);
+      setLoadError(null);
       const suffix = search.trim() ? `?query=${encodeURIComponent(search.trim())}` : "";
       try {
         const [organizationResponse, employeeResponse] = await Promise.all([
@@ -133,6 +136,7 @@ export function AdminEmployeesPage() {
         ]);
         setOrganization(organizationResponse);
         setEmployees(employeeResponse.items);
+        setAppliedQuery(search.trim());
       } catch {
         setLoadError("Не вдалося завантажити працівників.");
       } finally {
@@ -257,8 +261,23 @@ export function AdminEmployeesPage() {
         ) : null}
         {loading ? (
           <p aria-live="polite">Завантажуємо працівників…</p>
-        ) : employees.length > 0 ? (
+        ) : loadError ? null : employees.length > 0 ? (
           <EmployeeRows employees={employees} />
+        ) : appliedQuery ? (
+          <div className="empty-state">
+            <h3>За вашим запитом нікого не знайдено</h3>
+            <p>Змініть ім’я чи email або поверніться до всього списку.</p>
+            <button
+              className="button button-quiet"
+              type="button"
+              onClick={() => {
+                setQuery("");
+                void loadEmployees();
+              }}
+            >
+              Скинути пошук
+            </button>
+          </div>
         ) : (
           <div className="empty-state">
             <h3>Працівників ще немає</h3>

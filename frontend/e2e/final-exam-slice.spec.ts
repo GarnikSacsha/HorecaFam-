@@ -62,6 +62,7 @@ test("Employee completes Final Exam without feedback and sees certification only
 }, testInfo) => {
   let answerCount = 0;
   let finished = false;
+  let finishRequests = 0;
 
   await page.route("**/api/v1/**", async (route: Route) => {
     const request = route.request();
@@ -75,8 +76,8 @@ test("Employee completes Final Exam without feedback and sees certification only
     if (method === "GET" && pathname === "/me/training/final-exam") {
       await route.fulfill({
         json: {
-          availability: "eligible",
-          can_start: true,
+          availability: finished ? "certified" : "eligible",
+          can_start: !finished,
           reason_codes: [],
           readiness_status: "ready",
           active_attempt: null,
@@ -148,11 +149,19 @@ test("Employee completes Final Exam without feedback and sees certification only
       });
       return;
     }
-    if (method === "POST" && pathname === `/me/training/final-exam/attempts/${attempt.id}/finish`) {
-      expectProtectedMutation(request);
-      expect(request.postDataJSON()).toEqual({ lease_generation: 1 });
-      expect(answerCount).toBe(20);
-      finished = true;
+    if (
+      (method === "POST" && pathname === `/me/training/final-exam/attempts/${attempt.id}/finish`) ||
+      (method === "GET" && pathname === `/me/training/final-exam/attempts/${attempt.id}/result`)
+    ) {
+      if (method === "POST") {
+        expectProtectedMutation(request);
+        expect(request.postDataJSON()).toEqual({ lease_generation: 1 });
+        expect(answerCount).toBe(20);
+        finished = true;
+        finishRequests += 1;
+      } else {
+        expect(finished).toBeTruthy();
+      }
       await route.fulfill({
         json: {
           result: {
@@ -171,7 +180,7 @@ test("Employee completes Final Exam without feedback and sees certification only
             attempt_id: attempt.id,
             certified_at: "2030-08-31T08:25:00Z",
           },
-          newly_certified: true,
+          newly_certified: method === "POST",
           retake_available: false,
           review: questions.map((question, index) => ({
             attempt_question_id: question.id,
@@ -193,7 +202,7 @@ test("Employee completes Final Exam without feedback and sees certification only
             is_critical: false,
             is_critical_error: false,
           })),
-          replayed: false,
+          replayed: method === "GET",
         },
       });
       return;
@@ -248,6 +257,14 @@ test("Employee completes Final Exam without feedback and sees certification only
   await expect(page.getByRole("button", { name: "Повторити Final Exam" })).toHaveCount(0);
   expect(answerCount).toBe(20);
   expect(finished).toBeTruthy();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Останній результат" })).toBeVisible();
+  await page.getByRole("button", { name: "Переглянути відповіді" }).click();
+  await expect(page.getByText("Пояснення Final Exam 15", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Усі відповіді (20)" }).click();
+  await expect(page.getByText("Пояснення Final Exam 1", { exact: true })).toBeVisible();
+  expect(finishRequests).toBe(1);
+  await page.screenshot({ path: testInfo.outputPath("exam-review-reopened.png"), fullPage: true });
   const scrollWidth = await page.evaluate<number>("document.documentElement.scrollWidth");
   expect(scrollWidth).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
 });
