@@ -63,6 +63,84 @@ function renderExam(client: ApiClient) {
 }
 
 describe("Employee Final Exam", () => {
+  it("reopens a completed review after returning and retries a failed read without submitting", async () => {
+    const result = {
+      result_id: "result-1",
+      attempt_id: "attempt-1",
+      assessment_version_id: "assessment-1",
+      completed_at: "2030-08-31T08:20:00Z",
+      correct_count: 19,
+      total_count: 20,
+      score_basis_points: 9500,
+      knowledge_level: "strong",
+      pass_status: "passed",
+      critical_error_count: 0,
+    };
+    const request = vi.fn((path: string, options?: RequestOptions) => {
+      expect(options?.method ?? "GET").toBe("GET");
+      if (path === "/me/training/final-exam")
+        return Promise.resolve({
+          availability: "certified",
+          can_start: false,
+          active_attempt: null,
+          certification: null,
+          reason_codes: [],
+        });
+      if (path === "/me/training/final-exam/attempts")
+        return Promise.resolve({
+          ...emptyHistory,
+          latest: result,
+          best: result,
+          history: [result],
+        });
+      if (path.endsWith("/attempt-1/result")) {
+        if (failReview) {
+          failReview = false;
+          return Promise.reject(new Error("Offline"));
+        }
+        return Promise.resolve({
+          result: { ...result, id: result.result_id, section_breakdown: {} },
+          certification: null,
+          newly_certified: false,
+          retake_available: false,
+          replayed: true,
+          review: [
+            {
+              attempt_question_id: "question-1",
+              position: 0,
+              mechanic: "single_choice",
+              prompt_payload: { stem: "Збережене питання" },
+              options: questions[0].options,
+              answer: {
+                id: "answer-1",
+                answer_payload: { mechanic: "single_choice", option_id: "question-1-a" },
+                submitted_at: result.completed_at,
+              },
+              is_correct: false,
+              correct_option_ids: ["question-1-b"],
+              explanation_payload: { text: "Збережене пояснення" },
+              is_critical: false,
+              is_critical_error: false,
+            },
+          ],
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    let failReview = true;
+    renderExam({
+      getSession: () => Promise.resolve(session),
+      request: request as ApiClient["request"],
+    });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Переглянути відповіді" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Не вдалося завантажити розбір");
+    await user.click(screen.getByRole("button", { name: "Переглянути відповіді" }));
+    expect(await screen.findByText("Збережене пояснення")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Усі відповіді/ })).toBeInTheDocument();
+    expect(request.mock.calls.filter(([path]) => path.endsWith("/result"))).toHaveLength(2);
+  });
+
   it("starts exactly twenty questions and saves an answer without feedback", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const client: ApiClient = {

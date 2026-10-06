@@ -64,6 +64,10 @@ export function EmployeeFinalExamPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [finish, setFinish] = useState<FinalExamFinishResponse | null>(null);
+  const [review, setReview] = useState<FinalExamFinishResponse | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const reviewRequest = useRef(0);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState<BusyAction>("load");
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +113,32 @@ export function EmployeeFinalExamPage() {
     void load();
   }, [load]);
 
+  useEffect(
+    () => () => {
+      reviewRequest.current += 1;
+    },
+    [],
+  );
+
+  const openReview = async (attemptId: string) => {
+    if (busy || reviewLoading || (attempt && !finish)) return;
+    const request = ++reviewRequest.current;
+    setReview(null);
+    setReviewError(null);
+    setReviewLoading(true);
+    try {
+      const response = await client.request<FinalExamFinishResponse>(
+        `/me/training/final-exam/attempts/${attemptId}/result`,
+      );
+      if (request === reviewRequest.current) setReview(response);
+    } catch {
+      if (request === reviewRequest.current)
+        setReviewError("Не вдалося завантажити розбір. Спробуйте відкрити відповіді ще раз.");
+    } finally {
+      if (request === reviewRequest.current) setReviewLoading(false);
+    }
+  };
+
   const activeQuestion = attempt?.questions[activeIndex] ?? null;
   const activeSelection = activeQuestion ? (selected[activeQuestion.id] ?? []) : [];
   const allAnswered = attempt?.answered_count === 20;
@@ -135,6 +165,10 @@ export function EmployeeFinalExamPage() {
 
   const startAttempt = async () => {
     if (!session || busy) return;
+    reviewRequest.current += 1;
+    setReview(null);
+    setReviewError(null);
+    setReviewLoading(false);
     setBusy("start");
     setError(null);
     startKey.current ??= createIdempotencyKey();
@@ -347,7 +381,7 @@ export function EmployeeFinalExamPage() {
               summary.current_retake_requirement.timing_state === "overdue" ? "warning" : "neutral"
             }
           >
-            {summary.current_retake_requirement.timing_state ?? "scheduled"}
+            {timingCopy[summary.current_retake_requirement.timing_state ?? "scheduled"][0]}
           </StatusPill>
         </section>
       ) : null}
@@ -559,6 +593,12 @@ export function EmployeeFinalExamPage() {
       {history.history.length ? (
         <section className="interactive-history" aria-labelledby="final-exam-history-title">
           <h2 id="final-exam-history-title">Історія Final Exam</h2>
+          {reviewLoading ? <p role="status">Завантажуємо розбір…</p> : null}
+          {reviewError ? (
+            <p className="inline-error" role="alert">
+              {reviewError}
+            </p>
+          ) : null}
           <ol className="results-history-list">
             {history.history.map((result) => (
               <li key={result.result_id}>
@@ -569,9 +609,26 @@ export function EmployeeFinalExamPage() {
                     new Date(result.completed_at),
                   )}
                 </time>
+                {!attempt || finish ? (
+                  <button
+                    className="button button-quiet"
+                    type="button"
+                    disabled={Boolean(busy) || reviewLoading}
+                    onClick={() => void openReview(result.attempt_id)}
+                  >
+                    Переглянути відповіді
+                  </button>
+                ) : null}
               </li>
             ))}
           </ol>
+          {review ? (
+            <section className="bounded-section" aria-label="Розбір завершеної спроби">
+              <h3>Розбір завершеної спроби</h3>
+              <ExamResultSummary result={review.result} />
+              <ExamResultReview key={review.result.id} items={review.review} />
+            </section>
+          ) : null}
         </section>
       ) : null}
     </section>

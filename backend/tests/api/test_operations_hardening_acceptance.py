@@ -1,16 +1,26 @@
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
-from app.models import EmployeeProfile, Location, OrganizationMembership, Session, User
+from app.core.errors import APIError
+from app.models import (
+    AttemptResult,
+    AuditEvent,
+    EmployeeProfile,
+    Location,
+    OrganizationMembership,
+    Session,
+    User,
+)
 from app.schemas.assessment import SingleChoiceSubmission
 from app.services.final_exam_answers import save_final_exam_answer
-from app.services.final_exam_results import finish_final_exam_attempt
+from app.services.final_exam_results import finish_final_exam_attempt, get_final_exam_result
 from tests.api import test_vertical_slice_acceptance as slice_acceptance
 from tests.factories.assessments import (
     make_assessment,
@@ -225,6 +235,11 @@ async def test_synthetic_invitation_to_passing_final_result_chain(
         )
         assert "is_correct" not in answer.model_dump_json()
 
+    review_url = f"/api/v1/me/training/final-exam/attempts/{attempt.id}/result"
+    unfinished = await auth_client.get(review_url)
+    assert unfinished.status_code == 404
+    assert "correct_option_ids" not in unfinished.text
+
     finished = await finish_final_exam_attempt(
         db_session,
         organization_id=membership.organization_id,
@@ -244,3 +259,31 @@ async def test_synthetic_invitation_to_passing_final_result_chain(
     assert finished.result.pass_status == "passed"
     assert finished.certification is not None
     assert finished.newly_certified is True
+
+    result_count = await db_session.scalar(select(func.count()).select_from(AttemptResult))
+    audit_count = await db_session.scalar(select(func.count()).select_from(AuditEvent))
+    reopened = await auth_client.get(review_url)
+    assert reopened.status_code == 200
+    expected = finished.model_dump(mode="json")
+    expected.update(newly_certified=False, replayed=True)
+    assert reopened.json() == expected
+    assert (await auth_client.get(review_url)).json() == expected
+    assert await db_session.scalar(select(func.count()).select_from(AttemptResult)) == result_count
+    assert await db_session.scalar(select(func.count()).select_from(AuditEvent)) == audit_count
+
+    scope = {
+        "organization_id": membership.organization_id,
+        "location_id": location.id,
+        "employee_profile_id": employee.id,
+        "attempt_id": attempt.id,
+    }
+    for key in scope:
+        with pytest.raises(APIError) as denied:
+            await get_final_exam_result(db_session, **{**scope, key: uuid4()})
+        assert denied.value.status_code == 404
+    membership.status = "disabled"
+    membership.disabled_at = now
+    await db_session.commit()
+    assert (await auth_client.get(review_url)).status_code == 403
+    auth_client.cookies.clear()
+    assert (await auth_client.get(review_url)).status_code == 401

@@ -78,6 +78,7 @@ from app.services.final_exam_readiness import (
 from app.services.final_exam_results import (
     finish_final_exam_attempt,
     get_final_exam_history,
+    get_final_exam_result,
 )
 from app.services.idempotency import (
     find_idempotency_replay,
@@ -296,6 +297,25 @@ async def get_final_exam_attempt_route(
         employee_profile_id=employee_profile_id,
         attempt_id=attempt_id,
         session_id=authorization.session.id,
+    )
+
+
+@router.get(
+    "/me/training/final-exam/attempts/{attempt_id}/result",
+    response_model=FinalExamFinishResponse,
+)
+async def get_final_exam_result_route(
+    attempt_id: UUID,
+    authorization: Annotated[AuthorizationContext, Depends(require_current_active_employee)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FinalExamFinishResponse:
+    organization_id, location_id, employee_profile_id = _employee_scope(authorization)
+    return await get_final_exam_result(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        attempt_id=attempt_id,
     )
 
 

@@ -136,6 +136,32 @@ async def get_final_exam_history(
     )
 
 
+async def get_final_exam_result(
+    db: AsyncSession,
+    *,
+    organization_id: UUID,
+    location_id: UUID,
+    employee_profile_id: UUID,
+    attempt_id: UUID,
+) -> FinalExamFinishResponse:
+    attempt = await _owned_final_exam_attempt(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        employee_profile_id=employee_profile_id,
+        attempt_id=attempt_id,
+    )
+    # Незавершена спроба не розкриває правильних відповідей навіть після їх збереження.
+    if attempt.status != "completed":
+        raise _error(404, "RESOURCE_NOT_FOUND", "Результат іспиту не знайдено.")
+    result = await db.scalar(select(AttemptResult).where(AttemptResult.attempt_id == attempt.id))
+    if result is None:
+        raise _error(404, "RESOURCE_NOT_FOUND", "Результат іспиту не знайдено.")
+    return await _finish_response(
+        db, attempt=attempt, result=result, newly_certified=False, replayed=True
+    )
+
+
 async def _finish_response(
     db: AsyncSession,
     *,
