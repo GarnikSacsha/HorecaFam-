@@ -19,6 +19,24 @@ const timingCopy = {
   frozen: "Час призупинено",
 } as const;
 
+const caseStateCopy: Record<AdminAttentionCase["state"], string> = {
+  open: "Відкрито",
+  acknowledged: "У роботі",
+  resolved: "Вирішено",
+};
+const requirementStateCopy: Record<AdminRetakeRequirement["state"], string> = {
+  proposed: "Проєкт",
+  active: "Активна",
+  completed: "Завершена",
+  cancelled: "Скасована",
+};
+const reasonCopy: Record<AdminRetakeRequirement["reason"], string> = {
+  failed_exam: "Невдалий іспит",
+  critical_error: "Критична помилка",
+  management_follow_up: "Перевірка адміністратора",
+  material_content_change: "Оновлення навчальних матеріалів",
+};
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium", timeStyle: "short" }).format(
     new Date(value),
@@ -352,7 +370,7 @@ export function AdminAttentionPage() {
                   </td>
                   <td>
                     <StatusPill tone={item.severity === "critical" ? "warning" : "neutral"}>
-                      {item.state}
+                      {caseStateCopy[item.state]}
                     </StatusPill>
                   </td>
                   <td>
@@ -382,7 +400,7 @@ export function AdminAttentionPage() {
                   : "Прострочене перескладання"}
               </strong>
               <StatusPill tone={item.severity === "critical" ? "warning" : "neutral"}>
-                {item.state}
+                {caseStateCopy[item.state]}
               </StatusPill>
               <button
                 className="button button-quiet"
@@ -601,9 +619,9 @@ export function AdminAttentionPage() {
               }}
             >
               <span>
-                <strong>{item.reason}</strong>
+                <strong>{reasonCopy[item.reason]}</strong>
                 <StatusPill tone={item.timing_state === "overdue" ? "warning" : "neutral"}>
-                  {item.state}
+                  {requirementStateCopy[item.state]}
                 </StatusPill>
               </span>
               <span>

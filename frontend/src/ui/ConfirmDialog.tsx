@@ -90,7 +90,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? "Активуємо…" : confirmLabel}
+            {busy ? "Підтверджуємо…" : confirmLabel}
           </button>
         </div>
       </div>

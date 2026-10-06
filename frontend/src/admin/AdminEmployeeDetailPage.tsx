@@ -20,6 +20,23 @@ import { AdminEmployeeTrainingPanel } from "./AdminEmployeeTrainingPanel";
 
 type LifecycleAction = "disable" | "reactivate" | "pause" | "resume";
 
+function lifecycleReasonLabel(reason: string | null | undefined): string {
+  switch (reason) {
+    case "scheduled_leave":
+      return "Запланована відсутність";
+    case "leave":
+      return "Тимчасова відсутність";
+    case "access_review":
+      return "Перевірка доступу";
+    case null:
+    case undefined:
+    case "":
+      return "Не вказано";
+    default:
+      return "Інша причина";
+  }
+}
+
 const lifecycleCopy: Record<
   LifecycleAction,
   { title: string; description: string; confirmLabel: string; success: string }
@@ -372,7 +389,7 @@ export function AdminEmployeeDetailPage() {
           <dl className="lifecycle-facts">
             <div>
               <dt>Причина паузи</dt>
-              <dd>{employee.training_pause_reason_code ?? "Не вказано"}</dd>
+              <dd>{lifecycleReasonLabel(employee.training_pause_reason_code)}</dd>
             </div>
             <div>
               <dt>Примітка</dt>
@@ -393,7 +410,7 @@ export function AdminEmployeeDetailPage() {
           <dl className="lifecycle-facts">
             <div>
               <dt>Причина вимкнення</dt>
-              <dd>{employee.disabled_reason_code ?? "Не вказано"}</dd>
+              <dd>{lifecycleReasonLabel(employee.disabled_reason_code)}</dd>
             </div>
             <div>
               <dt>Примітка</dt>
@@ -483,7 +500,7 @@ export function AdminEmployeeDetailPage() {
       <ConfirmDialog
         open={confirmOpen}
         title="Активувати працівника?"
-        description="Профіль уже збережено. Після підтвердження сервер окремо змінить Membership з Pending на Active."
+        description="Профіль уже збережено. Після підтвердження працівник отримає доступ до призначеного навчання."
         confirmLabel="Підтвердити активацію"
         busy={activating}
         onCancel={() => setConfirmOpen(false)}
