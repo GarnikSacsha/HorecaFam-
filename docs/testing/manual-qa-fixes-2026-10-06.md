@@ -32,7 +32,48 @@ Photos and the dirty main checkout. Stage only the mapped paths. No dependency/m
 The only API addition is an authenticated GET for an employee's completed Final review;
 grading, certification, attempts, deadlines and tenant boundaries remain unchanged.
 
-## Evidence
+## Commit and post-push verification — 2026-10-06
+
+Four selective commits were created and pushed to the existing
+`origin/codex/fix-sqlalchemy-asyncio` branch:
+
+1. `9bc263a` — empty employee search.
+2. `4a0ea58` — revoked-session handling.
+3. `403767f` — completed Final Exam review and reload regression.
+4. `142788f` — human-readable statuses and scope/evidence documentation.
+
+Remote readback confirmed `142788f608e841bc42bfd561138144ce1142c8d7` before
+post-push tests. No production source changed during this Git/test continuation.
+
+| Fresh check | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: |
+| Pre-commit four focused frontend suites | 19 | 0 | 0 |
+| Pre-commit PostgreSQL Final Exam service + API acceptance | 26 | 0 | 0 |
+| Post-push full Playwright, all three viewports | 87 | 0 | 0 |
+| Post-push PostgreSQL auth/session/lifecycle API suites | 40 | 0 | 0 |
+| Read-only public staging HTTP smoke | 4 | 0 | 0 |
+
+The 40 backend cases cover `test_auth_session.py`, `test_auth_csrf_logout.py`,
+`test_auth_logout_others.py`, `test_auth_mfa_rbac.py`,
+`test_auth_security_regressions.py` and `test_employee_lifecycle.py`. Executed with
+pytest, `-q -p no:cacheprovider --tb=line`, existing Python 3.12 and the dedicated
+test PostgreSQL environment. Browser execution used installed Playwright with
+`--workers=1` and the same local strict-port wrapper, without a file filter.
+All selected tests completed; this is not a new full-backend coverage gate.
+
+Public smoke verified `/` and `/employee/final-exam` return 200, `/api/v1/health`
+returns 200, and unauthenticated `/api/v1/auth/session` returns 401. Fresh Railway
+readback after push shows API and web still SUCCESS on `main` at
+`1bd384018ae304466c528edbf81e441b2b3a9dab`; the branch push did not deliver these
+fixes. Hosted smoke proves old-version availability, not new-fix acceptance.
+
+Final inventory contains only the 17 mapped source/test/documentation paths.
+Committed diff whitespace checks passed. Existing outputs remain excluded; the
+original dirty checkout and protected assets were not changed. This final
+documentation-only checkpoint records these results under map entry 5; no test
+rerun is needed solely for recording evidence.
+
+## Pre-commit implementation evidence
 
 ### Result
 
@@ -131,7 +172,8 @@ Local helpers and outputs are excluded.
 
 ### Delivery boundary
 
-Candidate on `codex/fix-sqlalchemy-asyncio`, based on `362183a`. Selective commit and
-push are authorized; PR, merge, deployment and hosted data changes remain separate.
-Existing untracked outputs and the dirty original checkout are preserved. Additional
-post-push checks will be recorded separately from the pre-commit evidence above.
+Candidate on `codex/fix-sqlalchemy-asyncio`, based on `362183a`, is committed and
+pushed. Additional post-push checks are recorded above. PR, merge, deployment and
+hosted data changes remain separate; no such action was performed. Next delivery
+gate: separately authorize integration into main and deployment, then repeat
+authenticated staging checks for both roles on the exact delivered revision.
