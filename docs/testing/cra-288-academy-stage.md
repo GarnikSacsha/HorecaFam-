@@ -39,3 +39,14 @@ The reusable image uploader also serves the existing Training editor, whose test
 
 The final full backend coverage run is separate and still pending at this checkpoint.
 No push, production/staging migration, deployment or merge performed.
+
+## Fresh review correction
+
+An existing selected position disappeared from the article editor when inactive/unavailable.
+RED reproduced the missing checkbox. The editor now retains selected inactive/unavailable
+positions as removable, refuses saving an invalid audience and never silently widens it to all.
+Starter mappings still list active positions only. Backend behavior is unchanged.
+GREEN: focused 3/0/0; full frontend 180/0/0 (34 files, 36.58s); full Playwright 96/0/0 (1.5m).
+An unsupported Testing Library `exact` option initially failed TypeScript; removing that
+redundant option retained exact string matching, and the focused tests plus TypeScript,
+ESLint, Prettier and build passed. Existing large-chunk warning remains (573.08 kB minified).

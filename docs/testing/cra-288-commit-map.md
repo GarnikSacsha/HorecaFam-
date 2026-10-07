@@ -106,6 +106,15 @@ Dependencies: stages 1 and 3.
 
 ## Final acceptance
 
+### Review correction: preserve removable inactive Academy audiences
+
+Fresh review found that filtering inactive positions out of the article editor can hide an
+existing selected audience and make safe editing difficult. Show selected inactive/unavailable
+positions as removable, reject saving them, and retain active-only starter mappings. Expected
+paths: AdminAcademyPage and its tests, this map and Academy evidence. Verify focused RED/GREEN,
+full frontend/Playwright, types/lint/format/build. No backend or schema change.
+Commit: `fix(academy): keep inactive article audiences removable`.
+
 Run the full backend suite with independent coverage gates, all frontend tests and Playwright,
 TypeScript/lint/format/build, and Alembic checks on the isolated local test DB. Perform a
 separate fresh review pass of authorization, migration preservation, source provenance and

@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ApiClient } from "../api/client";
-import type { SessionResponse } from "../api/contracts";
+import type { AcademyArticle, SessionResponse } from "../api/contracts";
 import { SessionProvider } from "../session/SessionContext";
 import { AdminAcademyPage } from "./AdminAcademyPage";
 
@@ -19,16 +19,20 @@ const session: SessionResponse = {
   platform_operator: false,
   csrf_token: "test-csrf",
 };
-function show() {
+function show(existing?: AcademyArticle) {
   const request = vi.fn().mockImplementation((path: string, options?: { method?: string }) => {
     if (path.endsWith("/locations"))
       return Promise.resolve([{ id: "l", name: "Зал", status: "active" }]);
     if (path.endsWith("/operational-roles"))
       return Promise.resolve(
-        ["waiter", "runner", "bartender"].map((id) => ({ id, name_uk: id, status: "active" })),
+        ["waiter", "runner", "bartender", "archived"].map((id) => ({
+          id,
+          name_uk: id,
+          status: id === "archived" ? "archived" : "active",
+        })),
       );
     if (options?.method === "POST") return Promise.resolve({ created_count: 13 });
-    return Promise.resolve({ items: [], next_offset: null });
+    return Promise.resolve({ items: existing ? [existing] : [], next_offset: null });
   });
   const client: ApiClient = { getSession: vi.fn().mockResolvedValue(session), request };
   render(
@@ -83,4 +87,35 @@ it("requires distinct mapped positions before adding starter drafts", async () =
     "/organizations/o/locations/l/academy/seed",
     expect.objectContaining({ method: "POST", csrfToken: "test-csrf" }),
   );
+});
+
+it("keeps inactive and unavailable selected positions removable without widening the audience", async () => {
+  show({
+    id: "a",
+    revision: 2,
+    slug: "old",
+    title_uk: "Наявна стаття",
+    summary_uk: "Опис",
+    body_uk: "Текст",
+    category: "service",
+    status: "draft",
+    position: 0,
+    all_positions: false,
+    operational_role_ids: ["archived", "missing"],
+    cover_asset_id: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  });
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Редагувати Наявна стаття" }));
+  const inactive = screen.getByRole("checkbox", { name: "archived · неактивна посада" });
+  const missing = screen.getByRole("checkbox", { name: "Недоступна посада" });
+  expect(inactive).toBeChecked();
+  expect(missing).toBeChecked();
+  expect(screen.getByRole("button", { name: "Зберегти статтю" })).toBeDisabled();
+  await user.click(inactive);
+  await user.click(missing);
+  await user.click(screen.getByRole("checkbox", { name: "runner" }));
+  expect(screen.getByRole("button", { name: "Зберегти статтю" })).toBeEnabled();
+  expect(screen.getByLabelText("Усі посади, включно з майбутніми")).not.toBeChecked();
 });

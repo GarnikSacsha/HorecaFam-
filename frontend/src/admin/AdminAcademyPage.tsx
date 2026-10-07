@@ -67,8 +67,14 @@ function AcademyWorkspace({ org, loc, roles }: { org: string; loc: string; roles
       active = false;
     };
   }, [client, base, offset, refresh]);
+  const validAudience =
+    form.all_positions ||
+    (form.operational_role_ids.length > 0 &&
+      form.operational_role_ids.every((id) =>
+        roles.some((role) => role.id === id && role.status === "active"),
+      ));
   const save = async () => {
-    if (!session || busy) return;
+    if (!session || busy || !validAudience) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -247,25 +253,52 @@ function AcademyWorkspace({ org, loc, roles }: { org: string; loc: string; roles
             {!form.all_positions ? (
               <fieldset>
                 <legend>Посади читачів</legend>
-                {roles.map((role) => (
-                  <label key={role.id} className="field-group">
-                    <span>
-                      <input
-                        type="checkbox"
-                        checked={form.operational_role_ids.includes(role.id)}
-                        onChange={(event) =>
-                          setForm({
-                            ...form,
-                            operational_role_ids: event.target.checked
-                              ? [...form.operational_role_ids, role.id]
-                              : form.operational_role_ids.filter((id) => id !== role.id),
-                          })
-                        }
-                      />{" "}
-                      {role.name_uk}
-                    </span>
-                  </label>
-                ))}
+                {roles
+                  .filter(
+                    (role) =>
+                      role.status === "active" || form.operational_role_ids.includes(role.id),
+                  )
+                  .map((role) => (
+                    <label key={role.id} className="field-group">
+                      <span>
+                        <input
+                          type="checkbox"
+                          checked={form.operational_role_ids.includes(role.id)}
+                          onChange={(event) =>
+                            setForm({
+                              ...form,
+                              operational_role_ids: event.target.checked
+                                ? [...form.operational_role_ids, role.id]
+                                : form.operational_role_ids.filter((id) => id !== role.id),
+                            })
+                          }
+                        />{" "}
+                        {role.name_uk}
+                        {role.status === "active" ? "" : " · неактивна посада"}
+                      </span>
+                    </label>
+                  ))}
+                {form.operational_role_ids
+                  .filter((id) => !roles.some((role) => role.id === id))
+                  .map((id) => (
+                    <label key={id} className="field-group">
+                      <span>
+                        <input
+                          type="checkbox"
+                          checked
+                          onChange={() =>
+                            setForm({
+                              ...form,
+                              operational_role_ids: form.operational_role_ids.filter(
+                                (value) => value !== id,
+                              ),
+                            })
+                          }
+                        />{" "}
+                        Недоступна посада
+                      </span>
+                    </label>
+                  ))}
               </fieldset>
             ) : null}
             <div className="field-group">
@@ -305,10 +338,7 @@ function AcademyWorkspace({ org, loc, roles }: { org: string; loc: string; roles
               Перевірте текст та аудиторію перед публікацією. Статті не є обов’язковим навчанням.
             </p>
             <div className="compact-actions">
-              <button
-                className="button button-primary"
-                disabled={!form.all_positions && !form.operational_role_ids.length}
-              >
+              <button className="button button-primary" disabled={!validAudience}>
                 Зберегти статтю
               </button>
               <button
@@ -338,11 +368,13 @@ function AcademyWorkspace({ org, loc, roles }: { org: string; loc: string; roles
               onChange={(event) => setSeedRoles({ ...seedRoles, [field]: event.target.value })}
             >
               <option value="">Оберіть посаду</option>
-              {roles.map((role) => (
-                <option value={role.id} key={role.id}>
-                  {role.name_uk}
-                </option>
-              ))}
+              {roles
+                .filter((role) => role.status === "active")
+                .map((role) => (
+                  <option value={role.id} key={role.id}>
+                    {role.name_uk}
+                  </option>
+                ))}
             </select>
           </div>
         ))}
@@ -419,7 +451,7 @@ export function AdminAcademyPage() {
         if (!active) return;
         setLocations(places);
         setLoc(places[0]?.id ?? "");
-        setRoles(positions.filter((role) => role.status === "active"));
+        setRoles(positions);
       })
       .catch(() => {
         if (active) setError(true);
