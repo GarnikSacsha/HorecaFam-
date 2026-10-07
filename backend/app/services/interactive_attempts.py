@@ -364,6 +364,7 @@ async def _assessment_ready(
             .where(
                 AssessmentVersion.training_version_id == assignment.training_version_id,
                 AssessmentVersion.lesson_version_id == lesson_version.id,
+                AssessmentVersion.assessment_type == "interactive_training",
                 AssessmentVersion.status == "published",
             )
             .order_by(AssessmentVersion.version_number.desc())
@@ -455,6 +456,11 @@ async def _snapshot_question(
             "sources": [
                 {
                     "role": source.source_role,
+                    "standard_rule_version_id": (
+                        str(source.standard_rule_version_id)
+                        if source.standard_rule_version_id is not None
+                        else None
+                    ),
                     "menu_item_version_id": (
                         str(source.menu_item_version_id)
                         if source.menu_item_version_id is not None
@@ -651,6 +657,7 @@ async def start_or_resume_interactive_attempt(
             assignment_id=assignment.id,
             assessment_version_id=assessment_version.id,
             status="in_progress",
+            assessment_type=assessment_version.assessment_type,
             presentation_locale=presentation_locale,
             question_count=len(selected),
             snapshot_schema_version=1,

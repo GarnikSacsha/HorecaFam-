@@ -447,6 +447,7 @@ async def start_or_resume_practice_attempt(
             assignment_id=assignment.id,
             assessment_version_id=assessment_version.id,
             status="in_progress",
+            assessment_type=assessment_version.assessment_type,
             presentation_locale=presentation_locale,
             question_count=10,
             snapshot_schema_version=1,

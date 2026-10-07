@@ -825,6 +825,51 @@ export interface EmployeeTrainingHomeResponse {
 
 export interface EmployeeTrainingModuleDetail extends EmployeeTrainingModuleSummary {
   lessons: EmployeeTrainingLessonSummary[];
+  course?: CourseModuleSummary | null;
+}
+
+export interface CourseResult {
+  id: string;
+  correct_count: number;
+  total_count: number;
+  score_basis_points: number;
+  knowledge_level: PracticeKnowledgeLevel;
+  pass_status: null;
+  completed_at: string;
+}
+
+export interface CourseModuleSummary {
+  module_version_id: string;
+  question_count: number;
+  can_start: boolean;
+  ready: boolean;
+  active_attempt_id: string | null;
+  history: { attempt_id: string; result: CourseResult }[];
+}
+
+export interface CourseAttempt {
+  id: string;
+  assessment_version_id: string;
+  assignment_id: string;
+  status: "in_progress" | "completed" | "expired" | "invalidated";
+  presentation_locale: "uk" | "en";
+  lease_generation: number;
+  writable: boolean;
+  expires_at: string;
+  questions: {
+    id: string;
+    position: number;
+    mechanic: string;
+    prompt_payload: Record<string, unknown>;
+    options: { id: string; position: number; payload: Record<string, unknown> }[];
+    answer_payload: Record<string, unknown> | null;
+    review: {
+      is_correct: boolean;
+      correct_option_ids: string[];
+      explanation_payload: Record<string, unknown>;
+    } | null;
+  }[];
+  result: CourseResult | null;
 }
 
 export interface EmployeeTrainingLessonDetail extends EmployeeTrainingLessonSummary {
@@ -884,6 +929,7 @@ export interface QuestionCandidateExplanationPayload {
 
 export interface QuestionCandidateSource {
   source_role: string;
+  standard_rule_version_id?: string | null;
   menu_item_version_id: string | null;
   menu_item_version_component_id: string | null;
   menu_item_version_allergen_id: string | null;

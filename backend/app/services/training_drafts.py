@@ -20,6 +20,7 @@ from app.models import (
     Training,
     TrainingModule,
     TrainingModuleAudience,
+    TrainingModuleStandardDependency,
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingVersion,
@@ -191,6 +192,21 @@ async def _copy_module_graph(
     )
     db.add(target_module)
     await db.flush()
+    standard = await db.scalar(
+        select(TrainingModuleStandardDependency).where(
+            TrainingModuleStandardDependency.training_module_version_id == source_module.id,
+        )
+    )
+    if standard is not None:
+        db.add(
+            TrainingModuleStandardDependency(
+                organization_id=target.organization_id,
+                location_id=target.location_id,
+                training_version_id=target.id,
+                training_module_version_id=target_module.id,
+                standard_set_version_id=standard.standard_set_version_id,
+            )
+        )
     source_roles = list(
         (
             await db.scalars(

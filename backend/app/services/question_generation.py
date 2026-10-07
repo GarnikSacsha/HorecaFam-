@@ -1022,6 +1022,10 @@ async def candidate_source_fingerprint_is_current(
     candidate: QuestionCandidate,
 ) -> bool:
     rule_row = await db.get(QuestionGenerationRule, candidate.generation_rule_id)
+    from app.services.standard_questions import STANDARD_RULE_CODES, standard_source_is_current
+
+    if rule_row is not None and rule_row.code in STANDARD_RULE_CODES:
+        return rule_row.status == "active" and await standard_source_is_current(db, candidate)
     if rule_row is not None and rule_row.code == "menu.description.authored":
         from app.services.question_authoring import authored_source_is_current
 

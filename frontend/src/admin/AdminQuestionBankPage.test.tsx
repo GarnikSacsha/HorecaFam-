@@ -212,6 +212,19 @@ function renderPage(client: ApiClient) {
   );
 }
 
+it("generates standards candidates through the scoped review workflow", async () => {
+  const requests: Array<{ path: string; options?: RequestOptions }> = [];
+  renderPage(questionBankClient(requests));
+  await userEvent.click(await screen.findByRole("button", { name: "Кандидати зі стандартів" }));
+  await screen.findByText("Створено 2; вже існувало 0; застаріло 0.");
+  const generated = requests.find(({ path }) =>
+    path.endsWith("/standard-question-candidates/generate"),
+  );
+  expect(generated?.path).toContain("/training-versions/training-version-1/");
+  expect(generated?.options?.csrfToken).toBe("csrf-safe");
+  expect(generated?.options?.idempotencyKey).toBeTruthy();
+});
+
 describe("Admin Question Bank", () => {
   it("offers authored import and explicit Final publication without starting mutations", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];

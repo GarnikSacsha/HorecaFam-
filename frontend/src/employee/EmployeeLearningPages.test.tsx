@@ -43,6 +43,107 @@ function renderWithClient(
 }
 
 describe("Employee Training reference", () => {
+  it("submits a course explicitly and displays only the server result", async () => {
+    const user = userEvent.setup();
+    const question = {
+      id: "question-1",
+      position: 0,
+      mechanic: "single_choice",
+      prompt_payload: { stem: "Гість просить допомоги. Що зробити?" },
+      options: [{ id: "option-1", position: 0, payload: { text: "Уточнити запит" } }],
+      answer_payload: null,
+      review: null,
+    };
+    const attempt = {
+      id: "attempt-1",
+      assessment_version_id: "assessment-1",
+      assignment_id: "assignment-1",
+      status: "in_progress",
+      presentation_locale: "uk",
+      lease_generation: 1,
+      writable: true,
+      expires_at: "2030-10-01T00:00:00Z",
+      questions: [question],
+      result: null,
+    };
+    const requests: { path: string; options?: RequestOptions }[] = [];
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string, options?: RequestOptions) => {
+        requests.push({ path, options });
+        if (path.endsWith("/course/attempts")) return Promise.resolve(attempt as T);
+        if (path.endsWith("/answer"))
+          return Promise.resolve({
+            ...attempt,
+            questions: [
+              { ...question, answer_payload: { mechanic: "single_choice", option_id: "option-1" } },
+            ],
+          } as T);
+        if (path.endsWith("/finish"))
+          return Promise.resolve({
+            ...attempt,
+            status: "completed",
+            writable: false,
+            result: {
+              id: "result-1",
+              correct_count: 0,
+              total_count: 1,
+              score_basis_points: 0,
+              knowledge_level: "very_weak",
+              pass_status: null,
+              completed_at: "2030-09-01T10:00:00Z",
+            },
+            questions: [
+              {
+                ...question,
+                review: {
+                  is_correct: false,
+                  correct_option_ids: [],
+                  explanation_payload: { text: "Пояснення сервера" },
+                },
+              },
+            ],
+          } as T);
+        return Promise.resolve({
+          id: "module-1",
+          domain_type: "service",
+          title: "Сервіс",
+          description: null,
+          position: 0,
+          required: true,
+          lesson_count: 0,
+          content_locale: "uk",
+          translation_fallback: false,
+          lessons: [],
+          course: {
+            module_version_id: "module-version-1",
+            question_count: 1,
+            can_start: true,
+            ready: true,
+            active_attempt_id: null,
+            history: [],
+          },
+        } as T);
+      },
+    };
+    renderWithClient(
+      client,
+      "/employee/learning/modules/module-1",
+      "/employee/learning/modules/:moduleId",
+      <EmployeeLearningModulePage />,
+    );
+    await user.click(await screen.findByRole("button", { name: "Розпочати перевірку" }));
+    expect(screen.queryByText("Пояснення сервера")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Уточнити запит" }));
+    await user.click(screen.getByRole("button", { name: "Зберегти відповідь" }));
+    expect(requests.some(({ path }) => path.endsWith("/finish"))).toBe(false);
+    await user.click(await screen.findByRole("button", { name: "Завершити перевірку" }));
+    expect(await screen.findByText("0 із 1")).toBeInTheDocument();
+    expect(screen.getByText("Пояснення сервера")).toBeInTheDocument();
+    const answer = requests.find(({ path }) => path.endsWith("/answer"));
+    expect(answer?.options?.csrfToken).toBe(session.csrf_token);
+    expect(answer?.options?.idempotencyKey).toBeTruthy();
+  });
   it("offers whole-menu Practice as the next step after completed training", async () => {
     const client: ApiClient = {
       getSession: () => Promise.resolve(session),

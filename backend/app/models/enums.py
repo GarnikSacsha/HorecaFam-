@@ -288,6 +288,7 @@ class AssessmentType(StrEnum):
     INTERACTIVE_TRAINING = "interactive_training"
     WHOLE_MENU_KNOWLEDGE_CHECK = "whole_menu_knowledge_check"
     MENU_FINAL_EXAM = "menu_final_exam"
+    COURSE_KNOWLEDGE_CHECK = "course_knowledge_check"
 
 
 class AssessmentVersionStatus(StrEnum):

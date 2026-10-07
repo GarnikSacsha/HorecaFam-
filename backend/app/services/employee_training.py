@@ -30,6 +30,7 @@ from app.schemas.training import (
     EmployeeTrainingModuleSummary,
     EmployeeTrainingSummary,
 )
+from app.services.course_assessments import course_module_summary
 from app.services.employee_menu import training_menu_summaries
 from app.services.module_audiences import module_visible_to
 from app.services.practice_results import has_final_exam_eligibility
@@ -302,6 +303,9 @@ async def get_employee_training_module(
         raise _not_found()
     return EmployeeTrainingModuleDetail(
         **summary.model_dump(),
+        course=await course_module_summary(
+            db, assignment=assignment, module_version_id=module_version.id
+        ),
         lessons=await _lesson_summaries(
             db,
             module_version_id=module_version.id,

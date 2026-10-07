@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.enums import ContentBlockType
+from app.schemas.course_assessment import CourseModuleSummary
 from app.schemas.menu import EmployeeMenuItemSummary
 
 YOUTUBE_VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -560,6 +561,7 @@ class EmployeeTrainingHomeResponse(StrictTrainingSchema):
 
 class EmployeeTrainingModuleDetail(EmployeeTrainingModuleSummary):
     lessons: list[EmployeeTrainingLessonSummary]
+    course: CourseModuleSummary | None = None
 
 
 class EmployeeTrainingLessonDetail(EmployeeTrainingLessonSummary):

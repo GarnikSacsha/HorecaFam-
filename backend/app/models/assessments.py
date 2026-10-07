@@ -44,7 +44,10 @@ class QuestionGenerationRule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UniqueConstraint("code", "version", name="uq_question_generation_rules_code_version"),
         CheckConstraint("length(btrim(code)) BETWEEN 1 AND 100", name="code_length"),
         CheckConstraint("version >= 1", name="version_positive"),
-        CheckConstraint("domain_type = 'menu'", name="domain_type_menu"),
+        CheckConstraint(
+            "domain_type IN ('menu', 'service', 'sales', 'venue_standards')",
+            name="domain_type_menu",
+        ),
         CheckConstraint(f"mechanic IN ({MECHANICS})", name="mechanic_allowed"),
         CheckConstraint("status IN ('active', 'retired')", name="status_allowed"),
         CheckConstraint("jsonb_typeof(configuration) = 'object'", name="configuration_object"),
@@ -302,7 +305,7 @@ class QuestionSourceLink(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ),
         CheckConstraint(
             "num_nonnulls(menu_item_version_id, menu_item_version_component_id, "
-            "menu_item_version_allergen_id) = 1",
+            "menu_item_version_allergen_id, standard_rule_version_id) = 1",
             name="exactly_one_source",
         ),
         ForeignKeyConstraint(
@@ -326,6 +329,16 @@ class QuestionSourceLink(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             ondelete="RESTRICT",
         ),
         Index("ix_question_source_links_candidate_role", "question_candidate_id", "source_role"),
+        ForeignKeyConstraint(
+            ["standard_rule_version_id", "organization_id", "location_id"],
+            [
+                "standard_rule_versions.id",
+                "standard_rule_versions.organization_id",
+                "standard_rule_versions.location_id",
+            ],
+            name="fk_question_source_links_standard_scope",
+            ondelete="RESTRICT",
+        ),
         Index("ix_question_source_links_question_role", "question_version_id", "source_role"),
     )
 
@@ -334,6 +347,7 @@ class QuestionSourceLink(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     question_candidate_id: Mapped[UUID | None] = mapped_column(_uuid())
     question_version_id: Mapped[UUID | None] = mapped_column(_uuid())
     source_role: Mapped[str] = mapped_column(String(32), nullable=False)
+    standard_rule_version_id: Mapped[UUID | None] = mapped_column(_uuid())
     menu_item_version_id: Mapped[UUID | None] = mapped_column(
         _uuid(), ForeignKey("menu_item_versions.id", ondelete="RESTRICT")
     )
@@ -348,6 +362,7 @@ class QuestionSourceLink(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "assessments"
     __table_args__ = (
+        UniqueConstraint("id", "assessment_type", name="uq_assessments_type_scope"),
         UniqueConstraint("lesson_id", "assessment_type", name="uq_assessments_lesson_type"),
         UniqueConstraint("id", "organization_id", "location_id", name="uq_assessments_scope"),
         UniqueConstraint(
@@ -359,11 +374,12 @@ class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ),
         CheckConstraint(
             "assessment_type IN ('interactive_training', "
-            "'whole_menu_knowledge_check', 'menu_final_exam')",
+            "'whole_menu_knowledge_check', 'menu_final_exam', 'course_knowledge_check')",
             name="assessment_type_allowed",
         ),
         CheckConstraint(
-            "(assessment_type = 'interactive_training' AND lesson_id IS NOT NULL) OR "
+            "(assessment_type IN ('interactive_training', 'course_knowledge_check') "
+            "AND lesson_id IS NOT NULL) OR "
             "(assessment_type IN ('whole_menu_knowledge_check', 'menu_final_exam') "
             "AND lesson_id IS NULL)",
             name="scope_matches_type",
@@ -397,18 +413,31 @@ class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class AssessmentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "assessment_versions"
     __table_args__ = (
+        UniqueConstraint("id", "assessment_type", name="uq_assessment_versions_type_scope"),
+        ForeignKeyConstraint(
+            ["assessment_id", "assessment_type"],
+            ["assessments.id", "assessments.assessment_type"],
+            name="fk_assessment_versions_type_scope",
+            ondelete="RESTRICT",
+        ),
         UniqueConstraint("assessment_id", "version_number", name="uq_assessment_versions_number"),
         UniqueConstraint("id", "assessment_id", name="uq_assessment_versions_assessment_scope"),
         CheckConstraint("version_number >= 1", name="version_number_positive"),
         CheckConstraint("status IN ('draft', 'published', 'archived')", name="status_allowed"),
         CheckConstraint(
-            "(lesson_id IS NOT NULL AND lesson_version_id IS NOT NULL "
+            "(assessment_type = 'interactive_training' "
+            "AND lesson_id IS NOT NULL AND lesson_version_id IS NOT NULL "
             "AND question_count = 5 AND threshold_percent IS NULL "
             "AND feedback_policy = 'immediate') OR "
             "(lesson_id IS NULL AND lesson_version_id IS NULL "
-            "AND ((question_count = 10 AND threshold_percent = 40) "
-            "OR (question_count = 20 AND threshold_percent = 70)) "
-            "AND feedback_policy = 'after_final_submission')",
+            "AND ((assessment_type = 'whole_menu_knowledge_check' "
+            "AND question_count = 10 AND threshold_percent = 40) "
+            "OR (assessment_type = 'menu_final_exam' "
+            "AND question_count = 20 AND threshold_percent = 70)) "
+            "AND feedback_policy = 'after_final_submission') OR "
+            "(assessment_type = 'course_knowledge_check' AND lesson_id IS NOT NULL "
+            "AND lesson_version_id IS NOT NULL AND question_count BETWEEN 1 AND 20 "
+            "AND threshold_percent IS NULL AND feedback_policy = 'after_final_submission')",
             name="configuration_matches_scope",
         ),
         CheckConstraint(
@@ -447,6 +476,12 @@ class AssessmentVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     assessment_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    assessment_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="interactive_training",
+        server_default="interactive_training",
+    )
     training_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     lesson_id: Mapped[UUID | None] = mapped_column(_uuid())
     lesson_version_id: Mapped[UUID | None] = mapped_column(_uuid())
@@ -532,7 +567,7 @@ class AssessmentReadiness(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "status IN ('processing', 'ready', 'warning', 'blocked')", name="status_allowed"
         ),
         CheckConstraint(
-            "eligible_count >= 0 AND required_count IN (5, 10, 20)", name="counts_valid"
+            "eligible_count >= 0 AND required_count BETWEEN 1 AND 20", name="counts_valid"
         ),
         CheckConstraint("length(basis_fingerprint) = 64", name="basis_fingerprint_length"),
         CheckConstraint(
@@ -576,6 +611,13 @@ class AssessmentReadiness(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class AssessmentAttempt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "assessment_attempts"
     __table_args__ = (
+        UniqueConstraint("id", "assessment_type", name="uq_assessment_attempts_type_scope"),
+        ForeignKeyConstraint(
+            ["assessment_version_id", "assessment_type"],
+            ["assessment_versions.id", "assessment_versions.assessment_type"],
+            name="fk_assessment_attempts_type_scope",
+            ondelete="RESTRICT",
+        ),
         UniqueConstraint(
             "id",
             "organization_id",
@@ -605,7 +647,12 @@ class AssessmentAttempt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="status_allowed",
         ),
         CheckConstraint("presentation_locale IN ('uk', 'en')", name="locale_allowed"),
-        CheckConstraint("question_count IN (1, 2, 3, 4, 5, 10, 20)", name="question_count_allowed"),
+        CheckConstraint(
+            "(assessment_type = 'course_knowledge_check' AND question_count BETWEEN 1 AND 20) OR "
+            "(assessment_type <> 'course_knowledge_check' "
+            "AND question_count IN (1, 2, 3, 4, 5, 10, 20))",
+            name="question_count_allowed",
+        ),
         CheckConstraint("snapshot_schema_version >= 1", name="snapshot_schema_version_positive"),
         CheckConstraint("expires_at > started_at", name="expiry_after_start"),
         CheckConstraint(
@@ -654,6 +701,12 @@ class AssessmentAttempt(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     assignment_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     assessment_version_id: Mapped[UUID] = mapped_column(
         _uuid(), ForeignKey("assessment_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    assessment_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="interactive_training",
+        server_default="interactive_training",
     )
     status: Mapped[str] = mapped_column(
         String(16),
@@ -811,18 +864,31 @@ class AttemptDeviceLease(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class AttemptResult(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "attempt_results"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["attempt_id", "assessment_type"],
+            ["assessment_attempts.id", "assessment_attempts.assessment_type"],
+            name="fk_attempt_results_type_scope",
+            ondelete="RESTRICT",
+        ),
         UniqueConstraint("attempt_id", name="uq_attempt_results_attempt"),
         UniqueConstraint("id", "attempt_id", name="uq_attempt_results_source_scope"),
         CheckConstraint("correct_count BETWEEN 0 AND total_count", name="correct_count_range"),
-        CheckConstraint("total_count IN (1, 2, 3, 4, 5, 10, 20)", name="total_count_allowed"),
+        CheckConstraint(
+            "(assessment_type = 'course_knowledge_check' AND total_count BETWEEN 1 AND 20) OR "
+            "(assessment_type <> 'course_knowledge_check' "
+            "AND total_count IN (1, 2, 3, 4, 5, 10, 20))",
+            name="total_count_allowed",
+        ),
         CheckConstraint("score_basis_points BETWEEN 0 AND 10000", name="score_range"),
         CheckConstraint(
             "knowledge_level IN ('very_weak', 'weak', 'good', 'strong')",
             name="knowledge_level_allowed",
         ),
         CheckConstraint(
-            "(total_count IN (1, 2, 3, 4, 5, 10) AND pass_status IS NULL) OR "
-            "(total_count = 20 AND pass_status IN ('passed', 'failed'))",
+            "(assessment_type = 'course_knowledge_check' AND pass_status IS NULL) OR "
+            "(assessment_type <> 'course_knowledge_check' AND "
+            "((total_count IN (1, 2, 3, 4, 5, 10) AND pass_status IS NULL) OR "
+            "(total_count = 20 AND pass_status IN ('passed', 'failed'))))",
             name="pass_status_matches_count",
         ),
         CheckConstraint(
@@ -835,6 +901,12 @@ class AttemptResult(UUIDPrimaryKeyMixin, Base):
 
     attempt_id: Mapped[UUID] = mapped_column(
         _uuid(), ForeignKey("assessment_attempts.id", ondelete="RESTRICT"), nullable=False
+    )
+    assessment_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="interactive_training",
+        server_default="interactive_training",
     )
     correct_count: Mapped[int] = mapped_column(Integer, nullable=False)
     total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=5, server_default="5")

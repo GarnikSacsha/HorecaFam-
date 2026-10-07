@@ -125,6 +125,13 @@ from app.models.menu import (
     MenuVersionSectionTranslation,
 )
 from app.models.menu_history import MenuChangeEvent
+from app.models.standards import (
+    StandardRule,
+    StandardRuleVersion,
+    StandardSet,
+    StandardSetVersion,
+    TrainingModuleStandardDependency,
+)
 from app.models.training import (
     Asset,
     Lesson,
@@ -152,6 +159,11 @@ from app.models.training_assignments import (
 )
 
 __all__ = [
+    "StandardRule",
+    "StandardRuleVersion",
+    "StandardSet",
+    "StandardSetVersion",
+    "TrainingModuleStandardDependency",
     "MenuChangeEvent",
     "AccessStatus",
     "AdminAccess",

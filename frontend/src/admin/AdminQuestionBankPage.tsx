@@ -55,6 +55,7 @@ function sourceIdentity(source: QuestionCandidateResponse["sources"][number]): s
     source.menu_item_version_component_id ??
     source.menu_item_version_allergen_id ??
     source.menu_item_version_id ??
+    source.standard_rule_version_id ??
     "Джерело без ідентифікатора"
   );
 }
@@ -407,17 +408,23 @@ export function AdminQuestionBankPage() {
     }
   };
 
-  const generate = async () => {
-    if (!organizationId || !locationId || !menuVersionId || !trainingVersion || !session) return;
+  const generate = async (source: "menu" | "standards" = "menu") => {
+    if (!organizationId || !locationId || !trainingVersion || !session) return;
+    if (source === "menu" && !menuVersionId) return;
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       const result = await client.request<QuestionCandidateGenerateResponse>(
-        `/organizations/${organizationId}/locations/${locationId}/question-candidates/generate`,
+        source === "standards"
+          ? `/organizations/${organizationId}/locations/${locationId}/training-versions/${trainingVersion.id}/standard-question-candidates/generate`
+          : `/organizations/${organizationId}/locations/${locationId}/question-candidates/generate`,
         {
           method: "POST",
-          body: { menu_version_id: menuVersionId, training_version_id: trainingVersion.id },
+          body:
+            source === "menu"
+              ? { menu_version_id: menuVersionId, training_version_id: trainingVersion.id }
+              : undefined,
           csrfToken: session.csrf_token,
           idempotencyKey: createIdempotencyKey(),
         },
@@ -551,6 +558,14 @@ export function AdminQuestionBankPage() {
           disabled={busy || !menuVersionId || !trainingVersion}
         >
           Згенерувати кандидатів
+        </button>
+        <button
+          className="button button-secondary"
+          type="button"
+          onClick={() => void generate("standards")}
+          disabled={busy || !trainingVersion}
+        >
+          Кандидати зі стандартів
         </button>
       </div>
 

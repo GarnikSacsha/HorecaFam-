@@ -100,6 +100,7 @@ async def _published_assessment(
             AssessmentVersion.location_id == assignment.location_id,
             AssessmentVersion.training_version_id == assignment.training_version_id,
             AssessmentVersion.lesson_version_id == lesson_version.id,
+            AssessmentVersion.assessment_type == "interactive_training",
             AssessmentVersion.status == "published",
         )
         .order_by(AssessmentVersion.version_number.desc())
@@ -236,6 +237,7 @@ async def get_lesson_interactive_training_summary(
                     AssessmentAttempt.employee_profile_id == employee_profile_id,
                     AssessmentAttempt.status == "completed",
                     AssessmentVersion.lesson_id == lesson_id,
+                    AssessmentVersion.assessment_type == "interactive_training",
                 )
                 .order_by(AttemptResult.completed_at.desc())
                 .limit(HISTORY_LIMIT)

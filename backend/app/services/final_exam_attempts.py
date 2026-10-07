@@ -775,6 +775,7 @@ async def start_or_resume_final_exam_attempt(
             assignment_id=assignment.id,
             assessment_version_id=version.id,
             status="in_progress",
+            assessment_type=version.assessment_type,
             presentation_locale=presentation_locale,
             question_count=20,
             snapshot_schema_version=1,

@@ -23,6 +23,8 @@ from app.models import (
     QuestionSourceLink,
     QuestionVersion,
     QuestionVersionTranslation,
+    StandardRuleVersion,
+    TrainingModuleStandardDependency,
     TrainingVersion,
 )
 from app.schemas.assessment import (
@@ -41,6 +43,7 @@ from app.schemas.assessment import (
     QuestionCandidateResponse,
 )
 from app.services.question_generation import candidate_source_fingerprint_is_current
+from app.services.standard_questions import STANDARD_RULE_CODES
 
 
 def _error(status_code: int, code: str, message: str) -> APIError:
@@ -153,6 +156,7 @@ async def ensure_practice_readiness(
             organization_id=organization_id,
             location_id=location_id,
             assessment_id=assessment.id,
+            assessment_type=assessment.assessment_type,
             training_version_id=training_version_id,
             lesson_id=None,
             lesson_version_id=None,
@@ -389,6 +393,7 @@ def _candidate_response(
         sources=[
             CandidateSourceResponse(
                 source_role=source.source_role,
+                standard_rule_version_id=source.standard_rule_version_id,
                 menu_item_version_id=source.menu_item_version_id,
                 menu_item_version_component_id=source.menu_item_version_component_id,
                 menu_item_version_allergen_id=source.menu_item_version_allergen_id,
@@ -532,10 +537,32 @@ async def _assessment_version(
     training_version = await db.get(TrainingVersion, candidate.training_version_id)
     if lesson is None or training_version is None:
         raise _not_found()
+    rule = await db.get(QuestionGenerationRule, candidate.generation_rule_id)
+    is_course = rule is not None and rule.code in STANDARD_RULE_CODES
+    assessment_type = "course_knowledge_check" if is_course else "interactive_training"
+    required_count = 5
+    if is_course:
+        required_count = (
+            await db.scalar(
+                select(func.count(StandardRuleVersion.id))
+                .join(
+                    TrainingModuleStandardDependency,
+                    TrainingModuleStandardDependency.standard_set_version_id
+                    == StandardRuleVersion.standard_set_version_id,
+                )
+                .where(
+                    TrainingModuleStandardDependency.training_module_version_id
+                    == lesson.training_module_version_id,
+                )
+            )
+            or 0
+        )
+        if not 1 <= required_count <= 20:
+            raise _provenance_invalid()
     assessment = await db.scalar(
         select(Assessment).where(
             Assessment.lesson_id == lesson.lesson_id,
-            Assessment.assessment_type == "interactive_training",
+            Assessment.assessment_type == assessment_type,
         )
     )
     if assessment is None:
@@ -544,7 +571,7 @@ async def _assessment_version(
             location_id=candidate.location_id,
             training_id=training_version.training_id,
             lesson_id=lesson.lesson_id,
-            assessment_type="interactive_training",
+            assessment_type=assessment_type,
         )
         db.add(assessment)
         await db.flush()
@@ -569,13 +596,14 @@ async def _assessment_version(
             organization_id=candidate.organization_id,
             location_id=candidate.location_id,
             assessment_id=assessment.id,
+            assessment_type=assessment.assessment_type,
             training_version_id=candidate.training_version_id,
             lesson_id=lesson.lesson_id,
             lesson_version_id=lesson.id,
             version_number=version_number,
             status="published",
-            question_count=5,
-            feedback_policy="immediate",
+            question_count=required_count,
+            feedback_policy="after_final_submission" if is_course else "immediate",
             sampling_configuration={"strategy": "coverage_first", "rotation_minimum": 10},
             published_by_user_id=actor_user_id,
             published_at=now,
@@ -611,7 +639,8 @@ async def recompute_readiness(
     coverage_keys = sorted({pool.coverage_key for pool, _question in pool_rows})
     mechanics = sorted({pool.mechanic for pool, _question in pool_rows})
     status, rotation_supported, blocking_codes, warning_codes = derive_readiness_state(
-        eligible_count
+        eligible_count,
+        required_count=assessment_version.question_count,
     )
     basis_payload = [
         {
@@ -633,7 +662,7 @@ async def recompute_readiness(
     values: dict[str, object] = {
         "status": status,
         "eligible_count": eligible_count,
-        "required_count": 5,
+        "required_count": assessment_version.question_count,
         "coverage_evidence": {
             "distinct_source_count": len(coverage_keys),
             "coverage_keys": coverage_keys,
@@ -658,6 +687,7 @@ async def recompute_readiness(
         lesson_version_id=assessment_version.lesson_version_id,
         status=status,
         eligible_count=eligible_count,
+        required_count=assessment_version.question_count,
         coverage_evidence=values["coverage_evidence"],
         rotation_supported=rotation_supported,
         basis_fingerprint=basis_fingerprint,
@@ -740,6 +770,7 @@ async def _publish_candidate(
                 location_id=candidate.location_id,
                 question_version_id=question_version.id,
                 source_role=source.source_role,
+                standard_rule_version_id=source.standard_rule_version_id,
                 menu_item_version_id=source.menu_item_version_id,
                 menu_item_version_component_id=source.menu_item_version_component_id,
                 menu_item_version_allergen_id=source.menu_item_version_allergen_id,
@@ -755,6 +786,7 @@ async def _publish_candidate(
         correct_source.menu_item_version_id
         or correct_source.menu_item_version_component_id
         or correct_source.menu_item_version_allergen_id
+        or correct_source.standard_rule_version_id
     )
     if coverage_id is None:
         raise _provenance_invalid()
@@ -774,25 +806,26 @@ async def _publish_candidate(
     candidate.revision += 1
     await db.flush()
     readiness = await recompute_readiness(db, assessment_version, now=now)
-    await ensure_practice_readiness(
-        db,
-        organization_id=candidate.organization_id,
-        location_id=candidate.location_id,
-        training_version_id=candidate.training_version_id,
-        actor_user_id=actor_user_id,
-        now=now,
-    )
-    # Один Published Question одночасно оновлює готовність Practice та Final Exam.
-    from app.services.final_exam_readiness import ensure_final_exam_readiness
+    if assessment_version.assessment_type == "interactive_training":
+        await ensure_practice_readiness(
+            db,
+            organization_id=candidate.organization_id,
+            location_id=candidate.location_id,
+            training_version_id=candidate.training_version_id,
+            actor_user_id=actor_user_id,
+            now=now,
+        )
+        # Питання стандартів не впливають на готовність сертифікації Menu.
+        from app.services.final_exam_readiness import ensure_final_exam_readiness
 
-    await ensure_final_exam_readiness(
-        db,
-        organization_id=candidate.organization_id,
-        location_id=candidate.location_id,
-        training_version_id=candidate.training_version_id,
-        actor_user_id=actor_user_id,
-        now=now,
-    )
+        await ensure_final_exam_readiness(
+            db,
+            organization_id=candidate.organization_id,
+            location_id=candidate.location_id,
+            training_version_id=candidate.training_version_id,
+            actor_user_id=actor_user_id,
+            now=now,
+        )
     db.add(
         AuditEvent(
             organization_id=candidate.organization_id,

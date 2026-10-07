@@ -258,6 +258,7 @@ async def ensure_final_exam_readiness(
             organization_id=organization_id,
             location_id=location_id,
             assessment_id=assessment.id,
+            assessment_type=assessment.assessment_type,
             training_version_id=training_version_id,
             lesson_id=None,
             lesson_version_id=None,

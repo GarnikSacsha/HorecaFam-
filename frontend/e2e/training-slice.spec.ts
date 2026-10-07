@@ -445,7 +445,9 @@ test("admin publishes Training and employee reads the current editorial referenc
   await expect(page.getByRole("button", { name: "Додати модуль", exact: true })).toBeDisabled();
   await expect(page.locator("body")).toHaveJSProperty(
     "scrollWidth",
-    await page.locator("body").evaluate((body) => body.clientWidth),
+    await page
+      .locator("body")
+      .evaluate((body: unknown) => (body as { clientWidth: number }).clientWidth),
   );
   await page.getByRole("form", { name: "Новий модуль" }).screenshot({
     path: testInfo.outputPath("new-module.png"),

@@ -219,6 +219,7 @@ async def _complete_attempt(
     score_basis_points = correct_count * 10000 // attempt.question_count
     result = AttemptResult(
         attempt_id=attempt.id,
+        assessment_type=attempt.assessment_type,
         correct_count=correct_count,
         total_count=attempt.question_count,
         score_basis_points=score_basis_points,

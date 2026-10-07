@@ -387,6 +387,7 @@ async def _finish_final_exam_attempt(
     )
     result = AttemptResult(
         attempt_id=attempt.id,
+        assessment_type=attempt.assessment_type,
         correct_count=correct_count,
         total_count=20,
         score_basis_points=score_basis_points,

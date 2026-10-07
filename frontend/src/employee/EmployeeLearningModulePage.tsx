@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import type { EmployeeTrainingModuleDetail } from "../api/contracts";
 import { useSession } from "../session/SessionContext";
+import { EmployeeCourseAssessment } from "./EmployeeCourseAssessment";
 
 export function EmployeeLearningModulePage() {
   const { client, session } = useSession();
@@ -63,6 +64,12 @@ export function EmployeeLearningModulePage() {
               <span className="learning-fallback-note">Показано українською</span>
             ) : null}
           </header>
+          {module.course ? (
+            <EmployeeCourseAssessment
+              key={module.course.module_version_id}
+              course={module.course}
+            />
+          ) : null}
           {module.lessons.length ? (
             <>
               <Link

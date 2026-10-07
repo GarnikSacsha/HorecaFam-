@@ -130,6 +130,7 @@ class CandidateSource(StrictAssessmentSchema):
     menu_item_version_id: UUID | None = None
     menu_item_version_component_id: UUID | None = None
     menu_item_version_allergen_id: UUID | None = None
+    standard_rule_version_id: UUID | None = None
 
     @model_validator(mode="after")
     def exactly_one_source(self) -> "CandidateSource":
@@ -137,6 +138,7 @@ class CandidateSource(StrictAssessmentSchema):
             self.menu_item_version_id,
             self.menu_item_version_component_id,
             self.menu_item_version_allergen_id,
+            self.standard_rule_version_id,
         )
         if sum(value is not None for value in values) != 1:
             raise ValueError("Candidate source must identify exactly one verified fact")
@@ -249,6 +251,7 @@ class QuestionCandidateBatchApproveRequest(StrictAssessmentSchema):
 
 class CandidateSourceResponse(StrictAssessmentSchema):
     source_role: str
+    standard_rule_version_id: UUID | None = None
     menu_item_version_id: UUID | None
     menu_item_version_component_id: UUID | None
     menu_item_version_allergen_id: UUID | None
@@ -281,7 +284,7 @@ class LessonAssessmentReadinessResponse(StrictAssessmentSchema):
     lesson_version_id: UUID
     status: Literal["processing", "ready", "warning", "blocked"]
     eligible_count: int = Field(ge=0)
-    required_count: Literal[5] = 5
+    required_count: int = Field(default=5, ge=1, le=20)
     coverage_evidence: dict[str, object]
     rotation_supported: bool
     basis_fingerprint: str

@@ -58,6 +58,7 @@ async def test_interactive_boundary_rejects_other_assessment_families(
     db_session.add(version)
     await db_session.flush()
     attempt.assessment_version_id = version.id
+    attempt.assessment_type = family
     attempt.question_count = count
     await db_session.commit()
     before = [

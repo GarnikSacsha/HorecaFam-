@@ -346,6 +346,7 @@ async def _finish_practice_attempt(
     score_basis_points = correct_count * 1000
     result = AttemptResult(
         attempt_id=attempt.id,
+        assessment_type=attempt.assessment_type,
         correct_count=correct_count,
         total_count=10,
         score_basis_points=score_basis_points,

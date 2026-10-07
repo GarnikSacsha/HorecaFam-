@@ -188,6 +188,7 @@ async def create_final_exam_version(
         organization_id=organization_id,
         location_id=location_id,
         assessment_id=current.assessment_id,
+        assessment_type="menu_final_exam",
         training_version_id=training_version_id,
         version_number=number,
         status="published",
