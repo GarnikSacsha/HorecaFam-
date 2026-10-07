@@ -74,6 +74,45 @@ class TrainingVersionAudience(UUIDPrimaryKeyMixin, Base):
     )
 
 
+class TrainingModuleAudience(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "training_module_audiences"
+    __table_args__ = (
+        UniqueConstraint(
+            "training_module_version_id",
+            "operational_role_id",
+            name="uq_training_module_audiences_module_role",
+        ),
+        ForeignKeyConstraint(
+            ["training_module_version_id", "training_version_id"],
+            ["training_module_versions.id", "training_module_versions.training_version_id"],
+            name="fk_training_module_audiences_module_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["training_version_id", "organization_id", "location_id"],
+            [
+                "training_versions.id",
+                "training_versions.organization_id",
+                "training_versions.location_id",
+            ],
+            name="fk_training_module_audiences_version_scope",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["operational_role_id", "organization_id"],
+            ["operational_roles.id", "operational_roles.organization_id"],
+            name="fk_training_module_audiences_role_scope",
+            ondelete="RESTRICT",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    location_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    training_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    training_module_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    operational_role_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+
+
 class TrainingRollout(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "training_rollouts"
     __table_args__ = (

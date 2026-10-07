@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
@@ -12,6 +12,8 @@ from app.models import (
     OrganizationMembership,
     Training,
     TrainingAssignment,
+    TrainingModuleAudience,
+    TrainingModuleVersion,
     TrainingVersion,
     TrainingVersionAudience,
     User,
@@ -80,6 +82,7 @@ async def _assignment_still_applies(
     *,
     assignment: TrainingAssignment,
     profile: EmployeeProfile,
+    previous_operational_role_id: UUID | None = None,
 ) -> bool:
     if (
         profile.location_id is None
@@ -87,10 +90,49 @@ async def _assignment_still_applies(
         or assignment.location_id != profile.location_id
     ):
         return False
+    if (
+        previous_operational_role_id is not None
+        and previous_operational_role_id != profile.operational_role_id
+    ):
+        previous_audience = (
+            select(TrainingModuleAudience.id)
+            .where(
+                TrainingModuleAudience.training_module_version_id == TrainingModuleVersion.id,
+                TrainingModuleAudience.operational_role_id == previous_operational_role_id,
+            )
+            .exists()
+        )
+        current_audience = (
+            select(TrainingModuleAudience.id)
+            .where(
+                TrainingModuleAudience.training_module_version_id == TrainingModuleVersion.id,
+                TrainingModuleAudience.operational_role_id == profile.operational_role_id,
+            )
+            .exists()
+        )
+        changed_module = await db.scalar(
+            select(TrainingModuleVersion.id)
+            .where(
+                TrainingModuleVersion.training_version_id == assignment.training_version_id,
+                TrainingModuleVersion.all_positions.is_(False),
+                previous_audience != current_audience,
+            )
+            .limit(1)
+        )
+        if changed_module is not None:
+            return False
     audience_id = await db.scalar(
-        select(TrainingVersionAudience.id).where(
-            TrainingVersionAudience.training_version_id == assignment.training_version_id,
-            TrainingVersionAudience.operational_role_id == profile.operational_role_id,
+        select(TrainingVersion.id).where(
+            TrainingVersion.id == assignment.training_version_id,
+            or_(
+                TrainingVersion.all_positions.is_(True),
+                select(TrainingVersionAudience.id)
+                .where(
+                    TrainingVersionAudience.training_version_id == TrainingVersion.id,
+                    TrainingVersionAudience.operational_role_id == profile.operational_role_id,
+                )
+                .exists(),
+            ),
         )
     )
     return audience_id is not None
@@ -109,15 +151,20 @@ async def _published_target(
             await db.execute(
                 select(Training, TrainingVersion)
                 .join(TrainingVersion, TrainingVersion.training_id == Training.id)
-                .join(
-                    TrainingVersionAudience,
-                    TrainingVersionAudience.training_version_id == TrainingVersion.id,
-                )
                 .where(
                     Training.organization_id == organization_id,
                     Training.location_id == profile.location_id,
                     TrainingVersion.status == "published",
-                    TrainingVersionAudience.operational_role_id == profile.operational_role_id,
+                    or_(
+                        TrainingVersion.all_positions.is_(True),
+                        select(TrainingVersionAudience.id)
+                        .where(
+                            TrainingVersionAudience.training_version_id == TrainingVersion.id,
+                            TrainingVersionAudience.operational_role_id
+                            == profile.operational_role_id,
+                        )
+                        .exists(),
+                    ),
                 )
             )
         )
@@ -132,6 +179,7 @@ async def evaluate_activation_applicability(
     organization_id: UUID,
     employee_profile_id: UUID,
     effective_membership_status: str | None = None,
+    previous_operational_role_id: UUID | None = None,
     now: datetime | None = None,
 ) -> ActivationApplicabilityResult:
     """Застосовує одну межу призначення для всіх змін операційного профілю."""
@@ -154,6 +202,7 @@ async def evaluate_activation_applicability(
         db,
         assignment=current,
         profile=profile,
+        previous_operational_role_id=previous_operational_role_id,
     ):
         return ActivationApplicabilityResult(1, 0, 0, effects=("retained",))
     if current is not None:
@@ -191,6 +240,9 @@ async def evaluate_activation_applicability(
         training_version_id=version.id,
         status="assigned",
         source="automatic",
+        previous_assignment_id=(
+            current.id if current is not None and current.training_id == training.id else None
+        ),
         assigned_at=now or datetime.now(UTC),
     )
     db.add(assignment)

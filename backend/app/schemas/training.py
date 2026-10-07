@@ -212,6 +212,28 @@ class TrainingModulePatch(StrictTrainingSchema):
     required: bool
 
 
+class ModuleAudienceWrite(StrictTrainingSchema):
+    all_positions: bool
+    operational_role_ids: list[UUID] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def validate_audience(self) -> Self:
+        roles = self.operational_role_ids
+        if len(roles) != len(set(roles)):
+            raise ValueError("Operational roles must be unique")
+        if self.all_positions == bool(roles):
+            raise ValueError("Choose all positions or an explicit nonempty audience")
+        return self
+
+
+class TrainingModuleCreate(TrainingModulePatch, ModuleAudienceWrite):
+    domain_type: Literal["service", "sales", "venue_standards"]
+
+
+class TrainingModuleAudienceUpdate(ModuleAudienceWrite):
+    expected_revision: int = Field(ge=0)
+
+
 class TrainingLessonCreate(StrictTrainingSchema):
     expected_revision: int = Field(ge=0)
     title_uk: str = Field(min_length=1, max_length=200)
@@ -280,7 +302,9 @@ class TrainingLessonResponse(StrictTrainingSchema):
 
 class TrainingModuleResponse(StrictTrainingSchema):
     id: UUID
-    domain_type: Literal["menu"]
+    domain_type: Literal["menu", "service", "sales", "venue_standards"]
+    all_positions: bool = True
+    operational_role_ids: list[UUID] = Field(default_factory=list)
     position: int
     title_uk: str
     description_uk: str | None
@@ -380,7 +404,14 @@ class TrainingPublishRequest(StrictTrainingSchema):
 
 class TrainingAudienceUpdate(StrictTrainingSchema):
     expected_revision: int = Field(ge=0)
+    all_positions: bool = False
     operational_role_ids: list[UUID]
+
+    @model_validator(mode="after")
+    def require_exclusive_audience(self) -> "TrainingAudienceUpdate":
+        if self.all_positions and self.operational_role_ids:
+            raise ValueError("All positions cannot be combined with a selected audience")
+        return self
 
     @field_validator("operational_role_ids")
     @classmethod
@@ -393,6 +424,7 @@ class TrainingAudienceUpdate(StrictTrainingSchema):
 class TrainingAudienceResponse(StrictTrainingSchema):
     training_version_id: UUID
     revision: int
+    all_positions: bool = False
     operational_role_ids: list[UUID]
 
 
@@ -482,7 +514,7 @@ class EmployeeTrainingAssignmentSummary(StrictTrainingSchema):
 
 class EmployeeTrainingModuleSummary(StrictTrainingSchema):
     id: UUID
-    domain_type: Literal["menu"]
+    domain_type: Literal["menu", "service", "sales", "venue_standards"]
     title: str
     description: str | None
     position: int

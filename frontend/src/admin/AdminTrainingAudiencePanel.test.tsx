@@ -91,6 +91,24 @@ it("blocks saving after a failed read and supports explicit retry", async () => 
   expect(await screen.findByLabelText("Офіціант")).toBeChecked();
 });
 
+it("explicitly saves all current and future positions without a stale role list", async () => {
+  const { requests } = setup((path, options) => {
+    if (options?.method === "PUT")
+      return { ...audience, revision: 5, all_positions: true, operational_role_ids: [] };
+    return path.endsWith("operational-roles") ? roles : audience;
+  });
+  const user = userEvent.setup();
+  await user.click(await screen.findByLabelText("Усі поточні та майбутні позиції"));
+  expect(screen.getByLabelText("Офіціант")).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Зберегти аудиторію" }));
+  expect(await screen.findByText("Аудиторію збережено.")).toBeVisible();
+  expect(requests.find(({ options }) => options?.method === "PUT")?.options?.body).toEqual({
+    expected_revision: 4,
+    all_positions: true,
+    operational_role_ids: [],
+  });
+});
+
 it("preserves selection on conflict and requires an explicit reload before another save", async () => {
   setup((path, options) => {
     if (options?.method === "PUT")

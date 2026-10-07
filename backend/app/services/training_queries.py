@@ -11,6 +11,7 @@ from app.models import (
     LessonVersion,
     Location,
     TrainingModule,
+    TrainingModuleAudience,
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingRollout,
@@ -241,6 +242,19 @@ async def get_training_version_detail(
             TrainingModuleResponse(
                 id=module_version.id,
                 domain_type=module.domain_type,
+                all_positions=module_version.all_positions,
+                operational_role_ids=list(
+                    (
+                        await db.scalars(
+                            select(TrainingModuleAudience.operational_role_id)
+                            .where(
+                                TrainingModuleAudience.training_module_version_id
+                                == module_version.id
+                            )
+                            .order_by(TrainingModuleAudience.operational_role_id)
+                        )
+                    ).all()
+                ),
                 position=module_version.position,
                 title_uk=uk_module.title,
                 description_uk=uk_module.description,

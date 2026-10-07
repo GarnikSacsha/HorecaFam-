@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
@@ -43,6 +43,8 @@ const detail = {
     {
       id: "module-version-1",
       domain_type: "menu",
+      all_positions: true,
+      operational_role_ids: [] as string[],
       position: 0,
       title_uk: "Меню ресторану",
       description_uk: "Базові знання",
@@ -192,6 +194,118 @@ function trainingClient(
 }
 
 describe("Admin Training workspace", () => {
+  it("creates a position module and saves its selected audience with revision and CSRF", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const fallback = trainingClient(requests);
+    const copy = structuredClone(detail) as TrainingVersionDetail;
+    const client: ApiClient = {
+      ...fallback,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.endsWith("/operational-roles"))
+          return Promise.resolve([
+            { id: "runner-role", name_uk: "Ранер", status: "active" },
+            { id: "bartender-role", name_uk: "Бармен", status: "active" },
+          ] as T);
+        if (!options?.method && path.endsWith("/training-version-1"))
+          return Promise.resolve(copy as T);
+        if (options?.method === "POST" && path.endsWith("/modules")) {
+          requests.push({ path, options });
+          copy.modules.push({
+            ...copy.modules[0],
+            id: "runner-module",
+            title_uk: "Ранер: основи",
+            domain_type: "service",
+            all_positions: false,
+            operational_role_ids: ["runner-role"],
+            lessons: [],
+          });
+          copy.revision += 1;
+          return Promise.resolve({ module: copy.modules[1], revision: copy.revision } as T);
+        }
+        return fallback.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByText("Новий модуль"));
+    const create = within(await screen.findByRole("form", { name: "Новий модуль" }));
+    await user.type(create.getByLabelText("Назва нового модуля"), "Ранер: основи");
+    await user.click(await create.findByLabelText("Ранер"));
+    await user.click(create.getByRole("button", { name: "Додати модуль" }));
+    await waitFor(() => expect(screen.getByLabelText("Назва модуля")).toHaveValue("Ранер: основи"));
+    const created = requests.find(
+      ({ options, path }) => options?.method === "POST" && path.endsWith("/modules"),
+    );
+    expect(created?.options).toMatchObject({
+      csrfToken: "csrf-safe",
+      body: {
+        expected_revision: 4,
+        domain_type: "service",
+        title_uk: "Ранер: основи",
+        all_positions: false,
+        operational_role_ids: ["runner-role"],
+        required: true,
+      },
+    });
+    const audienceForm = within(screen.getByRole("form", { name: "Аудиторія модуля" }));
+    await user.click(await audienceForm.findByLabelText("Бармен"));
+    await user.click(audienceForm.getByRole("button", { name: "Зберегти аудиторію модуля" }));
+    expect(
+      requests.find(({ path }) => path.endsWith("/runner-module/audience"))?.options,
+    ).toMatchObject({
+      method: "PUT",
+      csrfToken: "csrf-safe",
+      body: {
+        expected_revision: 5,
+        all_positions: false,
+        operational_role_ids: ["runner-role", "bartender-role"],
+      },
+    });
+  });
+
+  it("edits the selected position module and keeps it selected after refresh", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const fallback = trainingClient(requests);
+    const copy = structuredClone(detail);
+    copy.modules.push({
+      ...copy.modules[0],
+      id: "runner-module",
+      title_uk: "Ранер",
+      lessons: [],
+    });
+    const client: ApiClient = {
+      ...fallback,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (!options?.method && path.endsWith("/training-version-1"))
+          return Promise.resolve(copy as T);
+        return fallback.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText("Модуль навчання"), "runner-module");
+    expect(screen.getByLabelText("Назва модуля")).toHaveValue("Ранер");
+    await user.click(screen.getByRole("button", { name: "Зберегти модуль" }));
+    expect(
+      requests
+        .find(({ options }) => options?.method === "PATCH")
+        ?.path.endsWith("/modules/runner-module"),
+    ).toBe(true);
+    expect(await screen.findByLabelText("Назва модуля")).toHaveValue("Ранер");
+  });
+
   it("identifies existing cards from the bound menu without changing their bindings", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const fallback = trainingClient(requests);

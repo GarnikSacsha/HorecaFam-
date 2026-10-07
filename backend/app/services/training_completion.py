@@ -25,6 +25,7 @@ from app.services.idempotency import (
     request_fingerprint,
     reserve_idempotency,
 )
+from app.services.module_audiences import module_visible_to
 from app.services.practice_results import has_final_exam_eligibility
 from app.services.training_progress import derive_training_progress
 
@@ -124,6 +125,7 @@ async def _assigned_lesson_version(
         .where(
             TrainingModuleVersion.training_version_id == assignment.training_version_id,
             LessonVersion.lesson_id == lesson_id,
+            module_visible_to(assignment.employee_profile_id),
         )
     )
     if lesson_version is None:

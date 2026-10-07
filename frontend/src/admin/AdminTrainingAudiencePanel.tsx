@@ -22,6 +22,7 @@ export function AdminTrainingAudiencePanel({
   const [roles, setRoles] = useState<OperationalRoleSummary[]>([]);
   const [snapshot, setSnapshot] = useState<TrainingAudienceResponse | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [allPositions, setAllPositions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [conflict, setConflict] = useState(false);
@@ -50,6 +51,7 @@ export function AdminTrainingAudiencePanel({
       setRoles(nextRoles);
       setSnapshot(nextAudience);
       setSelected(nextAudience.operational_role_ids);
+      setAllPositions(nextAudience.all_positions ?? false);
       setConflict(false);
     } catch {
       if (current === generation.current)
@@ -69,11 +71,13 @@ export function AdminTrainingAudiencePanel({
   }, [load]);
 
   const valid =
-    selected.length > 0 &&
-    selected.every((id) => roles.some((role) => role.id === id && role.status === "active"));
+    allPositions ||
+    (selected.length > 0 &&
+      selected.every((id) => roles.some((role) => role.id === id && role.status === "active")));
   const changed =
     snapshot !== null &&
-    [...selected].sort().join() !== [...snapshot.operational_role_ids].sort().join();
+    (allPositions !== (snapshot.all_positions ?? false) ||
+      [...selected].sort().join() !== [...snapshot.operational_role_ids].sort().join());
   const save = async () => {
     if (!snapshot || !session || !valid || !changed || busy || pending.current || conflict) return;
     const current = generation.current;
@@ -86,13 +90,18 @@ export function AdminTrainingAudiencePanel({
     try {
       const result = await client.request<TrainingAudienceResponse>(base, {
         method: "PUT",
-        body: { expected_revision: snapshot.revision, operational_role_ids: selected },
+        body: {
+          expected_revision: snapshot.revision,
+          all_positions: allPositions,
+          operational_role_ids: allPositions ? [] : selected,
+        },
         csrfToken: session.csrf_token,
       });
       if (current !== generation.current) return;
       persisted = true;
       setSnapshot(result);
       setSelected(result.operational_role_ids);
+      setAllPositions(result.all_positions ?? false);
       setSaved(true);
       await onSaved(result.revision);
     } catch (caught) {
@@ -158,12 +167,23 @@ export function AdminTrainingAudiencePanel({
         >
           <fieldset className="field-group" disabled={busy || saving}>
             <legend>Операційні ролі</legend>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={allPositions}
+                onChange={(event) => {
+                  setAllPositions(event.target.checked);
+                  setSaved(false);
+                }}
+              />
+              Усі поточні та майбутні позиції
+            </label>
             {options.map((role) => (
               <label className="check-row" key={role.id}>
                 <input
                   type="checkbox"
                   checked={selected.includes(role.id)}
-                  disabled={!role.active && !selected.includes(role.id)}
+                  disabled={allPositions || (!role.active && !selected.includes(role.id))}
                   onChange={(event) => {
                     setSaved(false);
                     setSelected((current) =>

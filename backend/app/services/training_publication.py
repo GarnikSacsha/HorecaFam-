@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
@@ -151,7 +151,7 @@ async def _readiness_for_version(
             ).all()
         )
     )
-    if audience_count == 0:
+    if audience_count == 0 and not version.all_positions:
         blockers.append(
             _issue(
                 "TRAINING_AUDIENCE_REQUIRED",
@@ -215,12 +215,12 @@ async def _readiness_for_version(
             )
         ).all()
     )
-    valid_modules: list[TrainingModuleVersion] = []
+    has_menu_module = False
     for module_version in modules:
         module_identity = await db.get(TrainingModule, module_version.training_module_id)
         if module_identity is not None and module_identity.domain_type == "menu":
-            valid_modules.append(module_version)
-    if not valid_modules:
+            has_menu_module = True
+    if not has_menu_module:
         blockers.append(
             _issue(
                 "MENU_MODULE_MISSING",
@@ -230,7 +230,7 @@ async def _readiness_for_version(
             )
         )
 
-    module_ids = [module.id for module in valid_modules]
+    module_ids = [module.id for module in modules]
     lessons = (
         list(
             (
@@ -244,7 +244,12 @@ async def _readiness_for_version(
         if module_ids
         else []
     )
-    required_lessons = [lesson for lesson in lessons if lesson.required]
+    required_module_ids = {module.id for module in modules if module.required}
+    required_lessons = [
+        lesson
+        for lesson in lessons
+        if lesson.required and lesson.training_module_version_id in required_module_ids
+    ]
     if not required_lessons:
         blockers.append(
             _issue(
@@ -255,7 +260,23 @@ async def _readiness_for_version(
             )
         )
 
-    for module_state in valid_modules:
+    for module_state in modules:
+        if (
+            len(modules) > 1
+            and module_state.required
+            and not any(
+                lesson.required and lesson.training_module_version_id == module_state.id
+                for lesson in lessons
+            )
+        ):
+            blockers.append(
+                _issue(
+                    "REQUIRED_LESSON_MISSING",
+                    "Обов’язковий модуль має містити щонайменше один обов’язковий урок.",
+                    "training_module",
+                    module_state.id,
+                )
+            )
         module_translations = list(
             (
                 await db.scalars(
@@ -416,7 +437,7 @@ async def _readiness_for_version(
         blocking_errors=blockers,
         warnings=warnings,
         counts=TrainingReadinessCounts(
-            module_count=len(valid_modules),
+            module_count=len(modules),
             lesson_count=len(lessons),
             required_lesson_count=len(required_lessons),
             content_block_count=len(blocks),
@@ -568,16 +589,21 @@ async def publish_training_version(
                         OrganizationMembership,
                         OrganizationMembership.id == EmployeeProfile.membership_id,
                     )
-                    .join(
-                        TrainingVersionAudience,
-                        TrainingVersionAudience.operational_role_id
-                        == EmployeeProfile.operational_role_id,
-                    )
                     .where(
                         EmployeeProfile.organization_id == organization_id,
                         EmployeeProfile.location_id == location_id,
                         OrganizationMembership.status == "active",
-                        TrainingVersionAudience.training_version_id == version.id,
+                        EmployeeProfile.operational_role_id.is_not(None),
+                        or_(
+                            literal(version.all_positions),
+                            select(TrainingVersionAudience.id)
+                            .where(
+                                TrainingVersionAudience.training_version_id == version.id,
+                                TrainingVersionAudience.operational_role_id
+                                == EmployeeProfile.operational_role_id,
+                            )
+                            .exists(),
+                        ),
                     )
                     .order_by(EmployeeProfile.id)
                 )

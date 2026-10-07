@@ -25,6 +25,7 @@ from app.schemas.assessment import (
 )
 from app.services.interactive_attempts import get_interactive_attempt
 from app.services.interactive_cycles import cycle_summary, lesson_attempts, resumable_attempt
+from app.services.module_audiences import module_visible_to
 
 HISTORY_LIMIT = 20
 
@@ -74,6 +75,7 @@ async def _current_scope(
                 TrainingAssignment.employee_profile_id == employee_profile_id,
                 TrainingAssignment.status != "revoked",
                 LessonVersion.lesson_id == lesson_id,
+                module_visible_to(employee_profile_id),
             )
             .order_by(TrainingAssignment.assigned_at.desc())
             .limit(1)

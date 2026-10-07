@@ -458,6 +458,7 @@ async def _update_pending_employee_profile(
         raise _resource_not_found()
     profile, membership = locked
     supplied = payload.model_fields_set
+    previous_operational_role_id = profile.operational_role_id
     old_values: dict[str, bool | str | None] = {}
     new_values: dict[str, bool | str | None] = {}
     if "first_name" in supplied:
@@ -502,6 +503,7 @@ async def _update_pending_employee_profile(
         db,
         organization_id=organization_id,
         employee_profile_id=employee_id,
+        previous_operational_role_id=previous_operational_role_id,
         now=datetime.now(UTC),
     )
     detail = await get_employee_detail(

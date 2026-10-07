@@ -31,6 +31,7 @@ from app.schemas.training import (
     EmployeeTrainingSummary,
 )
 from app.services.employee_menu import training_menu_summaries
+from app.services.module_audiences import module_visible_to
 from app.services.practice_results import has_final_exam_eligibility
 from app.services.private_storage import PrivateStorage
 from app.services.training_assets import ACCESS_EXPIRES_SECONDS
@@ -85,13 +86,17 @@ async def _module_summaries(
     db: AsyncSession,
     *,
     version: TrainingVersion,
+    employee_profile_id: UUID,
     requested_locale: Literal["uk", "en"],
 ) -> list[EmployeeTrainingModuleSummary]:
     rows = (
         await db.execute(
             select(TrainingModuleVersion, TrainingModule)
             .join(TrainingModule, TrainingModule.id == TrainingModuleVersion.training_module_id)
-            .where(TrainingModuleVersion.training_version_id == version.id)
+            .where(
+                TrainingModuleVersion.training_version_id == version.id,
+                module_visible_to(employee_profile_id),
+            )
             .order_by(TrainingModuleVersion.position, TrainingModuleVersion.id)
         )
     ).all()
@@ -165,6 +170,7 @@ async def list_employee_training(
     modules = await _module_summaries(
         db,
         version=version,
+        employee_profile_id=employee_profile_id,
         requested_locale=requested_locale,
     )
     progress = await derive_training_progress(db, assignment=assignment)
@@ -288,6 +294,7 @@ async def get_employee_training_module(
     summaries = await _module_summaries(
         db,
         version=version,
+        employee_profile_id=employee_profile_id,
         requested_locale=requested_locale,
     )
     summary = next((item for item in summaries if item.id == module_id), None)
@@ -328,6 +335,7 @@ async def get_employee_training_lesson(
         .where(
             TrainingModuleVersion.training_version_id == version.id,
             LessonVersion.lesson_id == lesson_id,
+            module_visible_to(employee_profile_id),
         )
     )
     if lesson is None:
@@ -426,6 +434,7 @@ async def get_employee_training_asset_access(
             TrainingAssignment.organization_id == organization_id,
             TrainingAssignment.location_id == location_id,
             TrainingAssignment.status != "revoked",
+            module_visible_to(employee_profile_id),
         )
     )
     if asset is None:

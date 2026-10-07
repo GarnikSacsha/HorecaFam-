@@ -420,6 +420,52 @@ def test_application_runtime_does_not_use_create_all() -> None:
     assert "create_all" not in application_source
 
 
+async def _check_position_migration_defaults(settings: Settings) -> None:
+    engine = create_engine(settings)
+    try:
+        async with engine.begin() as connection:
+            assert await connection.scalar(text("SELECT count(*) FROM training_versions"))
+            assert await connection.scalar(
+                text("SELECT bool_and(NOT all_positions) FROM training_versions")
+            )
+            assert await connection.scalar(
+                text("SELECT bool_and(all_positions) FROM training_module_versions")
+            )
+            assert (
+                await connection.scalar(text("SELECT count(*) FROM training_module_audiences")) == 0
+            )
+            await connection.execute(
+                text("UPDATE training_module_versions SET all_positions = false")
+            )
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.integration
+@pytest.mark.migration
+def test_position_migration_preserves_waiter_history_and_refuses_lossy_downgrade() -> None:
+    settings = database_settings()
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(config, "head")
+    asyncio.run(_truncate_backfill_fixture_data(settings))
+    try:
+        asyncio.run(_seed_attention_backfill_history(settings))
+        before = asyncio.run(_source_history_snapshot(settings))
+        command.downgrade(config, "0021_lesson_question_cycles")
+        command.upgrade(config, "head")
+        assert asyncio.run(_source_history_snapshot(settings)) == before
+        asyncio.run(_check_position_migration_defaults(settings))
+        with pytest.raises(RuntimeError, match="discard position-scoped training"):
+            command.downgrade(config, "0021_lesson_question_cycles")
+        command.current(config, check_heads=True)
+        assert asyncio.run(_source_history_snapshot(settings)) == before
+    finally:
+        asyncio.run(_truncate_backfill_fixture_data(settings))
+        command.upgrade(config, "head")
+
+
 @pytest.mark.integration
 @pytest.mark.migration
 def test_invitation_outbox_migration_downgrades_and_upgrades() -> None:
@@ -518,6 +564,7 @@ def test_metadata_contains_current_backend_tables() -> None:
         "lessons",
         "training_module_translations",
         "training_module_versions",
+        "training_module_audiences",
         "training_modules",
         "training_version_menu_dependencies",
         "training_version_audiences",

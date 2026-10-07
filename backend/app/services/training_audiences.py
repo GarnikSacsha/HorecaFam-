@@ -30,7 +30,11 @@ async def get_training_audience(
     # Одна SQL-вибірка зберігає узгодженість ревізії та повного набору ролей.
     rows = (
         await db.execute(
-            select(TrainingVersion.revision, TrainingVersionAudience.operational_role_id)
+            select(
+                TrainingVersion.revision,
+                TrainingVersion.all_positions,
+                TrainingVersionAudience.operational_role_id,
+            )
             .outerjoin(
                 TrainingVersionAudience,
                 TrainingVersionAudience.training_version_id == TrainingVersion.id,
@@ -48,6 +52,7 @@ async def get_training_audience(
     return TrainingAudienceResponse(
         training_version_id=version_id,
         revision=rows[0].revision,
+        all_positions=rows[0].all_positions,
         operational_role_ids=[row.operational_role_id for row in rows if row.operational_role_id],
     )
 
@@ -62,6 +67,7 @@ async def update_training_audience(
     request_id: UUID,
     expected_revision: int,
     operational_role_ids: list[UUID],
+    all_positions: bool = False,
 ) -> TrainingAudienceResponse:
     try:
         version = await db.scalar(
@@ -83,7 +89,7 @@ async def update_training_audience(
             )
         if version.revision != expected_revision:
             raise _revision_conflict()
-        if not operational_role_ids:
+        if not operational_role_ids and not all_positions:
             raise APIError(
                 status_code=409,
                 code="TRAINING_AUDIENCE_REQUIRED",
@@ -120,6 +126,7 @@ async def update_training_audience(
                 )
             ).all()
         )
+        previous_all_positions = version.all_positions
         await db.execute(
             delete(TrainingVersionAudience).where(
                 TrainingVersionAudience.training_version_id == version.id
@@ -137,6 +144,7 @@ async def update_training_audience(
                 for role_id in ordered_ids
             ]
         )
+        version.all_positions = all_positions
         version.revision += 1
         db.add(
             AuditEvent(
@@ -147,9 +155,13 @@ async def update_training_audience(
                 target_type="training_version",
                 target_id=version.id,
                 old_values={
-                    "operational_role_ids": [str(item) for item in sorted(previous_ids, key=str)]
+                    "operational_role_ids": [str(item) for item in sorted(previous_ids, key=str)],
+                    "all_positions": previous_all_positions,
                 },
-                new_values={"operational_role_ids": [str(item) for item in ordered_ids]},
+                new_values={
+                    "operational_role_ids": [str(item) for item in ordered_ids],
+                    "all_positions": all_positions,
+                },
                 request_id=request_id,
                 outcome="success",
             )
@@ -158,6 +170,7 @@ async def update_training_audience(
         return TrainingAudienceResponse(
             training_version_id=version.id,
             revision=version.revision,
+            all_positions=version.all_positions,
             operational_role_ids=ordered_ids,
         )
     except Exception:

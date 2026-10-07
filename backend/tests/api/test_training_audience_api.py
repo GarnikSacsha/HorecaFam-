@@ -151,6 +151,7 @@ async def test_training_audience_update_is_draft_only_revision_safe_and_exact(
     assert empty.json() == {
         "training_version_id": str(version_id),
         "revision": 0,
+        "all_positions": False,
         "operational_role_ids": [],
     }
 
@@ -169,6 +170,7 @@ async def test_training_audience_update_is_draft_only_revision_safe_and_exact(
     assert updated.json() == {
         "training_version_id": str(version_id),
         "revision": 1,
+        "all_positions": False,
         "operational_role_ids": [str(role.id)],
     }
     assert stale.status_code == 409

@@ -52,6 +52,7 @@ from app.services.interactive_cycles import (
     lock_employee,
     resumable_attempt,
 )
+from app.services.module_audiences import module_visible_to
 
 ATTEMPT_INACTIVITY = timedelta(days=7)
 
@@ -170,12 +171,18 @@ async def _owned_attempt(
         select(AssessmentAttempt)
         .join(AssessmentVersion, AssessmentVersion.id == AssessmentAttempt.assessment_version_id)
         .join(Assessment, Assessment.id == AssessmentVersion.assessment_id)
+        .join(LessonVersion, LessonVersion.id == AssessmentVersion.lesson_version_id)
+        .join(
+            TrainingModuleVersion,
+            TrainingModuleVersion.id == LessonVersion.training_module_version_id,
+        )
         .where(
             AssessmentAttempt.id == attempt_id,
             AssessmentAttempt.organization_id == organization_id,
             AssessmentAttempt.location_id == location_id,
             AssessmentAttempt.employee_profile_id == employee_profile_id,
             Assessment.assessment_type == "interactive_training",
+            module_visible_to(employee_profile_id),
         )
     )
     if lock:
@@ -323,6 +330,7 @@ async def _assignment_lesson(
                 TrainingAssignment.employee_profile_id == employee_profile_id,
                 TrainingAssignment.status != "revoked",
                 LessonVersion.lesson_id == lesson_id,
+                module_visible_to(employee_profile_id),
             )
             .with_for_update(of=TrainingAssignment)
         )

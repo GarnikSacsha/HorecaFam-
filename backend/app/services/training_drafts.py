@@ -19,6 +19,7 @@ from app.models import (
     MenuVersion,
     Training,
     TrainingModule,
+    TrainingModuleAudience,
     TrainingModuleTranslation,
     TrainingModuleVersion,
     TrainingVersion,
@@ -158,11 +159,27 @@ async def _copy_version_graph(
     source: TrainingVersion,
     target: TrainingVersion,
 ) -> None:
-    source_module = await db.scalar(
-        select(TrainingModuleVersion).where(TrainingModuleVersion.training_version_id == source.id)
+    source_modules = list(
+        (
+            await db.scalars(
+                select(TrainingModuleVersion)
+                .where(TrainingModuleVersion.training_version_id == source.id)
+                .order_by(TrainingModuleVersion.position)
+            )
+        ).all()
     )
-    if source_module is None:
+    if not source_modules:
         raise _resource_not_found()
+    for source_module in source_modules:
+        await _copy_module_graph(db, source_module=source_module, target=target)
+
+
+async def _copy_module_graph(
+    db: AsyncSession,
+    *,
+    source_module: TrainingModuleVersion,
+    target: TrainingVersion,
+) -> None:
     target_module = TrainingModuleVersion(
         id=uuid4(),
         training_id=target.training_id,
@@ -170,9 +187,31 @@ async def _copy_version_graph(
         training_module_id=source_module.training_module_id,
         position=source_module.position,
         required=source_module.required,
+        all_positions=source_module.all_positions,
     )
     db.add(target_module)
     await db.flush()
+    source_roles = list(
+        (
+            await db.scalars(
+                select(TrainingModuleAudience.operational_role_id).where(
+                    TrainingModuleAudience.training_module_version_id == source_module.id
+                )
+            )
+        ).all()
+    )
+    db.add_all(
+        [
+            TrainingModuleAudience(
+                organization_id=target.organization_id,
+                location_id=target.location_id,
+                training_version_id=target.id,
+                training_module_version_id=target_module.id,
+                operational_role_id=role_id,
+            )
+            for role_id in source_roles
+        ]
+    )
 
     source_module_translations = list(
         (
@@ -370,6 +409,7 @@ async def create_training_draft(
             version_number=(highest or 0) + 1,
             status="draft",
             base_version_id=published.id if published is not None else None,
+            all_positions=published.all_positions if published is not None else False,
             revision=0,
             created_by_user_id=actor_user_id,
         )

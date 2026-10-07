@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError, createIdempotencyKey } from "../api/client";
 import type {
@@ -8,6 +8,7 @@ import type {
   TrainingAssetResponse,
   TrainingContentBlockType,
   TrainingLessonResponse,
+  TrainingModuleResponse,
   TrainingPublishResponse,
   TrainingReadinessResponse,
   TrainingVersionCollection,
@@ -19,6 +20,7 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusPill } from "../ui/States";
 import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
 import { AdminTrainingAudiencePanel } from "./AdminTrainingAudiencePanel";
+import { AdminPositionModuleForm } from "./AdminPositionModuleForm";
 import { AdminTrainingMenuPicker } from "./AdminTrainingMenuPicker";
 import { useTrainingMenuItems } from "./useTrainingMenuItems";
 
@@ -150,6 +152,8 @@ export function AdminTrainingPage() {
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
   const [moduleRequired, setModuleRequired] = useState(true);
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const selectedModuleRef = useRef<string | null>(null);
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonMinutes, setLessonMinutes] = useState("");
   const [blockType, setBlockType] = useState<TrainingContentBlockType>("text");
@@ -162,7 +166,8 @@ export function AdminTrainingPage() {
     "idle" | "uploading" | "verifying" | "ready" | "failed"
   >("idle");
 
-  const module = draft?.modules[0] ?? null;
+  const module =
+    draft?.modules.find((item) => item.id === selectedModuleId) ?? draft?.modules[0] ?? null;
   const lessons = useMemo(
     () => [...(module?.lessons ?? [])].sort((left, right) => left.position - right.position),
     [module],
@@ -184,7 +189,10 @@ export function AdminTrainingPage() {
 
   const applyDetail = useCallback((detail: TrainingVersionDetail) => {
     setDraft(detail);
-    const nextModule = detail.modules[0];
+    const nextModule =
+      detail.modules.find((item) => item.id === selectedModuleRef.current) ?? detail.modules[0];
+    selectedModuleRef.current = nextModule?.id ?? null;
+    setSelectedModuleId(nextModule?.id ?? null);
     setModuleTitle(nextModule?.title_uk ?? "");
     setModuleDescription(nextModule?.description_uk ?? "");
     setModuleRequired(nextModule?.required ?? true);
@@ -267,7 +275,7 @@ export function AdminTrainingPage() {
       : "";
 
   const mutate = async (action: () => Promise<unknown>) => {
-    if (!draft || !locationId) return;
+    if (!draft || !locationId || busy) return false;
     setBusy(true);
     setError(null);
     setSaveState("saving");
@@ -275,6 +283,7 @@ export function AdminTrainingPage() {
       await action();
       await refreshDraft(locationId, draft.id);
       setSaveState("saved");
+      return true;
     } catch (caught) {
       if (caught instanceof ApiError && caught.code === "REVISION_CONFLICT") {
         setSaveState("conflict");
@@ -292,6 +301,7 @@ export function AdminTrainingPage() {
         setSaveState("error");
         setError("Зміни не збережено. Перевірте дані та повторіть дію.");
       }
+      return false;
     } finally {
       setBusy(false);
     }
@@ -671,9 +681,61 @@ export function AdminTrainingPage() {
       ) : module ? (
         <div className="training-layout">
           <aside className="training-outline" aria-label="Структура навчання">
+            {organizationId ? (
+              <details>
+                <summary>Новий модуль</summary>
+                <AdminPositionModuleForm
+                  key={draft.id}
+                  organizationId={organizationId}
+                  busy={busy}
+                  onSave={(values) =>
+                    mutate(async () => {
+                      const result = await client.request<{ module: TrainingModuleResponse }>(
+                        `${draftBase}/modules`,
+                        {
+                          method: "POST",
+                          csrfToken: session?.csrf_token,
+                          body: {
+                            ...values,
+                            expected_revision: draft.revision,
+                            required: true,
+                            description_uk: null,
+                          },
+                        },
+                      );
+                      selectedModuleRef.current = result.module.id;
+                    })
+                  }
+                />
+              </details>
+            ) : null}
+            <div className="field-group">
+              <label htmlFor="training-module-select">Модуль навчання</label>
+              <select
+                id="training-module-select"
+                value={module.id}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = draft.modules.find((item) => item.id === event.target.value);
+                  if (!next) return;
+                  selectedModuleRef.current = next.id;
+                  setSelectedModuleId(next.id);
+                  setModuleTitle(next.title_uk);
+                  setModuleDescription(next.description_uk ?? "");
+                  setModuleRequired(next.required);
+                  setSelectedLessonId(next.lessons[0]?.id ?? null);
+                }}
+              >
+                {draft.modules.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title_uk}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="training-panel-heading">
               <div>
-                <p className="eyebrow">Фіксований модуль</p>
+                <p className="eyebrow">Модуль</p>
                 <h2>{module.title_uk}</h2>
               </div>
               <span>{lessons.length} уроків</span>
@@ -759,6 +821,27 @@ export function AdminTrainingPage() {
           </aside>
 
           <section className="training-editor" aria-label="Редактор уроку">
+            {organizationId ? (
+              <AdminPositionModuleForm
+                key={`${module.id}:${draft.revision}`}
+                organizationId={organizationId}
+                module={module}
+                busy={busy}
+                onSave={(values) =>
+                  mutate(() =>
+                    client.request(`${draftBase}/modules/${module.id}/audience`, {
+                      method: "PUT",
+                      csrfToken: session?.csrf_token,
+                      body: {
+                        expected_revision: draft.revision,
+                        all_positions: values.all_positions,
+                        operational_role_ids: values.operational_role_ids,
+                      },
+                    }),
+                  )
+                }
+              />
+            ) : null}
             <form
               className="training-module-form"
               aria-label="Налаштування модуля"

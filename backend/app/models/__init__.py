@@ -143,6 +143,7 @@ from app.models.training_assignments import (
     LessonCompletion,
     RolloutEmployeeImpact,
     TrainingAssignment,
+    TrainingModuleAudience,
     TrainingRollout,
     TrainingVersionAudience,
 )
@@ -278,6 +279,7 @@ __all__ = [
     "Training",
     "TrainingDomain",
     "TrainingModule",
+    "TrainingModuleAudience",
     "TrainingModuleTranslation",
     "TrainingModuleVersion",
     "TrainingRollout",

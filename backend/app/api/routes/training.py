@@ -36,6 +36,8 @@ from app.schemas.training import (
     TrainingLessonPatch,
     TrainingLessonResponse,
     TrainingMenuDependencyBind,
+    TrainingModuleAudienceUpdate,
+    TrainingModuleCreate,
     TrainingModuleMutationResponse,
     TrainingModulePatch,
     TrainingModuleResponse,
@@ -59,6 +61,7 @@ from app.services.employee_training import (
     get_employee_training_module,
     list_employee_training,
 )
+from app.services.module_audiences import create_position_module, update_module_audience
 from app.services.private_storage import PrivateStorage, build_private_storage
 from app.services.training_assets import (
     ACCESS_EXPIRES_SECONDS,
@@ -436,6 +439,7 @@ async def training_version_audience_update_route(
         request_id=UUID(get_request_id()),
         expected_revision=payload.expected_revision,
         operational_role_ids=payload.operational_role_ids,
+        all_positions=payload.all_positions,
     )
 
 
@@ -606,6 +610,79 @@ async def training_rollout_confirm_route(
         expected_revision=payload.expected_revision,
         idempotency_key=idempotency_key.strip(),
         now=clock(),
+    )
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/modules",
+    response_model=TrainingModuleMutationResponse,
+    status_code=201,
+)
+async def training_module_create_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: TrainingModuleCreate,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingModuleMutationResponse:
+    result = await create_position_module(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        **payload.model_dump(),
+    )
+    detail = await get_training_version_detail(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+    )
+    return TrainingModuleMutationResponse(
+        module=_module(detail, result.entity.id),
+        revision=result.revision,
+    )
+
+
+@router.put(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/"
+    "{version_id}/modules/{module_id}/audience",
+    response_model=TrainingModuleMutationResponse,
+)
+async def training_module_audience_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    module_id: UUID,
+    payload: TrainingModuleAudienceUpdate,
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TrainingModuleMutationResponse:
+    result = await update_module_audience(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+        module_id=module_id,
+        actor_user_id=authorization.user.id,
+        request_id=UUID(get_request_id()),
+        **payload.model_dump(),
+    )
+    detail = await get_training_version_detail(
+        db,
+        organization_id=organization_id,
+        location_id=location_id,
+        version_id=version_id,
+    )
+    return TrainingModuleMutationResponse(
+        module=_module(detail, result.entity.id),
+        revision=result.revision,
     )
 
 

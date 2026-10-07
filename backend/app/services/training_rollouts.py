@@ -39,6 +39,7 @@ from app.services.idempotency import (
     request_fingerprint,
     reserve_idempotency,
 )
+from app.services.training_progress import position_lesson_ids
 
 type _RuleValue = Literal[
     "preserve_completion",
@@ -342,15 +343,29 @@ async def _completions_by_assignment(
     return result
 
 
-def _source_fingerprint(
+async def _source_fingerprint(
+    db: AsyncSession,
     assignments: list[TrainingAssignment],
     completions: dict[UUID, set[UUID]],
 ) -> str:
+    role_ids = dict(
+        (
+            await db.execute(
+                select(
+                    EmployeeProfile.id,
+                    EmployeeProfile.operational_role_id,
+                ).where(EmployeeProfile.id.in_([item.employee_profile_id for item in assignments]))
+            )
+        )
+        .tuples()
+        .all()
+    )
     return _canonical_hash(
         [
             {
                 "assignment_id": str(assignment.id),
                 "employee_profile_id": str(assignment.employee_profile_id),
+                "operational_role_id": str(role_ids.get(assignment.employee_profile_id)),
                 "status": assignment.status,
                 "completion_lesson_ids": [
                     str(lesson_id) for lesson_id in sorted(completions[assignment.id], key=str)
@@ -411,8 +426,8 @@ async def _rollout_is_stale(db: AsyncSession, rollout: TrainingRollout) -> bool:
         return True
     assignments = await _source_assignments(db, rollout=rollout, lock=False)
     completions = await _completions_by_assignment(db, assignments)
-    return rollout.source_assignment_set_fingerprint != _source_fingerprint(
-        assignments, completions
+    return rollout.source_assignment_set_fingerprint != await _source_fingerprint(
+        db, assignments, completions
     )
 
 
@@ -665,12 +680,8 @@ async def _rebuild_preview(
     db.add_all(rules)
     assignments = await _source_assignments(db, rollout=rollout, lock=True)
     completions = await _completions_by_assignment(db, assignments)
-    source_lessons = await _lesson_snapshots(db, training_version_id=source.id)
-    target_lessons = await _lesson_snapshots(db, training_version_id=target.id)
-    source_required = {lesson_id for lesson_id, lesson in source_lessons.items() if lesson.required}
-    target_required = {lesson_id for lesson_id, lesson in target_lessons.items() if lesson.required}
     rule_by_lesson = {rule.lesson_id: rule for rule in rules}
-    source_fingerprint = _source_fingerprint(assignments, completions)
+    source_fingerprint = await _source_fingerprint(db, assignments, completions)
     rules_fingerprint = _canonical_hash(
         [
             {
@@ -682,6 +693,26 @@ async def _rebuild_preview(
         ]
     )
     for assignment in assignments:
+        source_required = set(
+            (
+                await db.scalars(
+                    position_lesson_ids(
+                        training_version_id=source.id,
+                        employee_profile_id=assignment.employee_profile_id,
+                    )
+                )
+            ).all()
+        )
+        target_required = set(
+            (
+                await db.scalars(
+                    position_lesson_ids(
+                        training_version_id=target.id,
+                        employee_profile_id=assignment.employee_profile_id,
+                    )
+                )
+            ).all()
+        )
         completed = completions[assignment.id]
         current_completed = len(source_required & completed)
         projected_completed_ids = {
@@ -1007,7 +1038,7 @@ async def confirm_training_rollout(
             source_version.revision != rollout.from_version_revision
             or target_version.revision != rollout.to_version_revision
             or rollout.source_assignment_set_fingerprint
-            != _source_fingerprint(assignments, completion_sets)
+            != await _source_fingerprint(db, assignments, completion_sets)
         ):
             raise _rollout_stale()
         rules = list(
@@ -1054,9 +1085,6 @@ async def confirm_training_rollout(
             db,
             training_version_id=target_version.id,
         )
-        target_required_ids = {
-            lesson_id for lesson_id, lesson in target_lessons.items() if lesson.required
-        }
         rule_by_lesson = {rule.lesson_id: rule for rule in rules}
         locales = await _employee_locales(
             db,
@@ -1066,10 +1094,31 @@ async def confirm_training_rollout(
         target_assignments: list[TrainingAssignment] = []
         for impact in impacts:
             source_assignment = assignment_by_id[impact.source_assignment_id]
+            target_required_ids = set(
+                (
+                    await db.scalars(
+                        position_lesson_ids(
+                            training_version_id=target_version.id,
+                            employee_profile_id=source_assignment.employee_profile_id,
+                        )
+                    )
+                ).all()
+            )
+            target_visible_ids = set(
+                (
+                    await db.scalars(
+                        position_lesson_ids(
+                            training_version_id=target_version.id,
+                            employee_profile_id=source_assignment.employee_profile_id,
+                            required_only=False,
+                        )
+                    )
+                ).all()
+            )
             preserved = [
                 completion
                 for completion in source_completion_rows[source_assignment.id]
-                if completion.lesson_id in target_lessons
+                if completion.lesson_id in target_visible_ids
                 and rule_by_lesson[completion.lesson_id].rule == "preserve_completion"
             ]
             preserved_ids = {completion.lesson_id for completion in preserved}

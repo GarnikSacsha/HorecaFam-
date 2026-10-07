@@ -169,6 +169,9 @@ class TrainingVersionStatus(StrEnum):
 
 class TrainingDomain(StrEnum):
     MENU = "menu"
+    SERVICE = "service"
+    SALES = "sales"
+    VENUE_STANDARDS = "venue_standards"
 
 
 class ContentBlockType(StrEnum):

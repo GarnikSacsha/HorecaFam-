@@ -116,6 +116,9 @@ class TrainingVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default=text("'draft'"),
     )
     base_version_id: Mapped[UUID | None] = mapped_column(_uuid())
+    all_positions: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     created_by_user_id: Mapped[UUID] = mapped_column(
         _uuid(), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
@@ -130,9 +133,17 @@ class TrainingVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class TrainingModule(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "training_modules"
     __table_args__ = (
-        UniqueConstraint("training_id", "domain_type", name="uq_training_modules_domain"),
         UniqueConstraint("id", "training_id", name="uq_training_modules_scope"),
-        CheckConstraint("domain_type IN ('menu')", name="domain_type_allowed"),
+        CheckConstraint(
+            "domain_type IN ('menu', 'service', 'sales', 'venue_standards')",
+            name="domain_type_allowed",
+        ),
+        Index(
+            "uq_training_modules_menu",
+            "training_id",
+            unique=True,
+            postgresql_where=text("domain_type = 'menu'"),
+        ),
     )
 
     training_id: Mapped[UUID] = mapped_column(
@@ -163,6 +174,9 @@ class TrainingModuleVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         _uuid(), ForeignKey("training_versions.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     training_module_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    all_positions: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     required: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")

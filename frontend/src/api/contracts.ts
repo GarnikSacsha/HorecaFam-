@@ -214,6 +214,7 @@ export interface OperationalRoleSummary {
 export interface TrainingAudienceResponse {
   training_version_id: string;
   revision: number;
+  all_positions: boolean;
   operational_role_ids: string[];
 }
 
@@ -579,7 +580,9 @@ export interface TrainingLessonResponse {
 
 export interface TrainingModuleResponse {
   id: string;
-  domain_type: "menu";
+  domain_type: "menu" | "service" | "sales" | "venue_standards";
+  all_positions: boolean;
+  operational_role_ids: string[];
   position: number;
   title_uk: string;
   description_uk: string | null;
@@ -778,7 +781,7 @@ export type EmployeeTrainingNextAction =
 
 export interface EmployeeTrainingModuleSummary {
   id: string;
-  domain_type: "menu";
+  domain_type: "menu" | "service" | "sales" | "venue_standards";
   title: string;
   description: string | null;
   position: number;

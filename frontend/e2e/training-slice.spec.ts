@@ -139,6 +139,7 @@ test("admin publishes Training and employee reads the current editorial referenc
         expect(request.headers()["x-csrf-token"]).toBe("csrf-safe");
         expect(request.postDataJSON()).toEqual({
           expected_revision: 4,
+          all_positions: false,
           operational_role_ids: ["role-1"],
         });
         audienceRoles = ["role-1"];
@@ -425,13 +426,31 @@ test("admin publishes Training and employee reads the current editorial referenc
 
   await page.goto("/admin/content");
   await expect(page.getByRole("button", { name: "Опублікувати навчання" })).toBeDisabled();
-  await page.getByLabel("Офіціант", { exact: true }).check();
-  await page.getByRole("button", { name: "Зберегти аудиторію" }).click();
+  await page
+    .getByRole("region", { name: "Аудиторія навчання" })
+    .getByLabel("Офіціант", { exact: true })
+    .check();
+  await page.getByRole("button", { name: "Зберегти аудиторію", exact: true }).click();
   await expect(page.getByText("Аудиторію збережено.")).toBeVisible();
   await page.getByRole("region", { name: "Аудиторія навчання" }).screenshot({
     path: testInfo.outputPath("audience.png"),
   });
   await expect(page.getByRole("heading", { name: "Навчальні матеріали", level: 1 })).toBeVisible();
+  await expect(page.getByLabel("Модуль навчання")).toHaveValue("module-1");
+  await page.getByRole("form", { name: "Аудиторія модуля" }).screenshot({
+    path: testInfo.outputPath("module-audience.png"),
+  });
+  await page.getByText("Новий модуль", { exact: true }).click();
+  await expect(page.getByRole("form", { name: "Новий модуль" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Додати модуль", exact: true })).toBeDisabled();
+  await expect(page.locator("body")).toHaveJSProperty(
+    "scrollWidth",
+    await page.locator("body").evaluate((body) => body.clientWidth),
+  );
+  await page.getByRole("form", { name: "Новий модуль" }).screenshot({
+    path: testInfo.outputPath("new-module.png"),
+  });
+  await page.getByText("Новий модуль", { exact: true }).click();
   await expect(page.getByText("Англійський переклад ще не готовий.")).toBeVisible();
   await page.getByRole("button", { name: "Опублікувати навчання" }).click();
   const publishDialog = page.getByRole("dialog", {
