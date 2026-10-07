@@ -1,5 +1,23 @@
 # HoReCa Repository Status
 
+## CRA-288 — local implementation and acceptance complete, 2026-10-07
+
+Implemented on `feature/multi-role-training-content` from authoritative base `7a7f6f3`
+in an isolated worktree. Includes position-aware training, Runner/Bartender and shared
+Service Standards content, standards-backed course checks, optional Menu preparation
+fields and position-scoped Academy. Existing Waiter flow is retained. The approved
+session-clock prerequisite is isolated in its own commit; no admin redesign is included.
+
+Final acceptance: backend **1088/0/0**, frontend **180/0/0**, Playwright **96/0/0**.
+Coverage gates: statements **94.52%**, branches **81.54%**, fixed critical aggregate
+**89.72%**. Types/lint/format/build, Ruff/mypy and Alembic head/drift checks pass.
+Only the dedicated local `horeca_test_cra288` database was used. Original dirty main
+and unrelated work remain untouched. No push, PR, merge, deployment or hosted
+publication was performed. Human review is the next safe step.
+[Full scope, migrations, evidence, limitations and changed files](docs/testing/cra-288-final.md).
+
+Earlier checkpoints below describe historical source and delivery states.
+
 ## Manual QA fixes — committed, pushed and additionally tested, 2026-10-06
 
 Denys authorized correcting four observed Admin/Employee defects after manual QA:

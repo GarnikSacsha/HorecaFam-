@@ -123,3 +123,9 @@ answer secrecy. Inspect the exact final diff and file inventory.
 Record evidence and limitations in `docs/testing/`. Preserve atomic GREEN boundaries and
 selective staging. Do not push, deploy or merge. Update remaining map entries before changing
 their implementation boundary if new evidence requires it.
+
+Documentation checkpoint: `docs: record CRA-288 acceptance and review handoff`.
+Expected paths: STATUS.md, docs/testing/README.md, cra-288-final.md and this commit map.
+Verify final successful gate evidence, source/commit inventory, known limitations and exact
+staged whitespace/path checks. This checkpoint changes documentation only and does not require
+repeating already-passed application tests on unchanged source.

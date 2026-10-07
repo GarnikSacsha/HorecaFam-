@@ -1,5 +1,17 @@
 # Testing Context
 
+## CRA-288 final local acceptance — 2026-10-07
+
+[Complete implementation and acceptance report](cra-288-final.md): backend **1088/0/0**,
+frontend **180/0/0**, Playwright **96/0/0**. Same-run coverage gates passed independently:
+statements **94.52%**, branches **81.54%**, fixed critical aggregate **89.72%**.
+TypeScript/lint/format/build, Ruff/mypy and Alembic `0026_academy` head/drift checks pass.
+All backend tests used the dedicated local `horeca_test_cra288` database.
+[Approved pre-implementation baseline](cra-288-baseline.md) and
+[ordered commit map](cra-288-commit-map.md) retain prerequisite and RED/GREEN evidence.
+Local acceptance is complete; hosted acceptance and delivery are separate steps.
+No push, PR, merge or deployment was performed. Historical checkpoints follow.
+
 ## Local Git checkpoint — 2026-09-28
 
 The approved selective map now records Employee a162b6a, Admin 6658901 and LF 02a2329;
