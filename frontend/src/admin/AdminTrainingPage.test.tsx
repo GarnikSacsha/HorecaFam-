@@ -194,6 +194,58 @@ function trainingClient(
 }
 
 describe("Admin Training workspace", () => {
+  it("reviews the generic content pack before importing it into the current draft", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    const fallback = trainingClient(requests);
+    const client: ApiClient = {
+      ...fallback,
+      request: <T,>(path: string, options?: RequestOptions) => {
+        if (path.endsWith("/training-content-pack"))
+          return Promise.resolve({
+            notice: "Загальний матеріал без локальних правил",
+            courses: [
+              {
+                code: "runner",
+                title: "Runner",
+                positions: ["runner"],
+                lessons: [{ title: "Подача", text: "Перевірте замовлення" }],
+                scenarios: [
+                  {
+                    scenario: "Невідомий стіл?",
+                    action: "Уточнити",
+                    explanation: "Не вгадувати",
+                    alternatives: ["Вгадати", "Ігнорувати"],
+                  },
+                ],
+              },
+            ],
+          } as T);
+        return fallback.request<T>(path, options);
+      },
+    };
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <AdminTrainingPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Переглянути навчальний пакет" }));
+    expect(await screen.findByText("Загальний матеріал без локальних правил")).toBeVisible();
+    const install = screen.getByRole("button", { name: "Додати пакет до чернетки" });
+    expect(install).toBeDisabled();
+    await user.click(screen.getByLabelText(/Переглянуто загальний матеріал/));
+    await user.click(install);
+    await waitFor(() =>
+      expect(requests.some(({ path }) => path.endsWith("/content-pack"))).toBe(true),
+    );
+    expect(requests.find(({ path }) => path.endsWith("/content-pack"))?.options).toMatchObject({
+      method: "POST",
+      csrfToken: "csrf-safe",
+      body: { expected_revision: 4, acknowledge_generic_content: true, waiter_role_id: null },
+    });
+  });
   it("creates a position module and saves its selected audience with revision and CSRF", async () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     const fallback = trainingClient(requests);

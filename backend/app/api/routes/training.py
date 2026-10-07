@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
@@ -71,12 +72,18 @@ from app.services.training_assets import (
     prepare_asset_upload,
 )
 from app.services.training_audiences import get_training_audience, update_training_audience
+from app.services.training_catalog import COURSES, NOTICE
 from app.services.training_completion import complete_employee_training_lesson
 from app.services.training_content import (
     create_content_block,
     delete_content_block,
     reorder_content_blocks,
     update_content_block,
+)
+from app.services.training_content_pack import (
+    ContentPackRequest,
+    ContentPackResponse,
+    install_content_pack,
 )
 from app.services.training_drafts import (
     bind_training_menu_dependency,
@@ -105,6 +112,47 @@ from app.services.training_rollouts import (
 )
 
 router = APIRouter(tags=["training"])
+
+
+@router.get("/organizations/{organization_id}/training-content-pack")
+async def preview_content_pack_route(
+    organization_id: UUID,
+    _authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+) -> dict[str, object]:
+    return {"notice": NOTICE, "courses": [asdict(course) for course in COURSES]}
+
+
+@router.post(
+    "/organizations/{organization_id}/locations/{location_id}/training-versions/{version_id}/content-pack"
+)
+async def import_content_pack_route(
+    organization_id: UUID,
+    location_id: UUID,
+    version_id: UUID,
+    payload: ContentPackRequest,
+    request: Request,
+    authorization: Annotated[AuthorizationContext, Depends(require_organization_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _csrf: Annotated[AuthenticatedSession, Depends(get_csrf_protected_session)],
+    idempotency_key: Annotated[
+        str, Header(alias="Idempotency-Key", min_length=1, max_length=128, pattern=r".*\S.*")
+    ],
+) -> ContentPackResponse:
+    try:
+        return await install_content_pack(
+            db,
+            organization_id=organization_id,
+            location_id=location_id,
+            version_id=version_id,
+            actor_user_id=authorization.user.id,
+            request_id=UUID(get_request_id()),
+            payload=payload,
+            idempotency_key=idempotency_key.strip(),
+            now=cast(Clock, request.app.state.clock)(),
+        )
+    except Exception:
+        await db.rollback()
+        raise
 
 
 def get_private_storage(request: Request) -> PrivateStorage:

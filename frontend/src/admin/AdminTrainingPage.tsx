@@ -22,6 +22,7 @@ import { AdminTrainingRolloutPanel } from "./AdminTrainingRolloutPanel";
 import { AdminTrainingAudiencePanel } from "./AdminTrainingAudiencePanel";
 import { AdminPositionModuleForm } from "./AdminPositionModuleForm";
 import { AdminTrainingMenuPicker } from "./AdminTrainingMenuPicker";
+import { AdminTrainingContentPack } from "./AdminTrainingContentPack";
 import { useTrainingMenuItems } from "./useTrainingMenuItems";
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
@@ -661,6 +662,17 @@ export function AdminTrainingPage() {
             {busy ? "Зачекайте…" : "Прив’язати опубліковане меню"}
           </button>
         </div>
+      ) : null}
+
+      {!loading && draft?.status === "draft" && organizationId ? (
+        <AdminTrainingContentPack
+          key={draft.id}
+          organizationId={organizationId}
+          draftBase={draftBase}
+          revision={draft.revision}
+          busy={busy}
+          mutate={mutate}
+        />
       ) : null}
 
       {loading ? (

@@ -66,6 +66,24 @@ Run relevant content/training/assessment tests and quality checks.
 Commit: `feat(content): add runner bartender and shared service training`.
 Dependencies: stages 1–2.
 
+### 3b. Additive bar-menu preparation details
+
+Repository inspection confirmed that MenuItem already handles identity, ingredients, allergens,
+price, availability and versioned descriptions, but has no structured preparation fields.
+Extend that same versioned item with optional volume, technique, glassware, garnish, serving
+standard and preparation time; preserve empty legacy items and draft-copy/import/history
+semantics. Reuse current private training images for illustrated lessons rather than adding
+a public image-storage path. Do not rename MenuItem or create a second bar catalog.
+
+Expected paths: menu model/schema and additive migration; existing menu write/read/copy/import/
+delta services; bounded existing menu editor and employee detail; relevant API, migration and
+frontend tests. RED: structured details are rejected or lost. GREEN: validated round-trip,
+draft-copy preservation, meaningful delta and legacy Menu regressions, quality/migration checks.
+
+Commit: `feat(menu): preserve optional preparation details for bar items`.
+Dependency: stage 3 content; this is a separate coherent boundary within the original bar-menu
+requirement, without restaurant-specific recipe data or new dependencies.
+
 ## 4. Optional Academy and focused employee navigation
 
 Outcome: optional published articles, scoped to one/multiple/all positions, with category,
