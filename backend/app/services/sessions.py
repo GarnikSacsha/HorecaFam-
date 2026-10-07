@@ -122,6 +122,7 @@ async def create_session(
         user_id=user.id,
         token_hash=hash_secret(raw_token),
         csrf_token_hash=hash_secret(csrf_token),
+        created_at=now,
         last_seen_at=now,
         absolute_expires_at=now + lifetime,
         mfa_verified_at=now if mfa_verified else None,
