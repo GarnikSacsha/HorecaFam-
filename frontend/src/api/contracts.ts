@@ -1550,3 +1550,25 @@ export interface MenuChangeHistoryResponse {
   items: MenuChangeEvent[];
   next_cursor: string | null;
 }
+export interface AcademyWrite {
+  slug: string;
+  title_uk: string;
+  summary_uk: string;
+  body_uk: string;
+  category: string;
+  status: "draft" | "published";
+  position: number;
+  all_positions: boolean;
+  operational_role_ids: string[];
+  cover_asset_id: string | null;
+}
+export interface AcademyArticle extends AcademyWrite {
+  id: string;
+  revision: number;
+  created_at: string;
+  updated_at: string;
+}
+export interface AcademyCollection {
+  items: AcademyArticle[];
+  next_offset: number | null;
+}

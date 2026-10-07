@@ -12,6 +12,10 @@ export function EmployeeShell({ children }: { children: React.ReactNode }) {
     <div className="employee-layout">
       <header className="employee-header">
         <span className="brand-mark">Bacara Academy</span>
+        <nav aria-label="Довідкові матеріали" className="compact-actions">
+          <NavLink to="/employee/menu">Меню</NavLink>
+          <NavLink to="/employee/academy">Академія</NavLink>
+        </nav>
       </header>
       <main aria-label="Bacara Academy" className="employee-content">
         {children}

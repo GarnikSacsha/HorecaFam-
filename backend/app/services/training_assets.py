@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
-from app.models import Asset, AuditEvent, LessonContentBlock, Location
+from app.models import AcademyArticle, Asset, AuditEvent, LessonContentBlock, Location
 from app.services.idempotency import (
     find_idempotency_replay,
     request_fingerprint,
@@ -372,7 +372,10 @@ async def archive_unlinked_asset(
         linked_block = await db.scalar(
             select(LessonContentBlock.id).where(LessonContentBlock.asset_id == asset.id)
         )
-        if linked_block is not None:
+        linked_article = await db.scalar(
+            select(AcademyArticle.id).where(AcademyArticle.cover_asset_id == asset.id).limit(1)
+        )
+        if linked_block is not None or linked_article is not None:
             raise _asset_not_ready()
         asset.status = "archived"
         asset.archived_at = now

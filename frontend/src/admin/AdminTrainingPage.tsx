@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError, createIdempotencyKey } from "../api/client";
+import { uploadPrivateImage } from "../api/assets";
 import type {
-  AssetUploadIntentResponse,
   LocationSummary,
   MenuVersionCollection,
   TrainingAssetResponse,
@@ -42,11 +42,6 @@ function saveStateLabel(state: SaveState): string {
   if (state === "conflict") return "Конфлікт версій";
   if (state === "error") return "Не збережено";
   return "Збережено";
-}
-
-async function sha256(file: File): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function move<T>(items: T[], from: number, to: number): T[] {
@@ -505,35 +500,12 @@ export function AdminTrainingPage() {
     setUploadState("uploading");
     setError(null);
     try {
-      const checksum = await sha256(assetFile);
-      const intent = await client.request<AssetUploadIntentResponse>(
-        `/organizations/${organizationId}/locations/${locationId}/assets/upload-intents`,
-        {
-          method: "POST",
-          body: {
-            file_name: assetFile.name,
-            mime_type: assetFile.type,
-            size_bytes: assetFile.size,
-            sha256: checksum,
-          },
-          csrfToken: session.csrf_token,
-          idempotencyKey: createIdempotencyKey(),
-        },
-      );
-      const form = new FormData();
-      Object.entries(intent.upload_fields).forEach(([key, value]) => form.append(key, value));
-      form.append("file", assetFile);
-      const upload = await fetch(intent.upload_url, { method: "POST", body: form });
-      if (!upload.ok) throw new Error("upload failed");
-      setUploadState("verifying");
-      const ready = await client.request<TrainingAssetResponse>(
-        `/organizations/${organizationId}/locations/${locationId}/assets/${intent.asset_id}/complete`,
-        {
-          method: "POST",
-          body: { sha256: checksum },
-          csrfToken: session.csrf_token,
-          idempotencyKey: createIdempotencyKey(),
-        },
+      const ready = await uploadPrivateImage(
+        client,
+        `/organizations/${organizationId}/locations/${locationId}/assets`,
+        session.csrf_token,
+        assetFile,
+        () => setUploadState("verifying"),
       );
       setUploadedAsset(ready);
       setUploadState("ready");

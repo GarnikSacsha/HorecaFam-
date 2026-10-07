@@ -1,4 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AdminAcademyPage } from "../admin/AdminAcademyPage";
+import { EmployeeAcademyPage } from "../employee/EmployeeAcademyPage";
 
 import { AdminEmployeeDetailPage } from "../admin/AdminEmployeeDetailPage";
 import { AdminAuditPage } from "../admin/AdminAuditPage";
@@ -50,6 +52,36 @@ export function App() {
     <BrowserRouter>
       <SessionProvider>
         <Routes>
+          <Route
+            path="/admin/academy"
+            element={
+              <ProtectedRoute audience="admin">
+                <AdminShell>
+                  <AdminAcademyPage />
+                </AdminShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/academy"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeAcademyPage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/academy/:slug"
+            element={
+              <ProtectedRoute audience="active-employee">
+                <EmployeeShell>
+                  <EmployeeAcademyPage />
+                </EmployeeShell>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<PublicStartPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

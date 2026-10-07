@@ -554,6 +554,8 @@ def test_metadata_contains_current_backend_tables() -> None:
         "retake_requirements",
         "sessions",
         "standard_sets",
+        "academy_articles",
+        "academy_article_audiences",
         "standard_set_versions",
         "standard_rules",
         "standard_rule_versions",

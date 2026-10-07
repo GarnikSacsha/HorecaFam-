@@ -1,3 +1,4 @@
+from app.models.academy import AcademyArticle, AcademyArticleAudience
 from app.models.assessments import (
     Assessment,
     AssessmentAttempt,
@@ -159,6 +160,8 @@ from app.models.training_assignments import (
 )
 
 __all__ = [
+    "AcademyArticle",
+    "AcademyArticleAudience",
     "StandardRule",
     "StandardRuleVersion",
     "StandardSet",

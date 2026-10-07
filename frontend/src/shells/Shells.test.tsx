@@ -74,7 +74,11 @@ describe("application shells", () => {
     expect(screen.getByRole("navigation", { name: "Основна навігація" })).toHaveTextContent(
       "ГоловнаНавчанняПрактикаПрофіль",
     );
-    expect(screen.queryByRole("link", { name: "Меню" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Меню" })).toHaveAttribute("href", "/employee/menu");
+    expect(screen.getByRole("link", { name: "Академія" })).toHaveAttribute(
+      "href",
+      "/employee/academy",
+    );
     expect(screen.getByRole("link", { name: "Профіль" })).toHaveAttribute(
       "href",
       "/employee/profile",
