@@ -391,6 +391,9 @@ class MenuVersionCategory(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class MenuItemVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "menu_item_versions"
     __table_args__ = (
+        CheckConstraint(
+            "preparation IS NULL OR jsonb_typeof(preparation) = 'object'", name="preparation_object"
+        ),
         UniqueConstraint(
             "id",
             "menu_version_id",
@@ -482,6 +485,7 @@ class MenuItemVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     menu_version_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     menu_item_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
     menu_version_category_id: Mapped[UUID] = mapped_column(_uuid(), nullable=False)
+    preparation: Mapped[dict[str, object] | None] = mapped_column(JSONB(none_as_null=True))
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     availability: Mapped[str] = mapped_column(
         String(32),

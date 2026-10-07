@@ -350,7 +350,17 @@ export interface MenuComponentInput {
   position: number;
 }
 
+export interface MenuPreparation {
+  volume_ml: number | null;
+  technique_uk: string | null;
+  glassware_uk: string | null;
+  garnish_uk: string | null;
+  serving_standard_uk: string | null;
+  preparation_seconds: number | null;
+}
+
 export interface MenuItemResponse {
+  preparation?: MenuPreparation | null;
   item_id: string;
   item_version_id: string;
   version_id: string;
@@ -523,6 +533,7 @@ export interface EmployeeMenuResponse {
 }
 
 export interface EmployeeMenuItemDetail extends EmployeeMenuItemSummary {
+  preparation?: MenuPreparation | null;
   source_note?: {
     source_date: string;
     guest_description: string;
@@ -1512,6 +1523,7 @@ export interface DashboardResponse {
   attention: { unresolved: number; critical: number };
 }
 export interface MenuBusinessValues {
+  preparation?: MenuPreparation | null;
   name: string;
   description: string | null;
   price_minor: number | null;

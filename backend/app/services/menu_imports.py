@@ -767,6 +767,9 @@ async def _materialize_draft(
                     menu_id=menu_import.menu_id,
                     menu_version_id=draft.id,
                     menu_item_id=item_identity.id,
+                    preparation=item_input.preparation.model_dump(mode="json")
+                    if item_input.preparation
+                    else None,
                     menu_version_category_id=category.id,
                     position=item_input.position,
                     availability=item_input.availability,

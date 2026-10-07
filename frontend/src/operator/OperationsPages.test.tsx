@@ -93,7 +93,20 @@ it("shows business menu changes with author email and before/after instead of te
             item_name: "Кава",
             created_at: "2031-02-03T12:00:00Z",
             old_values: { name: "Кава", price_minor: 6500, currency: "UAH", components: [] },
-            new_values: { name: "Кава", price_minor: 8000, currency: "UAH", components: [] },
+            new_values: {
+              name: "Кава",
+              price_minor: 8000,
+              currency: "UAH",
+              components: [],
+              preparation: {
+                volume_ml: 250,
+                technique_uk: "Build",
+                glassware_uk: null,
+                garnish_uk: null,
+                serving_standard_uk: null,
+                preparation_seconds: null,
+              },
+            },
           },
         ],
         next_cursor: null,
@@ -106,6 +119,7 @@ it("shows business menu changes with author email and before/after instead of te
   expect(await screen.findByText("chef@example.com")).toBeVisible();
   expect(screen.getByText("65,00 UAH")).toBeVisible();
   expect(screen.getByText("80,00 UAH")).toBeVisible();
+  expect(screen.getByText(/250 мл.*Build/)).toBeVisible();
   expect(screen.queryByText("employee.paused")).not.toBeInTheDocument();
   expect(requests.at(-1)).toContain("/menu-change-history?limit=50");
 });

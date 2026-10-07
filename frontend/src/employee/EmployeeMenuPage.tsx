@@ -9,6 +9,7 @@ import type {
 } from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
+import { MenuPreparationDetails } from "../ui/MenuPreparation";
 
 const availabilityCopy: Record<MenuAvailability, string> = {
   available: "Доступно",
@@ -116,6 +117,7 @@ export function MenuDetail({
             ) : (
               <p>{item.description ?? "Опис для цієї позиції не додано."}</p>
             )}
+            <MenuPreparationDetails value={item.preparation} />
             {allergenLabels.length ? (
               <div className="menu-detail-facts">
                 <section>

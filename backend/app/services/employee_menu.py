@@ -34,6 +34,7 @@ from app.schemas.menu import (
     EmployeeMenuResponse,
     EmployeeMenuSectionSummary,
     EmployeeMenuSummary,
+    MenuPreparation,
 )
 from app.services.menu_source_notes import menu_source_note
 
@@ -454,6 +455,7 @@ async def get_employee_menu_item(
     _name, description, _locale, _fallback = _localized_text(item_uk, item_en, preferred_locale)
     return EmployeeMenuItemDetail(
         **summary.model_dump(),
+        preparation=MenuPreparation.model_validate(item.preparation) if item.preparation else None,
         description=description,
         components=components,
         allergen_data_status=item.allergen_data_status,

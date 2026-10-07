@@ -5,12 +5,14 @@ import type {
   LocationSummary,
   MenuItemListResponse,
   MenuItemResponse,
+  MenuPreparation,
   MenuVersionCollection,
   MenuVersionDetail,
 } from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
+import { MenuPreparationEditor } from "../ui/MenuPreparation";
 import { AdminMenuLifecyclePanel } from "./AdminMenuLifecyclePanel";
 
 function formatPrice(value: number | null): string {
@@ -24,10 +26,16 @@ function MenuItemEditor({
 }: {
   item: MenuItemResponse;
   busy: boolean;
-  onSave: (item: MenuItemResponse, name: string, priceMinor: number | null) => Promise<void>;
+  onSave: (
+    item: MenuItemResponse,
+    name: string,
+    priceMinor: number | null,
+    preparation: MenuPreparation | null,
+  ) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(item.name_uk);
+  const [preparation, setPreparation] = useState<MenuPreparation | null>(item.preparation ?? null);
   const [price, setPrice] = useState(
     item.price_minor === null ? "" : String(item.price_minor / 100),
   );
@@ -39,9 +47,12 @@ function MenuItemEditor({
           onSubmit={(event) => {
             event.preventDefault();
             const normalized = price.trim() ? Math.round(Number(price) * 100) : null;
-            void onSave(item, name, Number.isFinite(normalized) ? normalized : null).then(() =>
-              setEditing(false),
-            );
+            void onSave(
+              item,
+              name,
+              Number.isFinite(normalized) ? normalized : null,
+              preparation,
+            ).then(() => setEditing(false));
           }}
         >
           <div className="field-group">
@@ -64,6 +75,7 @@ function MenuItemEditor({
               onChange={(event) => setPrice(event.target.value)}
             />
           </div>
+          <MenuPreparationEditor value={preparation} onChange={setPreparation} disabled={busy} />
           <div className="compact-actions">
             <button className="button button-primary" type="submit" disabled={busy}>
               Зберегти
@@ -636,7 +648,7 @@ export function AdminMenuPage() {
                               key={item.item_id}
                               item={item}
                               busy={busy}
-                              onSave={(current, name, priceMinor) =>
+                              onSave={(current, name, priceMinor, preparation) =>
                                 mutate(() =>
                                   client.request(`${basePath}/items/${current.item_id}`, {
                                     method: "PATCH",
@@ -645,6 +657,10 @@ export function AdminMenuPage() {
                                       expected_revision: draft.revision,
                                       name_uk: name,
                                       price_minor: priceMinor,
+                                      ...(JSON.stringify(preparation) !==
+                                      JSON.stringify(current.preparation ?? null)
+                                        ? { preparation }
+                                        : {}),
                                     },
                                   }),
                                 )

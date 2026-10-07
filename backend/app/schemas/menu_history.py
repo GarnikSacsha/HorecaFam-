@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.menu import FactDataStatus, MenuAvailability
+from app.schemas.menu import FactDataStatus, MenuAvailability, MenuPreparation
 
 
 class MenuHistoryComponent(BaseModel):
@@ -13,6 +13,7 @@ class MenuHistoryComponent(BaseModel):
 
 
 class MenuBusinessValues(BaseModel):
+    preparation: MenuPreparation | None = None
     name: str
     description: str | None
     price_minor: int | None

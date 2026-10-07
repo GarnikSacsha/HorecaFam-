@@ -65,7 +65,22 @@ class MenuComponentInput(StrictMenuSchema):
         return _normalize_bounded_text(value, maximum=200)
 
 
+class MenuPreparation(StrictMenuSchema):
+    volume_ml: int | None = Field(default=None, ge=1, le=10000)
+    technique_uk: str | None = Field(default=None, max_length=200)
+    glassware_uk: str | None = Field(default=None, max_length=200)
+    garnish_uk: str | None = Field(default=None, max_length=500)
+    serving_standard_uk: str | None = Field(default=None, max_length=2000)
+    preparation_seconds: int | None = Field(default=None, ge=1, le=86400)
+
+    @field_validator("technique_uk", "glassware_uk", "garnish_uk", "serving_standard_uk")
+    @classmethod
+    def normalize_optional_detail(cls, value: str | None) -> str | None:
+        return value.strip() or None if value is not None else None
+
+
 class MenuItemWrite(StrictMenuSchema):
+    preparation: MenuPreparation | None = None
     category_id: UUID
     stable_code: str | None = Field(default=None, min_length=1, max_length=100)
     name_uk: str = Field(min_length=1, max_length=200)
@@ -149,6 +164,7 @@ class MenuItemWrite(StrictMenuSchema):
 
 
 class MenuItemPatch(StrictMenuSchema):
+    preparation: MenuPreparation | None = None
     expected_revision: int = Field(ge=0)
     category_id: UUID | None = None
     stable_code: str | None = Field(default=None, min_length=1, max_length=100)
@@ -472,6 +488,7 @@ class MenuComponentResponse(StrictMenuSchema):
 
 
 class MenuItemResponse(StrictMenuSchema):
+    preparation: MenuPreparation | None = None
     item_id: UUID
     item_version_id: UUID
     version_id: UUID
@@ -518,6 +535,7 @@ class MenuImportComponent(MenuComponentInput):
 
 
 class MenuImportItem(StrictMenuSchema):
+    preparation: MenuPreparation | None = None
     source_key: str = Field(min_length=1, max_length=200)
     stable_code: str | None = Field(default=None, min_length=1, max_length=100)
     name_uk: str = Field(min_length=1, max_length=200)
@@ -794,6 +812,7 @@ class EmployeeMenuSourceNote(StrictMenuSchema):
 
 
 class EmployeeMenuItemDetail(EmployeeMenuItemSummary):
+    preparation: MenuPreparation | None = None
     description: str | None
     components: list[EmployeeMenuComponent]
     allergen_data_status: FactDataStatus

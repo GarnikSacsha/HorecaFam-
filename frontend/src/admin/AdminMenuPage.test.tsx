@@ -144,6 +144,31 @@ function menuClient(requests: Array<{ path: string; options?: RequestOptions }>)
 }
 
 describe("Admin Menu workspace", () => {
+  it("saves optional preparation fields through the existing revision-guarded item editor", async () => {
+    const requests: Array<{ path: string; options?: RequestOptions }> = [];
+    render(
+      <SessionProvider client={menuClient(requests)}>
+        <MemoryRouter>
+          <AdminMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+    const user = userEvent.setup();
+    const item = (await screen.findByText("Борщ")).closest("article");
+    if (!item) throw new Error("Missing menu item");
+    await user.click(within(item).getByRole("button", { name: "Редагувати" }));
+    await user.click(within(item).getByText("Приготування й подача (необов’язково)"));
+    await user.type(within(item).getByLabelText("Об’єм, мл"), "250");
+    await user.type(within(item).getByLabelText("Техніка приготування"), "Build");
+    await user.click(within(item).getByRole("button", { name: "Зберегти" }));
+    expect(requests.find(({ options }) => options?.method === "PATCH")?.options).toMatchObject({
+      csrfToken: "csrf-safe",
+      body: {
+        expected_revision: 2,
+        preparation: { volume_ml: 250, technique_uk: "Build", garnish_uk: null },
+      },
+    });
+  });
   it("rejects a next page from a changed revision and offers a fresh read", async () => {
     const original = menuClient([]);
     const client: ApiClient = {

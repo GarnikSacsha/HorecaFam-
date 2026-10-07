@@ -360,6 +360,7 @@ async def _copy_version_graph(
             menu_id=target.menu_id,
             menu_version_id=target.id,
             menu_item_id=old_item.menu_item_id,
+            preparation=old_item.preparation,
             menu_version_category_id=category_map[old_item.menu_version_category_id].id,
             position=old_item.position,
             availability=old_item.availability,

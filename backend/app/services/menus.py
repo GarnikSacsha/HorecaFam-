@@ -30,6 +30,7 @@ from app.schemas.menu import (
     MenuItemPatch,
     MenuItemResponse,
     MenuItemWrite,
+    MenuPreparation,
     MenuVersionCollection,
     MenuVersionDetail,
     MenuVersionSummary,
@@ -72,6 +73,7 @@ class _ItemSnapshot:
     components: tuple[tuple[UUID, bool | None, int], ...]
     allergen_data_status: str
     allergens: tuple[UUID, ...]
+    preparation: dict[str, object] | None
 
 
 async def _version_category(
@@ -322,6 +324,7 @@ async def _item_snapshot(
         components=tuple((row[0], row[1], row[2]) for row in component_rows),
         allergen_data_status=item_version.allergen_data_status,
         allergens=allergen_ids,
+        preparation=item_version.preparation,
     )
 
 
@@ -348,6 +351,7 @@ def _classify_delta(
         "components",
         "allergen_data_status",
         "allergens",
+        "preparation",
     )
     changed = [field for field in fields if getattr(base, field) != getattr(current, field)]
     if not changed:
@@ -358,7 +362,7 @@ def _classify_delta(
         "allergen_data_status",
         "allergens",
     }
-    review = {"category_identity_id", "name_uk", "description_uk", "availability"}
+    review = {"category_identity_id", "name_uk", "description_uk", "availability", "preparation"}
     if required.intersection(changed):
         impact = "required"
     elif review.intersection(changed):
@@ -461,6 +465,7 @@ async def _create_menu_item(
         menu_id=version.menu_id,
         menu_version_id=version.id,
         menu_item_id=identity.id,
+        preparation=payload.preparation.model_dump(mode="json") if payload.preparation else None,
         menu_version_category_id=category.id,
         position=len(existing),
         availability=payload.availability,
@@ -602,6 +607,9 @@ async def _current_payload(
     if identity is None:
         raise _resource_not_found()
     return MenuItemWrite(
+        preparation=MenuPreparation.model_validate(item_version.preparation)
+        if item_version.preparation
+        else None,
         category_id=item_version.menu_version_category_id,
         stable_code=identity.stable_code,
         name_uk=translation.name,
@@ -711,6 +719,9 @@ async def _update_menu_item(
     item_version.source_kind = merged.source_kind
     item_version.source_reference = merged.source_reference
     item_version.source_item_key = merged.source_item_key
+    item_version.preparation = (
+        merged.preparation.model_dump(mode="json") if merged.preparation else None
+    )
     item_version.verified_by_user_id = actor_user_id
     item_version.verified_at = now
     await _replace_facts(
@@ -1036,6 +1047,9 @@ async def _admin_item_response(
         )
     )
     return MenuItemResponse(
+        preparation=MenuPreparation.model_validate(item_version.preparation)
+        if item_version.preparation
+        else None,
         item_id=item_version.menu_item_id,
         item_version_id=item_version.id,
         version_id=item_version.menu_version_id,

@@ -21,6 +21,7 @@ def business_values(payload: MenuItemWrite | None) -> MenuBusinessValues | None:
         return None
     # Явний перелік не дозволяє джерелам імпорту або службовим полям потрапити в історію.
     return MenuBusinessValues(
+        preparation=payload.preparation,
         name=payload.name_uk,
         description=payload.description_uk,
         price_minor=payload.price_minor,

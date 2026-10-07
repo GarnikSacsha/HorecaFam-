@@ -18,6 +18,7 @@ const fields: Array<[keyof MenuBusinessValues, string]> = [
   ["components", "Склад"],
   ["allergen_data_status", "Відомості про алергени"],
   ["allergen_codes", "Алергени"],
+  ["preparation", "Приготування й подача"],
 ];
 const labels: Record<string, string> = {
   available: "Доступно",
@@ -31,6 +32,22 @@ const labels: Record<string, string> = {
 function displayValue(values: MenuBusinessValues | null, field: keyof MenuBusinessValues) {
   const value = values?.[field];
   if (value === null || value === undefined) return "Не вказано";
+  if (field === "preparation") {
+    const preparation = values?.preparation;
+    if (!preparation) return "Не вказано";
+    return (
+      [
+        preparation.volume_ml ? `${preparation.volume_ml} мл` : null,
+        preparation.technique_uk,
+        preparation.glassware_uk,
+        preparation.garnish_uk,
+        preparation.serving_standard_uk,
+        preparation.preparation_seconds ? `${preparation.preparation_seconds} с` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || "Не вказано"
+    );
+  }
   if (field === "price_minor")
     return `${(Number(value) / 100).toLocaleString("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${values?.currency ?? ""}`;
   if (field === "components")
@@ -44,6 +61,7 @@ function displayValue(values: MenuBusinessValues | null, field: keyof MenuBusine
     );
   if (Array.isArray(value))
     return value.filter((item) => typeof item === "string").join(", ") || "Немає";
+  if (typeof value !== "string" && typeof value !== "number") return "Не вказано";
   return labels[String(value)] ?? String(value);
 }
 function ChangeCard({ item }: { item: MenuChangeEvent }) {

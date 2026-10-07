@@ -70,6 +70,32 @@ const detail: EmployeeMenuItemDetail = {
 };
 
 describe("Employee published Menu", () => {
+  it("shows only supplied preparation details in the existing menu reader", () => {
+    render(
+      <MemoryRouter>
+        <MenuDetail
+          item={{
+            ...detail,
+            preparation: {
+              volume_ml: 250,
+              technique_uk: "Build",
+              glassware_uk: "Склянка",
+              garnish_uk: null,
+              serving_standard_uk: "За карткою",
+              preparation_seconds: 90,
+            },
+          }}
+          loading={false}
+          onClose={() => {}}
+          returnTo={null}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("250 мл")).toBeVisible();
+    expect(screen.getByText("Build")).toBeVisible();
+    expect(screen.getByText("Склянка")).toBeVisible();
+    expect(screen.queryByText("Гарнір")).not.toBeInTheDocument();
+  });
   it("shows one allergen list without composition or source administration copy", () => {
     render(
       <MemoryRouter>
