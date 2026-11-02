@@ -1390,7 +1390,7 @@ h1 {
   z-index: 30;
   inset: auto 0 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 1px solid var(--border-subtle);
   padding: 0.45rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--surface-raised) 96%, transparent);

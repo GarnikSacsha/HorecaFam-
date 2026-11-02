@@ -13,7 +13,6 @@ import type {
   FinalExamSummaryResponse,
   InteractiveAnswerPayload,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 import { isSingleAnswer } from "./answerSelection";
@@ -342,7 +341,6 @@ export function EmployeeFinalExamPage() {
             тільки після фінального підтвердження.
           </p>
         </div>
-        <LogoutButton />
       </div>
 
       {busy === "load" ? <p aria-live="polite">Завантажуємо іспит…</p> : null}

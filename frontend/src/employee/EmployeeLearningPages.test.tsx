@@ -370,7 +370,7 @@ describe("Employee Training reference", () => {
     renderWithClient(client, "/employee/learning", "/employee/learning", <EmployeeLearningPage />);
 
     expect(await screen.findByRole("heading", { name: "Завершено" })).toBeInTheDocument();
-    expect(screen.getByText("Призначена версія 2")).toBeInTheDocument();
+    expect(screen.queryByText(/Призначена версія/)).toBeNull();
     expect(
       screen.getByText("Матеріали призначеної версії доступні для повторення."),
     ).toBeInTheDocument();

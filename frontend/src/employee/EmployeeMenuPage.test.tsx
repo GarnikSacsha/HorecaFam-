@@ -316,7 +316,7 @@ describe("Employee published Menu", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Меню" })).toBeInTheDocument();
-    expect(screen.getByText("Опублікована версія 2")).toBeInTheDocument();
+    expect(screen.queryByText(/Опублікована версія/)).toBeNull();
     expect(screen.getByText("Борщ")).toBeInTheDocument();
     expect(screen.getByText("Показано українською")).toBeInTheDocument();
 
@@ -343,6 +343,32 @@ describe("Employee published Menu", () => {
     expect(dialog).not.toHaveTextContent("Сметана (за бажанням)");
     expect(dialog).toHaveTextContent("Молоко");
     expect(dialog).not.toHaveTextContent("source_reference");
+  });
+
+  it("searches while typing without pressing the search button", async () => {
+    const requests: string[] = [];
+    const client: ApiClient = {
+      getSession: () => Promise.resolve(session),
+      request: <T,>(path: string) => {
+        requests.push(path);
+        return Promise.resolve(menu as T);
+      },
+    };
+    const user = userEvent.setup();
+    render(
+      <SessionProvider client={client}>
+        <MemoryRouter>
+          <EmployeeMenuPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    await screen.findByText("Борщ");
+    await user.type(screen.getByLabelText("Пошук у меню"), "тар");
+    await waitFor(() =>
+      expect(requests.some((path) => path.includes("q=%D1%82%D0%B0%D1%80"))).toBe(true),
+    );
+    expect(requests.filter((path) => path.includes("q=")).length).toBe(1);
   });
 
   it("shows the truthful no-publication state", async () => {

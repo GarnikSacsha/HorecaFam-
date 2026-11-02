@@ -16,7 +16,6 @@ import type {
   PracticeResultSummary,
   PracticeSummaryResponse,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 import { isSingleAnswer } from "./answerSelection";
@@ -382,7 +381,6 @@ export function EmployeePracticePage() {
             10 різних позицій меню. Правильні відповіді та пояснення з’являться тільки після фінішу.
           </p>
         </div>
-        <LogoutButton />
       </div>
 
       {busy === "load" ? <p aria-live="polite">Завантажуємо Практику…</p> : null}

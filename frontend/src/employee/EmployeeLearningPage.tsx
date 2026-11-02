@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { EmployeeTrainingHomeResponse } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 
 const sectionCopy = {
@@ -56,13 +55,7 @@ export function EmployeeLearningPage() {
         <div>
           <p className="eyebrow">Робочий довідник</p>
           <h1 id="employee-learning-title">Навчання</h1>
-          {response?.training ? (
-            <p className="learning-version-note">
-              Призначена версія {response.training.version_number}
-            </p>
-          ) : null}
         </div>
-        <LogoutButton />
       </div>
 
       {error ? (

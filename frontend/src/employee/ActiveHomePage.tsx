@@ -7,7 +7,6 @@ import type {
   OwnEmployeeProfile,
   OwnEmployeeProfilesResponse,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
@@ -132,7 +131,6 @@ export function ActiveHomePage() {
           <h1 id="active-home-title">Вітаємо, {profile.first_name ?? "колего"}</h1>
           <p className="page-description">{profile.organization.name}</p>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="employee-context-row" aria-label="Робочий контекст">
@@ -185,9 +183,6 @@ export function ActiveHomePage() {
         <section className="next-action-panel" aria-labelledby="assignment-title">
           <p className="eyebrow">Наступний крок</p>
           <h2 id="assignment-title">{assignedTraining.copy.heading}</h2>
-          <p className="assignment-version">
-            Призначена версія {assignedTraining.training.version_number}
-          </p>
           <p>
             {assignedTraining.progress.completed_required_lesson_count} із{" "}
             {assignedTraining.progress.required_lesson_count} обов’язкових уроків завершено

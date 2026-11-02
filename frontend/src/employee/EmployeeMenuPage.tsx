@@ -7,7 +7,6 @@ import type {
   EmployeeMenuResponse,
   MenuAvailability,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { MenuPreparationDetails } from "../ui/MenuPreparation";
 
@@ -151,6 +150,14 @@ export function EmployeeMenuPage() {
   const [query, setQuery] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [categoryId, setCategoryId] = useState("");
+
+  useEffect(() => {
+    // Пошук на ходу: чекаємо коротку паузу в наборі, щоб не смикати API на кожну літеру.
+    const next = queryInput.trim();
+    if (next === query) return;
+    const timer = window.setTimeout(() => setQuery(next), 300);
+    return () => window.clearTimeout(timer);
+  }, [query, queryInput]);
   const [selected, setSelected] = useState<EmployeeMenuItemDetail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -292,11 +299,7 @@ export function EmployeeMenuPage() {
         <div>
           <p className="eyebrow">Робочий довідник</p>
           <h1 id="employee-menu-title">Меню</h1>
-          {response?.menu ? (
-            <p className="menu-version-note">Опублікована версія {response.menu.version_number}</p>
-          ) : null}
         </div>
-        <LogoutButton />
       </div>
 
       <form
@@ -313,7 +316,7 @@ export function EmployeeMenuPage() {
         <input
           id="employee-menu-search"
           type="search"
-          placeholder="Назва або опис"
+          placeholder="Страва, напій або інгредієнт"
           value={queryInput}
           onChange={(event) => setQueryInput(event.target.value)}
         />

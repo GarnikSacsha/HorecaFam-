@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 const destinations = [
   { label: "Головна", to: "/employee", enabled: true },
   { label: "Навчання", to: "/employee/learning", enabled: true },
+  { label: "Меню", to: "/employee/menu", enabled: true },
   { label: "Практика", to: "/employee/practice", enabled: true },
   { label: "Профіль", to: "/employee/profile", enabled: true },
 ];
@@ -13,7 +14,6 @@ export function EmployeeShell({ children }: { children: React.ReactNode }) {
       <header className="employee-header">
         <span className="brand-mark">Bacara Academy</span>
         <nav aria-label="Довідкові матеріали" className="compact-actions">
-          <NavLink to="/employee/menu">Меню</NavLink>
           <NavLink to="/employee/academy">Академія</NavLink>
         </nav>
       </header>

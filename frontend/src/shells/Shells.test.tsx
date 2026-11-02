@@ -84,7 +84,7 @@ describe("application shells", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows all four Employee destinations including the read-only Profile", () => {
+  it("shows all five Employee destinations including the read-only Profile", () => {
     render(
       <MemoryRouter>
         <EmployeeShell>
@@ -94,7 +94,7 @@ describe("application shells", () => {
     );
 
     expect(screen.getByRole("navigation", { name: "Основна навігація" })).toHaveTextContent(
-      "ГоловнаНавчанняПрактикаПрофіль",
+      "ГоловнаНавчанняМенюПрактикаПрофіль",
     );
     expect(screen.getByRole("link", { name: "Меню" })).toHaveAttribute("href", "/employee/menu");
     expect(screen.getByRole("link", { name: "Академія" })).toHaveAttribute(
