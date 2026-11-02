@@ -154,7 +154,7 @@ export function AdminDashboardPage() {
               />
               <p className="dashboard-note">
                 Кількість працівників. Категорії можуть перетинатися; допуск до іспиту залежить від
-                готовності питань і Practice.
+                готовності питань і практики.
               </p>
               <Link className="text-link" to="/admin/results">
                 Переглянути екзамени
@@ -162,7 +162,7 @@ export function AdminDashboardPage() {
             </section>
             <section className="dashboard-card" aria-labelledby="dashboard-attention">
               <p className="eyebrow">Потребує уваги</p>
-              <h2 id="dashboard-attention">Attention</h2>
+              <h2 id="dashboard-attention">Відкриті випадки</h2>
               <Counts
                 values={[
                   ["Невирішені випадки", summary.attention.unresolved],
@@ -171,7 +171,7 @@ export function AdminDashboardPage() {
               />
               <p className="dashboard-note">Відкриті й підтверджені випадки, які ще не закрито.</p>
               <Link className="text-link" to="/admin/attention">
-                Відкрити Attention
+                Відкрити список
               </Link>
             </section>
           </div>

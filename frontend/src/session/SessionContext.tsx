@@ -151,3 +151,8 @@ export function useSession(): SessionContextValue {
   if (!context) throw new Error("useSession must be used inside SessionProvider");
   return context;
 }
+
+/** Session context for shells rendered outside a provider (tests); returns null there. */
+export function useOptionalSession(): SessionContextValue | null {
+  return useContext(SessionContext);
+}

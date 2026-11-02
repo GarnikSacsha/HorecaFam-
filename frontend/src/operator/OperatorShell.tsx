@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import { LogoutButton } from "../auth/LogoutButton";
+import { useOptionalSession } from "../session/SessionContext";
 
 const links = [
   { to: "/operator/jobs", label: "Jobs" },
@@ -9,9 +10,16 @@ const links = [
 ];
 
 function OperatorNavigation({ onNavigate }: { onNavigate?: () => void }) {
+  const isOrganizationAdmin =
+    useOptionalSession()?.session?.organization_access.some(
+      (access) => access.is_organization_admin,
+    ) === true;
+  const visibleLinks = isOrganizationAdmin
+    ? [...links, { to: "/admin/dashboard", label: "← До адміністрування" }]
+    : links;
   return (
     <nav aria-label="Навігація Platform Operator" className="admin-nav">
-      {links.map((link) => (
+      {visibleLinks.map((link) => (
         <NavLink
           key={link.to}
           to={link.to}

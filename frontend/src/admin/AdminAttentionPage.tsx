@@ -10,6 +10,7 @@ import type {
 } from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
+import { employeeDisplayName, useOrganizationDirectory } from "./useOrganizationDirectory";
 import { StatusPill } from "../ui/States";
 
 const timingCopy = {
@@ -53,6 +54,7 @@ export function AdminAttentionPage() {
   const organizationId = session?.organization_access.find(
     (access) => access.is_organization_admin,
   )?.organization_id;
+  const directory = useOrganizationDirectory(client, organizationId);
   const [cases, setCases] = useState<AdminAttentionCase[]>([]);
   const [requirements, setRequirements] = useState<AdminRetakeRequirement[]>([]);
   const [stateFilter, setStateFilter] = useState("current");
@@ -270,8 +272,8 @@ export function AdminAttentionPage() {
     <section className="admin-page attention-page" aria-labelledby="attention-title">
       <div className="page-heading-row">
         <div>
-          <p className="eyebrow">Безпечний follow-up</p>
-          <h1 id="attention-title">Attention і перескладання</h1>
+          <p className="eyebrow">Робота з помилками</p>
+          <h1 id="attention-title">Потребує уваги та перескладання</h1>
           <p className="page-description">
             Окрема робоча черга без рейтингу, покарань і зміни збережених результатів.
           </p>
@@ -337,7 +339,7 @@ export function AdminAttentionPage() {
             <option value="all">Усі локації</option>
             {caseLocations.map((locationId) => (
               <option key={locationId} value={locationId}>
-                {locationId.slice(0, 8)}
+                {directory.locationName(locationId)}
               </option>
             ))}
           </select>
@@ -345,7 +347,7 @@ export function AdminAttentionPage() {
       </div>
 
       <section className="queue-section" aria-labelledby="attention-queue-title">
-        <h2 id="attention-queue-title">Черга Attention</h2>
+        <h2 id="attention-queue-title">Хто потребує уваги</h2>
         {!visibleCases.length ? <p className="quiet-note">За цим фільтром кейсів немає.</p> : null}
         <div className="desktop-table-wrap">
           <table className="data-table">
@@ -373,9 +375,7 @@ export function AdminAttentionPage() {
                       {caseStateCopy[item.state]}
                     </StatusPill>
                   </td>
-                  <td>
-                    <code>{item.employee_profile_id.slice(0, 8)}</code>
-                  </td>
+                  <td>{directory.employeeName(item.employee_profile_id)}</td>
                   <td>{formatDate(item.created_at)}</td>
                   <td>
                     <button
@@ -443,7 +443,7 @@ export function AdminAttentionPage() {
           ) : null}
           {selectedCase.state !== "resolved" && selectedCase.case_type === "critical_allergen" ? (
             <div className="field-group">
-              <label htmlFor="resolution-comment">Підсумок follow-up</label>
+              <label htmlFor="resolution-comment">Підсумок розмови</label>
               <textarea
                 id="resolution-comment"
                 value={comment}
@@ -478,12 +478,12 @@ export function AdminAttentionPage() {
               onChange={(event) => setCreateReason(event.target.value as typeof createReason)}
             >
               <option value="critical_error">Критична помилка</option>
-              <option value="management_follow_up">Управлінський follow-up</option>
+              <option value="management_follow_up">Рішення керівника</option>
             </select>
           </div>
           {createReason === "critical_error" ? (
             <div className="field-group">
-              <label htmlFor="requirement-source">Джерело Attention</label>
+              <label htmlFor="requirement-source">Випадок</label>
               <select
                 id="requirement-source"
                 value={sourceCaseId}
@@ -493,7 +493,8 @@ export function AdminAttentionPage() {
                 <option value="">Оберіть відкритий критичний кейс</option>
                 {criticalSources.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.employee_profile_id.slice(0, 8)} · {item.subject_key ?? "алерген"}
+                    {directory.employeeName(item.employee_profile_id)} ·{" "}
+                    {item.subject_key ?? "алерген"}
                   </option>
                 ))}
               </select>
@@ -501,16 +502,25 @@ export function AdminAttentionPage() {
           ) : (
             <>
               <div className="field-group">
-                <label htmlFor="requirement-employee">ID працівника</label>
-                <input
+                <label htmlFor="requirement-employee">Працівник</label>
+                <select
                   id="requirement-employee"
                   value={createEmployeeId}
                   onChange={(event) => setCreateEmployeeId(event.target.value)}
                   required
-                />
+                >
+                  <option value="">Оберіть працівника</option>
+                  {directory.employees
+                    .filter((employee) => employee.membership_status === "active")
+                    .map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employeeDisplayName(employee)}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div className="field-group">
-                <label htmlFor="management-source">Ключ рішення</label>
+                <label htmlFor="management-source">Підстава (коротко)</label>
                 <input
                   id="management-source"
                   value={managementSourceKey}
@@ -574,7 +584,7 @@ export function AdminAttentionPage() {
               <option value="all">Усі</option>
               <option value="failed_exam">Невдалий іспит</option>
               <option value="critical_error">Критична помилка</option>
-              <option value="management_follow_up">Управлінський follow-up</option>
+              <option value="management_follow_up">Рішення керівника</option>
             </select>
           </div>
           <div className="field-group">
@@ -601,7 +611,7 @@ export function AdminAttentionPage() {
               <option value="all">Усі локації</option>
               {requirementLocations.map((locationId) => (
                 <option key={locationId} value={locationId}>
-                  {locationId.slice(0, 8)}
+                  {directory.locationName(locationId)}
                 </option>
               ))}
             </select>

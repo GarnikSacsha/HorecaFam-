@@ -25,8 +25,8 @@ function assignmentCopy(
   }
   if (response.next_action === "open_final_exam") {
     return {
-      heading: "Час пройти Final Exam",
-      action: "Відкрити Final Exam",
+      heading: "Час скласти підсумковий іспит",
+      action: "Відкрити іспит",
       note: "20 запитань без підказок. Результат і правильні відповіді з’являться лише після фінального підтвердження.",
       to: "/employee/final-exam",
     };

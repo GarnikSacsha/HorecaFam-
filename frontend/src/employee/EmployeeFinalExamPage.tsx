@@ -101,7 +101,7 @@ export function EmployeeFinalExamPage() {
       if (nextSummary.active_attempt) applyAttempt(nextSummary.active_attempt);
       else setAttempt(null);
     } catch {
-      setError("Не вдалося завантажити Final Exam. Перевірте мережу та спробуйте ще раз.");
+      setError("Не вдалося завантажити іспит. Перевірте мережу та спробуйте ще раз.");
     } finally {
       setBusy(null);
     }
@@ -186,7 +186,7 @@ export function EmployeeFinalExamPage() {
       setConfirming(false);
       applyAttempt(response.attempt);
     } catch {
-      setError("Спробу Final Exam не відкрито. Дані не втрачено — повторіть дію.");
+      setError("Спробу іспиту не відкрито. Дані не втрачено — повторіть дію.");
     } finally {
       setBusy(null);
     }
@@ -265,7 +265,7 @@ export function EmployeeFinalExamPage() {
         setError("Спробу відкрито на іншому пристрої. Підтвердьте продовження тут.");
       } else if (caught instanceof ApiError && caught.code === "ATTEMPT_EXPIRED") {
         setAttempt(null);
-        setError("Семиденний строк спроби минув. Почніть новий Final Exam.");
+        setError("Семиденний строк спроби минув. Почніть іспит заново.");
       } else {
         setError("Відповідь не збережено. Вибір залишився на екрані — повторіть дію.");
       }
@@ -303,7 +303,7 @@ export function EmployeeFinalExamPage() {
       if (caught instanceof ApiError && caught.code === "ATTEMPT_DEVICE_CONFLICT") {
         setAttempt((current) => (current ? { ...current, writable: false } : current));
       }
-      setError("Final Exam не завершено. Збережені відповіді залишилися на сервері.");
+      setError("Іспит не завершено. Збережені відповіді залишилися на сервері.");
     } finally {
       setBusy(null);
     }
@@ -319,13 +319,13 @@ export function EmployeeFinalExamPage() {
   const availability = useMemo(() => {
     if (!summary || attempt || finish) return null;
     const copy: Partial<Record<FinalExamSummaryResponse["availability"], [string, string]>> = {
-      no_assignment: ["Навчання ще не призначено", "Final Exam з’явиться після призначення."],
+      no_assignment: ["Навчання ще не призначено", "Іспит з’явиться після призначення."],
       training_incomplete: ["Спочатку завершіть навчання", "Потім відкриється Практика."],
       practice_required: [
         "Спочатку пройдіть Практику",
         "Потрібно щонайменше 4 з 10 правильних відповідей.",
       ],
-      preparing: ["Final Exam готується", "Перевірений банк питань ще не готовий."],
+      preparing: ["Іспит готується", "Перевірений банк питань ще не готовий."],
       paused: ["Навчання призупинено", "Історія доступна, нова спроба тимчасово недоступна."],
     };
     return copy[summary.availability] ?? null;
@@ -336,7 +336,7 @@ export function EmployeeFinalExamPage() {
       <div className="employee-learning-heading">
         <div>
           <p className="eyebrow">Сертифікація</p>
-          <h1 id="final-exam-title">Final Exam</h1>
+          <h1 id="final-exam-title">Підсумковий іспит</h1>
           <p className="page-description">
             20 запитань. Відповіді зберігаються без підказок; результат і пояснення відкриваються
             тільки після фінального підтвердження.
@@ -345,7 +345,7 @@ export function EmployeeFinalExamPage() {
         <LogoutButton />
       </div>
 
-      {busy === "load" ? <p aria-live="polite">Завантажуємо Final Exam…</p> : null}
+      {busy === "load" ? <p aria-live="polite">Завантажуємо іспит…</p> : null}
       {error ? (
         <div className="inline-error" role="alert">
           <p>{error}</p>
@@ -509,7 +509,7 @@ export function EmployeeFinalExamPage() {
                 onClick={() => setConfirming(true)}
                 type="button"
               >
-                Завершити Final Exam
+                Завершити іспит
               </button>
             </section>
           ) : null}
@@ -552,7 +552,7 @@ export function EmployeeFinalExamPage() {
           className="interactive-final practice-final"
           aria-labelledby="final-exam-result-title"
         >
-          <p className="eyebrow">Final Exam завершено</p>
+          <p className="eyebrow">Іспит завершено</p>
           <h2 id="final-exam-result-title">
             {finish.result.correct_count} з {finish.result.total_count} правильних відповідей
           </h2>
@@ -563,7 +563,7 @@ export function EmployeeFinalExamPage() {
           <ExamResultReview key={finish.result.id} items={finish.review} />
           {finish.retake_available ? (
             <button className="button button-primary" onClick={() => void retry()} type="button">
-              Повторити Final Exam
+              Скласти іспит ще раз
             </button>
           ) : null}
         </section>
@@ -579,8 +579,8 @@ export function EmployeeFinalExamPage() {
           {busy === "start"
             ? "Готуємо спробу…"
             : history.latest
-              ? "Повторити Final Exam"
-              : "Почати Final Exam"}
+              ? "Скласти іспит ще раз"
+              : "Почати іспит"}
         </button>
       ) : null}
 
@@ -592,7 +592,7 @@ export function EmployeeFinalExamPage() {
       ) : null}
       {history.history.length ? (
         <section className="interactive-history" aria-labelledby="final-exam-history-title">
-          <h2 id="final-exam-history-title">Історія Final Exam</h2>
+          <h2 id="final-exam-history-title">Історія іспитів</h2>
           {reviewLoading ? <p role="status">Завантажуємо розбір…</p> : null}
           {reviewError ? (
             <p className="inline-error" role="alert">

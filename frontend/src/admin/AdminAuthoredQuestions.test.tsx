@@ -244,7 +244,7 @@ describe("authored import boundaries", () => {
   it("pins expected Final version and idempotency across conflict retries; never auto-publishes", async () => {
     const requests = setup("final");
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Нова версія Final Exam" }));
+    await user.click(screen.getByRole("button", { name: "Нова версія іспиту" }));
     await user.click(screen.getByLabelText("Конфігурація Final (JSON)"));
     await user.paste(JSON.stringify(policy));
     await user.click(screen.getByRole("button", { name: "Переглянути нову версію" }));

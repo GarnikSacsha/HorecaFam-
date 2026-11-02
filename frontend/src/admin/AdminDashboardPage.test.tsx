@@ -62,7 +62,7 @@ it("loads the organization overview and filters the read by location", async () 
     "href",
     "/admin/results",
   );
-  expect(screen.getByRole("link", { name: "Відкрити Attention" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Відкрити список" })).toHaveAttribute(
     "href",
     "/admin/attention",
   );

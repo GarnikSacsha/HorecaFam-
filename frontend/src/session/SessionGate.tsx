@@ -7,9 +7,11 @@ type Audience = "admin" | "operator" | "pending-employee" | "active-employee";
 type ActiveSession = NonNullable<ReturnType<typeof useSession>["session"]>;
 
 function sessionDestination(session: ActiveSession): string {
-  if (session.platform_operator && session.session.mfa_verified) return "/operator/jobs";
+  // Organization Admin work comes first; the Operator console stays reachable from the Admin
+  // navigation for the few accounts that also hold platform_operator.
   const adminAccess = session.organization_access.find((access) => access.is_organization_admin);
   if (adminAccess && session.session.mfa_verified) return "/admin/dashboard";
+  if (session.platform_operator && session.session.mfa_verified) return "/operator/jobs";
   const employeeAccess = session.organization_access.find((access) => access.is_employee);
   if (employeeAccess?.membership_status === "pending") return "/employee/pending";
   if (employeeAccess?.membership_status === "active") return "/employee";

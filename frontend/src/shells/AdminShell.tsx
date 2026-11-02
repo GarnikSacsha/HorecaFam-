@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 
+import { useOptionalSession } from "../session/SessionContext";
+
 const links = [
   { to: "/admin/dashboard", label: "Огляд" },
   { to: "/admin/employees", label: "Працівники" },
@@ -9,14 +11,18 @@ const links = [
   { to: "/admin/academy", label: "Академія" },
   { to: "/admin/questions", label: "Банк питань" },
   { to: "/admin/results", label: "Результати" },
-  { to: "/admin/attention", label: "Attention" },
+  { to: "/admin/attention", label: "Потребує уваги" },
   { to: "/admin/audit", label: "Історія змін" },
 ];
 
 function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
+  const isPlatformOperator = useOptionalSession()?.session?.platform_operator === true;
+  const visibleLinks = isPlatformOperator
+    ? [...links, { to: "/operator/jobs", label: "Платформа (оператор)" }]
+    : links;
   return (
     <nav aria-label="Навігація адміністратора" className="admin-nav">
-      {links.map((link) => (
+      {visibleLinks.map((link) => (
         <NavLink
           key={link.to}
           to={link.to}

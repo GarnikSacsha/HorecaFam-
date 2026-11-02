@@ -5,6 +5,28 @@ import { MemoryRouter } from "react-router-dom";
 import { AdminShell } from "./AdminShell";
 import { EmployeeShell } from "./EmployeeShell";
 import { OperatorShell } from "../operator/OperatorShell";
+import type { ApiClient } from "../api/client";
+import type { SessionResponse } from "../api/contracts";
+import { SessionProvider } from "../session/SessionContext";
+
+const operatorAdminSession: SessionResponse = {
+  user: { id: "user-1", email: "owner@example.com", preferred_locale: "uk" },
+  session: { id: "session-1", absolute_expires_at: "2026-12-01T00:00:00Z", mfa_verified: true },
+  organization_access: [
+    {
+      organization_id: "organization-1",
+      membership_status: null,
+      is_employee: false,
+      is_organization_admin: true,
+    },
+  ],
+  platform_operator: true,
+  csrf_token: "csrf-safe",
+};
+
+function clientWith(session: SessionResponse): ApiClient {
+  return { request: vi.fn(), getSession: vi.fn().mockResolvedValue(session) };
+}
 
 vi.mock("../auth/LogoutButton", () => ({
   LogoutButton: () => <button type="button">Вийти</button>,
@@ -91,5 +113,41 @@ describe("application shells", () => {
       "href",
       "/employee/practice",
     );
+  });
+
+  it("links an operator-admin between the Admin workspace and the Operator console", async () => {
+    render(
+      <SessionProvider client={clientWith(operatorAdminSession)}>
+        <MemoryRouter>
+          <AdminShell>
+            <p>Огляд</p>
+          </AdminShell>
+          <OperatorShell>
+            <p>Operations</p>
+          </OperatorShell>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(await screen.findByRole("link", { name: "Платформа (оператор)" })).toHaveAttribute(
+      "href",
+      "/operator/jobs",
+    );
+    expect(screen.getByRole("link", { name: "← До адміністрування" })).toHaveAttribute(
+      "href",
+      "/admin/dashboard",
+    );
+  });
+
+  it("does not show the Operator link to a regular Admin", () => {
+    render(
+      <MemoryRouter>
+        <AdminShell>
+          <p>Огляд</p>
+        </AdminShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("link", { name: "Платформа (оператор)" })).not.toBeInTheDocument();
   });
 });

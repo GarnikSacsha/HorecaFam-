@@ -220,8 +220,8 @@ test("Employee completes Final Exam without feedback and sees certification only
   });
 
   await page.goto("/employee/final-exam");
-  await expect(page.getByRole("heading", { name: "Final Exam", level: 1 })).toBeVisible();
-  await page.getByRole("button", { name: "Почати Final Exam" }).click();
+  await expect(page.getByRole("heading", { name: "Підсумковий іспит", level: 1 })).toBeVisible();
+  await page.getByRole("button", { name: "Почати іспит" }).click();
 
   for (let questionNumber = 1; questionNumber <= 20; questionNumber += 1) {
     await expect(
@@ -235,7 +235,7 @@ test("Employee completes Final Exam without feedback and sees certification only
 
   await expect(page.getByText("Усі 20 відповідей збережено")).toBeVisible();
   await expect(page.getByText(/Пояснення Final Exam/)).toHaveCount(0);
-  await page.getByRole("button", { name: "Завершити Final Exam" }).click();
+  await page.getByRole("button", { name: "Завершити іспит" }).click();
   await expect(page.getByRole("dialog", { name: "Підтвердити завершення" })).toBeVisible();
   await page.getByRole("button", { name: "Підтвердити та завершити" }).click();
 
@@ -254,7 +254,7 @@ test("Employee completes Final Exam without feedback and sees certification only
   await page.screenshot({ path: testInfo.outputPath("exam-summary.png"), fullPage: true });
   await page.getByRole("button", { name: "Усі відповіді (20)" }).click();
   await expect(page.getByText("Пояснення Final Exam 1", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Повторити Final Exam" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Скласти іспит ще раз" })).toHaveCount(0);
   expect(answerCount).toBe(20);
   expect(finished).toBeTruthy();
   await page.reload();

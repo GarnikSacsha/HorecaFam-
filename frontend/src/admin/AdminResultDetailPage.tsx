@@ -105,13 +105,13 @@ export function AdminResultDetailPage() {
             Найкращий результат: <strong>{detail.final_exam.best.correct_count}/20</strong>
           </p>
         ) : (
-          <p>Final Exam ще не завершувався.</p>
+          <p>Підсумковий іспит ще не складався.</p>
         )}
       </section>
       <section className="bounded-section" aria-labelledby="follow-up-title">
         <div>
-          <p className="eyebrow">Attention і перескладання</p>
-          <h2 id="follow-up-title">Поточний follow-up</h2>
+          <p className="eyebrow">Потребує уваги та перескладання</p>
+          <h2 id="follow-up-title">Поточні дії</h2>
         </div>
         <p>
           Відкриті кейси: <strong>{attentionCount}</strong> · поточні вимоги:{" "}

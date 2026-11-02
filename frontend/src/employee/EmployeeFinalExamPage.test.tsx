@@ -184,7 +184,7 @@ describe("Employee Final Exam", () => {
 
     renderExam(client);
 
-    await user.click(await screen.findByRole("button", { name: "Почати Final Exam" }));
+    await user.click(await screen.findByRole("button", { name: "Почати іспит" }));
     expect(await screen.findByText("0 з 20 відповідей збережено")).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: "Варіант А" }));
     await user.click(screen.getByRole("button", { name: "Зберегти відповідь" }));
@@ -291,7 +291,7 @@ describe("Employee Final Exam", () => {
 
     renderExam(client);
 
-    await user.click(await screen.findByRole("button", { name: "Завершити Final Exam" }));
+    await user.click(await screen.findByRole("button", { name: "Завершити іспит" }));
     expect(screen.getByRole("dialog", { name: "Підтвердити завершення" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Підтвердити та завершити" }));
 
@@ -302,7 +302,7 @@ describe("Employee Final Exam", () => {
     expect(screen.getByText("Перевірений факт")).toBeInTheDocument();
     expect(screen.getByText("Помилок: 7")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Усі відповіді/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Повторити Final Exam" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Скласти іспит ще раз" })).toBeInTheDocument();
   });
 
   it("retains a readable passed result when returning after certification", async () => {
@@ -341,6 +341,6 @@ describe("Employee Final Exam", () => {
     expect(await screen.findByRole("heading", { name: "Останній результат" })).toBeInTheDocument();
     expect(screen.getByText("95%")).toBeInTheDocument();
     expect(screen.getByText("Помилок: 1")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Почати Final Exam" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Почати іспит" })).not.toBeInTheDocument();
   });
 });

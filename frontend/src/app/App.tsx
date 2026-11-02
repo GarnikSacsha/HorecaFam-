@@ -326,6 +326,8 @@ export function App() {
               </main>
             }
           />
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/operator" element={<Navigate to="/operator/jobs" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </SessionProvider>

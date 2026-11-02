@@ -173,6 +173,25 @@ function questionBankClient(
           draft: null,
           archived: [],
         } as T);
+      if (path.endsWith("/training-versions/training-version-1"))
+        return Promise.resolve({
+          id: "training-version-1",
+          version_number: 2,
+          status: "published",
+          modules: [
+            {
+              id: "module-1",
+              title_uk: "Меню",
+              lessons: [
+                {
+                  id: "lesson-1",
+                  lesson_version_id: "lesson-version-1",
+                  title_uk: "Супи та салати",
+                },
+              ],
+            },
+          ],
+        } as T);
       if (path.includes("/interactive-training/readiness")) return Promise.resolve(readiness as T);
       if (path.includes("/final-exam/readiness")) return Promise.resolve(finalExamReadiness as T);
       if (path.includes("/practice/readiness")) return Promise.resolve(practiceReadiness as T);
@@ -230,7 +249,7 @@ describe("Admin Question Bank", () => {
     const requests: Array<{ path: string; options?: RequestOptions }> = [];
     renderPage(questionBankClient(requests));
     expect(await screen.findByRole("button", { name: "Імпорт авторських питань" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Нова версія Final Exam" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Нова версія іспиту" })).toBeEnabled();
     expect(requests.filter(({ options }) => options?.method === "POST")).toHaveLength(0);
   });
 
@@ -252,18 +271,25 @@ describe("Admin Question Bank", () => {
       "1 / 10 різних позицій меню",
     );
     expect(
-      within(practiceCard as HTMLElement).getByText("INSUFFICIENT_QUESTION_POOL"),
+      within(practiceCard as HTMLElement).getByText("Недостатньо перевірених питань"),
     ).toBeInTheDocument();
+    expect(within(practiceCard as HTMLElement).getByText("Заблоковано")).toBeInTheDocument();
     const finalExamCard = screen
-      .getByRole("heading", { name: "Готовність Final Exam" })
+      .getByRole("heading", { name: "Готовність підсумкового іспиту" })
       .closest("article");
     expect(finalExamCard).not.toBeNull();
     expect(within(finalExamCard as HTMLElement).getByRole("status")).toHaveTextContent(
       "24 / 20 перевірених питань",
     );
     expect(
-      within(finalExamCard as HTMLElement).getByText("REPEAT_ROTATION_LIMITED"),
+      within(finalExamCard as HTMLElement).getByText(
+        "Мало питань для різних варіантів при повторній спробі",
+      ),
     ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Супи та салати" })).toBeInTheDocument();
+    expect(screen.getByText("Меню: опублікована версія 4")).toBeInTheDocument();
+    expect(screen.queryByText(/REPEAT_ROTATION_LIMITED|INSUFFICIENT_QUESTION_POOL/)).toBeNull();
+    expect(screen.queryByText(/lesson-version-1|menu-version-1/)).toBeNull();
     expect(requests.some(({ path }) => path.endsWith("/practice/readiness"))).toBe(true);
 
     await user.click(screen.getByRole("button", { name: "Згенерувати кандидатів" }));

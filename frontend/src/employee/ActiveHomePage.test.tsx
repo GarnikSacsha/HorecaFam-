@@ -76,7 +76,7 @@ describe("Active Employee Home", () => {
       expect(
         await screen.findByRole("heading", { name: "Сертифікацію отримано" }),
       ).toBeInTheDocument();
-      expect(screen.queryByText("Час пройти Final Exam")).not.toBeInTheDocument();
+      expect(screen.queryByText("Час скласти підсумковий іспит")).not.toBeInTheDocument();
       expect(screen.getByRole("link", { name: "Переглянути результат" })).toHaveAttribute(
         "href",
         "/employee/final-exam",
@@ -359,9 +359,9 @@ describe("Active Employee Home", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Час пройти Final Exam" }),
+      await screen.findByRole("heading", { name: "Час скласти підсумковий іспит" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Відкрити Final Exam" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Відкрити іспит" })).toHaveAttribute(
       "href",
       "/employee/final-exam",
     );

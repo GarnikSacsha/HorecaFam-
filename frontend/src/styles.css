@@ -2064,6 +2064,17 @@ h1 {
   font-size: 0.76rem;
 }
 
+.readiness-card .readiness-note {
+  color: var(--warning);
+  font-size: 0.82rem;
+}
+
+.readiness-lesson-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .question-queue-controls {
   flex-wrap: wrap;
   align-items: end;

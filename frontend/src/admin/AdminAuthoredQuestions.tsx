@@ -255,7 +255,7 @@ export function AdminAuthoredQuestions({
           aria-expanded={mode === "final"}
           onClick={() => setMode("final")}
         >
-          Нова версія Final Exam
+          Нова версія іспиту
         </button>
       </div>
       {error && (
@@ -406,7 +406,7 @@ export function AdminAuthoredQuestions({
       )}
       {mode === "final" && (
         <div className="candidate-editor">
-          <h2>Нова версія Final Exam</h2>
+          <h2>Нова версія іспиту</h2>
           <p>
             20 питань: їжа 10, напої 4, десерти 3, інше 3. Прохідний бал — 70%. Нова версія
             застосовується до нових дозволених спроб; сертифікація та історія зберігаються.

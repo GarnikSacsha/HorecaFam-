@@ -2,7 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 
 import { ApiError, createIdempotencyKey } from "../api/client";
 import type { ApiClient } from "../api/client";
-import type { RolloutLessonRule, TrainingRolloutResponse } from "../api/contracts";
+import type {
+  EmployeeListResponse,
+  RolloutLessonRule,
+  TrainingRolloutResponse,
+  TrainingVersionDetail,
+} from "../api/contracts";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusPill } from "../ui/States";
 
@@ -21,6 +26,13 @@ function employeeCountLabel(count: number): string {
 function unresolvedCountLabel(count: number): string {
   return count === 1 ? "1 рішення для змінених уроків" : `${count} рішень для змінених уроків`;
 }
+
+const ruleLabels: Record<RolloutLessonRule, string> = {
+  preserve_completion: "Завершення збережено",
+  needs_repeat: "Урок потрібно повторити",
+  new_incomplete: "Новий урок — потрібно пройти",
+  removed_historical: "Урок прибрано, історію збережено",
+};
 
 function rolloutStatusLabel(rollout: TrainingRolloutResponse): string {
   if (rollout.status === "completed") return "Перенесення завершено";
@@ -42,6 +54,8 @@ export function AdminTrainingRolloutPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [employeeNames, setEmployeeNames] = useState<Map<string, string>>(() => new Map());
+  const [lessonTitles, setLessonTitles] = useState<Map<string, string>>(() => new Map());
   const base = `/organizations/${organizationId}/locations/${locationId}/training-rollouts/${rolloutId}`;
 
   const refresh = useCallback(async () => {
@@ -55,6 +69,39 @@ export function AdminTrainingRolloutPanel({
       setLoading(false);
     }
   }, [base, client]);
+
+  const toVersionId = rollout?.to_version.id;
+  useEffect(() => {
+    // Імена та назви лише для відображення; без них панель працює з нейтральними підписами.
+    if (!toVersionId) return;
+    let active = true;
+    void Promise.all([
+      client
+        .request<EmployeeListResponse>(`/organizations/${organizationId}/employees`)
+        .catch(() => null),
+      client
+        .request<TrainingVersionDetail>(
+          `/organizations/${organizationId}/locations/${locationId}/training-versions/${toVersionId}`,
+        )
+        .catch(() => null),
+    ]).then(([employees, detail]) => {
+      if (!active) return;
+      const names = new Map<string, string>();
+      for (const employee of employees?.items ?? []) {
+        const fullName = [employee.first_name, employee.last_name].filter(Boolean).join(" ");
+        names.set(employee.id, fullName || employee.email);
+      }
+      const titles = new Map<string, string>();
+      for (const trainingModule of detail?.modules ?? []) {
+        for (const lesson of trainingModule.lessons ?? []) titles.set(lesson.id, lesson.title_uk);
+      }
+      setEmployeeNames(names);
+      setLessonTitles(titles);
+    });
+    return () => {
+      active = false;
+    };
+  }, [client, locationId, organizationId, toVersionId]);
 
   useEffect(() => {
     // Rollout є серверним знімком; локальний стан оновлюємо лише отриманою відповіддю.
@@ -170,35 +217,49 @@ export function AdminTrainingRolloutPanel({
             <span>{unresolvedCountLabel(rollout.impact_counts.unresolved_rule_count)}</span>
           </div>
 
-          {rollout.rules.some((rule) => rule.requires_admin_decision) ? (
+          {rollout.rules.some((rule) => rule.requires_admin_decision || rule.rule) ? (
             <div className="rollout-rule-list">
               <h3>Змінені уроки</h3>
               {rollout.rules
-                .filter((rule) => rule.requires_admin_decision)
+                .filter((rule) => rule.requires_admin_decision || rule.rule)
                 .map((rule, index) => (
                   <section key={rule.lesson_id} className="rollout-rule">
                     <p>
-                      <strong>Змінений урок {index + 1}</strong>
+                      <strong>
+                        {lessonTitles.has(rule.lesson_id)
+                          ? `Урок «${lessonTitles.get(rule.lesson_id)}»`
+                          : `Змінений урок ${index + 1}`}
+                      </strong>
                     </p>
-                    <p>Оберіть, чи зберігати попереднє завершення для цієї нової версії.</p>
-                    <div className="rollout-rule-actions">
-                      <button
-                        className="button button-secondary"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void updateRule(rule.lesson_id, "preserve_completion")}
-                      >
-                        Зберегти завершення
-                      </button>
-                      <button
-                        className="button button-quiet"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void updateRule(rule.lesson_id, "needs_repeat")}
-                      >
-                        Повторити урок
-                      </button>
-                    </div>
+                    {rollout.status === "completed" ||
+                    (rule.rule && !rule.requires_admin_decision) ? (
+                      <p>{rule.rule ? ruleLabels[rule.rule] : "Рішення не знадобилося"}</p>
+                    ) : (
+                      <>
+                        <p>
+                          Працівники вже проходили цей урок. Зарахувати їм його в новій версії чи
+                          попросити пройти ще раз?
+                        </p>
+                        <div className="rollout-rule-actions">
+                          <button
+                            className="button button-secondary"
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void updateRule(rule.lesson_id, "preserve_completion")}
+                          >
+                            Зберегти завершення
+                          </button>
+                          <button
+                            className="button button-quiet"
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void updateRule(rule.lesson_id, "needs_repeat")}
+                          >
+                            Повторити урок
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </section>
                 ))}
             </div>
@@ -206,10 +267,12 @@ export function AdminTrainingRolloutPanel({
 
           {rollout.employee_impacts.length ? (
             <div className="rollout-impact-list">
-              <h3>Прогноз для працівників</h3>
+              <h3>Як зміниться прогрес працівників</h3>
               {rollout.employee_impacts.map((impact) => (
                 <div key={impact.employee_profile_id} className="rollout-impact-row">
-                  <code>{impact.employee_profile_id}</code>
+                  <span className="rollout-employee-name">
+                    {employeeNames.get(impact.employee_profile_id) ?? "Працівник"}
+                  </span>
                   <span>
                     Зараз: {impact.current_completed_count} із {impact.current_required_count} ·{" "}
                     {impact.current_progress_percentage}%

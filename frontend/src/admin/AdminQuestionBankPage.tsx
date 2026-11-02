@@ -13,9 +13,11 @@ import type {
   QuestionCandidateResponse,
   QuestionCandidateStatus,
   TrainingVersionCollection,
+  TrainingVersionDetail,
   TrainingVersionSummary,
 } from "../api/contracts";
 import { LogoutButton } from "../auth/LogoutButton";
+import { readinessCodeLabel, readinessStatusLabel } from "./readinessLabels";
 import { useSession } from "../session/SessionContext";
 import { LoadingState, StatusPill } from "../ui/States";
 import { AdminAuthoredQuestions } from "./AdminAuthoredQuestions";
@@ -62,6 +64,7 @@ function sourceIdentity(source: QuestionCandidateResponse["sources"][number]): s
 
 function CandidateCard({
   candidate,
+  lessonTitle,
   selected,
   busy,
   onSelect,
@@ -69,6 +72,7 @@ function CandidateCard({
   onReject,
 }: {
   candidate: QuestionCandidateResponse;
+  lessonTitle?: string;
   selected: boolean;
   busy: boolean;
   onSelect: (candidateId: string, selected: boolean) => void;
@@ -229,22 +233,18 @@ function CandidateCard({
       )}
 
       <details className="candidate-provenance">
-        <summary>Джерела та provenance</summary>
+        <summary>Звідки взято питання</summary>
         <dl>
           <div>
             <dt>Урок</dt>
-            <dd>{candidate.lesson_version_id}</dd>
-          </div>
-          <div>
-            <dt>Навчання</dt>
-            <dd>{candidate.training_version_id}</dd>
+            <dd>{lessonTitle ?? "Урок поточного навчання"}</dd>
           </div>
           <div>
             <dt>Правило / механіка</dt>
             <dd>{mechanicLabels[candidate.mechanic] ?? candidate.mechanic}</dd>
           </div>
           <div>
-            <dt>Fingerprint</dt>
+            <dt>Технічний відбиток джерела</dt>
             <dd className="candidate-fingerprint">{candidate.source_fingerprint}</dd>
           </div>
         </dl>
@@ -299,6 +299,8 @@ export function AdminQuestionBankPage() {
   const [locations, setLocations] = useState<LocationSummary[]>([]);
   const [locationId, setLocationId] = useState("");
   const [menuVersionId, setMenuVersionId] = useState<string | null>(null);
+  const [menuVersionNumber, setMenuVersionNumber] = useState<number | null>(null);
+  const [lessonTitles, setLessonTitles] = useState<Map<string, string>>(() => new Map());
   const [trainingVersion, setTrainingVersion] = useState<TrainingVersionSummary | null>(null);
   const [candidates, setCandidates] = useState<QuestionCandidateResponse[]>([]);
   const [candidateTotal, setCandidateTotal] = useState(0);
@@ -338,22 +340,35 @@ export function AdminQuestionBankPage() {
         ]);
         const publishedTraining = trainings.published;
         setMenuVersionId(menus.current_published?.id ?? null);
+        setMenuVersionNumber(menus.current_published?.version_number ?? null);
         setTrainingVersion(publishedTraining);
         setCandidates(queue.items);
         setCandidateTotal(queue.total);
         setSelectedIds(new Set());
         if (publishedTraining) {
-          const [lessonReadiness, wholeMenuReadiness, examReadiness] = await Promise.all([
-            client.request<InteractiveTrainingReadinessResponse>(
-              `${base}/training-versions/${publishedTraining.id}/interactive-training/readiness`,
-            ),
-            client.request<PracticeReadinessResponse>(
-              `${base}/training-versions/${publishedTraining.id}/practice/readiness`,
-            ),
-            client.request<FinalExamReadinessResponse>(
-              `${base}/training-versions/${publishedTraining.id}/final-exam/readiness`,
-            ),
-          ]);
+          const [lessonReadiness, wholeMenuReadiness, examReadiness, trainingDetail] =
+            await Promise.all([
+              client.request<InteractiveTrainingReadinessResponse>(
+                `${base}/training-versions/${publishedTraining.id}/interactive-training/readiness`,
+              ),
+              client.request<PracticeReadinessResponse>(
+                `${base}/training-versions/${publishedTraining.id}/practice/readiness`,
+              ),
+              client.request<FinalExamReadinessResponse>(
+                `${base}/training-versions/${publishedTraining.id}/final-exam/readiness`,
+              ),
+              client
+                .request<TrainingVersionDetail>(`${base}/training-versions/${publishedTraining.id}`)
+                .catch(() => null),
+            ]);
+          const titles = new Map<string, string>();
+          for (const trainingModule of trainingDetail?.modules ?? []) {
+            for (const lesson of trainingModule.lessons ?? []) {
+              titles.set(lesson.id, lesson.title_uk);
+              if (lesson.lesson_version_id) titles.set(lesson.lesson_version_id, lesson.title_uk);
+            }
+          }
+          setLessonTitles(titles);
           setReadiness(lessonReadiness);
           setPracticeReadiness(wholeMenuReadiness);
           setFinalExamReadiness(examReadiness);
@@ -545,10 +560,17 @@ export function AdminQuestionBankPage() {
           </select>
         </div>
         <div className="question-version-context" aria-label="Версії джерел">
-          <span>Меню: {menuVersionId ?? "немає Published версії"}</span>
+          <span>
+            Меню:{" "}
+            {menuVersionNumber !== null
+              ? `опублікована версія ${menuVersionNumber}`
+              : "немає опублікованої версії"}
+          </span>
           <span>
             Навчання:{" "}
-            {trainingVersion ? `v${trainingVersion.version_number}` : "немає Published версії"}
+            {trainingVersion
+              ? `опублікована версія ${trainingVersion.version_number}`
+              : "немає опублікованої версії"}
           </span>
         </div>
         <button
@@ -605,7 +627,7 @@ export function AdminQuestionBankPage() {
       <section className="question-readiness" aria-labelledby="readiness-title">
         <div className="dataset-header">
           <div>
-            <p className="eyebrow">Published навчання</p>
+            <p className="eyebrow">Опубліковане навчання</p>
             <h2 id="readiness-title">Готовність уроків</h2>
           </div>
           {readiness ? (
@@ -622,11 +644,11 @@ export function AdminQuestionBankPage() {
           >
             <div className="readiness-card-heading">
               <div>
-                <p className="eyebrow">Усе Published меню</p>
+                <p className="eyebrow">Усе опубліковане меню</p>
                 <h3 id="practice-readiness-title">Готовність Практики</h3>
               </div>
               <StatusPill tone={readinessTone(practiceReadiness.status)}>
-                {practiceReadiness.status}
+                {readinessStatusLabel(practiceReadiness.status)}
               </StatusPill>
             </div>
             <p className="practice-readiness-count" role="status" aria-atomic="true">
@@ -641,7 +663,9 @@ export function AdminQuestionBankPage() {
             </p>
             {[...practiceReadiness.blocking_codes, ...practiceReadiness.warning_codes].map(
               (code) => (
-                <code key={code}>{code}</code>
+                <p className="readiness-note" key={code} title={code}>
+                  {readinessCodeLabel(code)}
+                </p>
               ),
             )}
           </article>
@@ -654,10 +678,10 @@ export function AdminQuestionBankPage() {
             <div className="readiness-card-heading">
               <div>
                 <p className="eyebrow">Сертифікація</p>
-                <h3 id="final-exam-readiness-title">Готовність Final Exam</h3>
+                <h3 id="final-exam-readiness-title">Готовність підсумкового іспиту</h3>
               </div>
               <StatusPill tone={readinessTone(finalExamReadiness.status)}>
-                {finalExamReadiness.status}
+                {readinessStatusLabel(finalExamReadiness.status)}
               </StatusPill>
             </div>
             <p className="practice-readiness-count" role="status">
@@ -672,31 +696,41 @@ export function AdminQuestionBankPage() {
             </p>
             {[...finalExamReadiness.blocking_codes, ...finalExamReadiness.warning_codes].map(
               (code) => (
-                <code key={code}>{code}</code>
+                <p className="readiness-note" key={code} title={code}>
+                  {readinessCodeLabel(code)}
+                </p>
               ),
             )}
           </article>
         ) : null}
         {readiness?.lessons.length ? (
           <div className="readiness-grid">
-            {readiness.lessons.map((lesson) => (
+            {readiness.lessons.map((lesson, index) => (
               <article className="readiness-card" key={lesson.lesson_version_id}>
                 <div className="readiness-card-heading">
-                  <strong>Урок {lesson.lesson_version_id}</strong>
-                  <StatusPill tone={readinessTone(lesson.status)}>{lesson.status}</StatusPill>
+                  <h3 className="readiness-lesson-title">
+                    {lessonTitles.get(lesson.lesson_id) ?? `Урок ${index + 1}`}
+                  </h3>
+                  <StatusPill tone={readinessTone(lesson.status)}>
+                    {readinessStatusLabel(lesson.status)}
+                  </StatusPill>
                 </div>
                 <p>
-                  Пул: {lesson.eligible_count} / {lesson.required_count} · Ротація:{" "}
-                  {lesson.rotation_supported ? "так" : "обмежена"}
+                  Питань: {lesson.eligible_count} з потрібних {lesson.required_count} · Різні
+                  варіанти при повторі: {lesson.rotation_supported ? "так" : "обмежено"}
                 </p>
                 {[...lesson.blocking_codes, ...lesson.warning_codes].map((code) => (
-                  <code key={code}>{code}</code>
+                  <p className="readiness-note" key={code} title={code}>
+                    {readinessCodeLabel(code)}
+                  </p>
                 ))}
               </article>
             ))}
           </div>
         ) : (
-          <p className="empty-state">Для Published навчання ще немає конфігурації оцінювання.</p>
+          <p className="empty-state">
+            Для опублікованого навчання перевірку знань ще не налаштовано.
+          </p>
         )}
       </section>
 
@@ -739,7 +773,7 @@ export function AdminQuestionBankPage() {
         {!loading && candidates.length === 0 ? (
           <div className="empty-state">
             <h3>У цій черзі немає кандидатів</h3>
-            <p>Змініть фільтр або запустіть генерацію для поточних Published версій.</p>
+            <p>Змініть фільтр або запустіть генерацію для поточних опублікованих версій.</p>
           </div>
         ) : (
           <div className="question-candidate-list">
@@ -747,6 +781,7 @@ export function AdminQuestionBankPage() {
               <CandidateCard
                 key={candidate.id}
                 candidate={candidate}
+                lessonTitle={lessonTitles.get(candidate.lesson_version_id)}
                 selected={selectedIds.has(candidate.id)}
                 busy={busy}
                 onSelect={(candidateId, selected) =>

@@ -777,6 +777,18 @@ describe("Admin Training workspace", () => {
           return Promise.resolve(rollout() as T);
         }
         if (path.endsWith("/training-rollouts/rollout-1")) return Promise.resolve(rollout() as T);
+        if (path.endsWith("/organizations/organization-1/employees"))
+          return Promise.resolve({
+            items: [
+              {
+                id: "employee-1",
+                first_name: "Ірина",
+                last_name: "Коваль",
+                email: "i@example.com",
+              },
+            ],
+            next_cursor: null,
+          } as T);
         return base.request<T>(path, options);
       },
     };
@@ -796,6 +808,9 @@ describe("Admin Training workspace", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("1 працівник")).toBeInTheDocument();
     expect(screen.getByText("1 рішення для змінених уроків")).toBeInTheDocument();
+    expect(await screen.findByText("Урок «Супи»")).toBeInTheDocument();
+    expect(await screen.findByText("Ірина Коваль")).toBeInTheDocument();
+    expect(screen.queryByText("employee-1")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Зберегти завершення" }));
     expect(await screen.findByText("Потрібен новий перегляд")).toBeInTheDocument();
@@ -804,6 +819,7 @@ describe("Admin Training workspace", () => {
     await user.click(screen.getByRole("button", { name: "Підтвердити перенесення" }));
     await user.click(screen.getByRole("button", { name: "Перенести прогрес" }));
     expect(await screen.findByText("Перенесення завершено")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Зберегти завершення" })).toBeNull();
 
     const ruleRequest = requests.find(({ path }) => path.endsWith("/lesson-rules/lesson-1"));
     expect(ruleRequest?.options?.body).toEqual({

@@ -33,6 +33,11 @@ const operatorSession: SessionResponse = {
   platform_operator: true,
 };
 
+const operatorAdminSession: SessionResponse = {
+  ...adminSession,
+  platform_operator: true,
+};
+
 function clientWithSession(session: SessionResponse | null): ApiClient {
   return {
     request: vi.fn(),
@@ -174,6 +179,44 @@ describe("session routing", () => {
           <Routes>
             <Route path="/" element={<HomeRedirect />} />
             <Route path="/operator/jobs" element={<p>Operator Jobs</p>} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(await screen.findByText("Operator Jobs")).toBeInTheDocument();
+  });
+
+  it("routes a Platform Operator who is also an Organization Admin to the Admin Dashboard", async () => {
+    render(
+      <SessionProvider client={clientWithSession(operatorAdminSession)}>
+        <MemoryRouter initialEntries={["/"]}>
+          <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/admin/dashboard" element={<p>Admin Dashboard</p>} />
+            <Route path="/operator/jobs" element={<p>Operator Jobs</p>} />
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    expect(await screen.findByText("Admin Dashboard")).toBeInTheDocument();
+    expect(screen.queryByText("Operator Jobs")).not.toBeInTheDocument();
+  });
+
+  it("keeps the Operator console reachable for an operator who is also an Admin", async () => {
+    render(
+      <SessionProvider client={clientWithSession(operatorAdminSession)}>
+        <MemoryRouter initialEntries={["/operator/jobs"]}>
+          <Routes>
+            <Route
+              path="/operator/jobs"
+              element={
+                <ProtectedRoute audience="operator">
+                  <p>Operator Jobs</p>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </MemoryRouter>
       </SessionProvider>,

@@ -104,8 +104,8 @@ export function AdminResultsPage() {
                 <tr>
                   <th>Працівник</th>
                   <th>Навчання</th>
-                  <th>Practice</th>
-                  <th>Final Exam</th>
+                  <th>Практика</th>
+                  <th>Іспит</th>
                   <th>
                     <span className="sr-only">Дія</span>
                   </th>
@@ -145,7 +145,7 @@ export function AdminResultsPage() {
                 <p>{trainingStatus(employee.current_training_status)}</p>
                 <ExamScore employee={employee} />
                 <p>
-                  Practice:{" "}
+                  Практика:{" "}
                   {employee.latest_practice_score_basis_points == null
                     ? "—"
                     : `${employee.latest_practice_score_basis_points / 100}%`}

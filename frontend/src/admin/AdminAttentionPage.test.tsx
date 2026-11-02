@@ -83,6 +83,23 @@ it("renders responsive queues, acknowledges and creates a proposed requirement e
       if (path === "/organizations/organization-1/retake-requirements") {
         return Promise.resolve({ items: [], next_cursor: null } as T);
       }
+      if (path === "/organizations/organization-1/employees") {
+        return Promise.resolve({
+          items: [
+            {
+              id: "employee-12345678",
+              first_name: "Ірина",
+              last_name: "Коваль",
+              email: "i@example.com",
+              membership_status: "active",
+            },
+          ],
+          next_cursor: null,
+        } as T);
+      }
+      if (path === "/organizations/organization-1/locations") {
+        return Promise.resolve([{ id: attentionCase.location_id, name: "Bacara Подол" }] as T);
+      }
       if (path.endsWith("/acknowledge")) {
         return Promise.resolve({
           ...attentionCase,
@@ -112,6 +129,9 @@ it("renders responsive queues, acknowledges and creates a proposed requirement e
   expect(await screen.findByRole("table")).toBeInTheDocument();
   const openButtons = await screen.findAllByRole("button", { name: "Відкрити" });
   expect(screen.getAllByText("Критичний алерген").length).toBeGreaterThan(0);
+  expect((await screen.findAllByText("Ірина Коваль")).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole("option", { name: "Bacara Подол" }).length).toBeGreaterThan(0);
+  expect(screen.queryByText(/employee-1234/)).toBeNull();
   await user.click(openButtons[0]);
   await user.click(screen.getByRole("button", { name: "Взяти в роботу" }));
 
@@ -120,7 +140,7 @@ it("renders responsive queues, acknowledges and creates a proposed requirement e
   expect(mutation?.options?.csrfToken).toBe("csrf-safe");
   expect(mutation?.options?.idempotencyKey).toBeTruthy();
 
-  await user.selectOptions(screen.getByLabelText("Джерело Attention"), attentionCase.id);
+  await user.selectOptions(screen.getByLabelText("Випадок"), attentionCase.id);
   await user.click(screen.getByRole("button", { name: "Створити проєкт" }));
 
   expect(

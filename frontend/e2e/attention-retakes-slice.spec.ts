@@ -202,7 +202,7 @@ test("failed retake moves from approaching through overdue to Passed without rew
   await page.reload();
   await expect(page.getByRole("heading", { name: "Дедлайн минув" })).toBeVisible();
   await expect(page.getByText(/Доступ не вимикається автоматично/)).toBeVisible();
-  await page.getByRole("button", { name: "Завершити Final Exam" }).click();
+  await page.getByRole("button", { name: "Завершити іспит" }).click();
   await page.getByRole("button", { name: "Підтвердити та завершити" }).click();
 
   await expect(page.getByRole("heading", { name: "14 з 20 правильних відповідей" })).toBeVisible();
@@ -336,7 +336,7 @@ test("Passed with a critical signal stays Passed through explicit Admin follow-u
     .first()
     .click();
   await page.getByRole("button", { name: "Взяти в роботу" }).click();
-  await page.getByLabel("Підсумок follow-up").fill("Проведено окремий інструктаж.");
+  await page.getByLabel("Підсумок розмови").fill("Проведено окремий інструктаж.");
   await page.getByRole("button", { name: "Завершити після розмови" }).click();
   await expect(page.getByText("Кейс завершено.")).toBeVisible();
 
