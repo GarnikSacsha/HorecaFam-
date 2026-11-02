@@ -373,7 +373,7 @@ for (const questionCount of [5, 3]) {
     await expect(page.getByRole("heading", { name: "Банк питань", level: 1 })).toBeVisible();
     await page.getByRole("button", { name: "Згенерувати кандидатів" }).click();
     await expect(page.getByText("До якої категорії належить Борщ?")).toBeVisible();
-    await page.getByText("Джерела та provenance").click();
+    await page.getByText("Звідки взято питання").click();
     await expect(page.getByText("menu-item-version-1")).toBeVisible();
     await page.getByRole("button", { name: "Схвалити", exact: true }).click();
     await expect(
