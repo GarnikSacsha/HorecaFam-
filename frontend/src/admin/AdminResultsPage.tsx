@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { AdminEmployeeResultRow, AdminResultsOverviewResponse } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 
@@ -78,11 +77,8 @@ export function AdminResultsPage() {
         <div>
           <p className="eyebrow">Навчання команди</p>
           <h1 id="results-title">Результати</h1>
-          <p className="page-description">
-            Поточний прогрес і незмінна історія сертифікації без рейтингу працівників.
-          </p>
+          <p className="page-description">Хто що пройшов і хто вже отримав сертифікат.</p>
         </div>
-        <LogoutButton />
       </div>
       {error ? (
         <p className="inline-error" role="alert">

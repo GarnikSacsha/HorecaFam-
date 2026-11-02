@@ -5,7 +5,6 @@ import type {
   MenuChangeEvent,
   MenuChangeHistoryResponse,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 
 const fields: Array<[keyof MenuBusinessValues, string]> = [
@@ -179,7 +178,6 @@ export function AdminAuditPage() {
             Хто та коли змінив ціни, склад, алергени й інші відомості про позиції.
           </p>
         </div>
-        <LogoutButton />
       </div>
       {error ? (
         <div role="alert">

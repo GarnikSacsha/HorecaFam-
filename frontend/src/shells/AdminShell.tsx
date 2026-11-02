@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 
+import { LogoutButton } from "../auth/LogoutButton";
 import { useOptionalSession } from "../session/SessionContext";
 
 const links = [
@@ -78,6 +79,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <p className="brand-mark">Bacara Academy</p>
         <p className="workspace-label">Адміністрування</p>
         <AdminNavigation />
+        <div className="admin-sidebar-footer">
+          <LogoutButton />
+        </div>
       </aside>
       <div className="admin-workspace">
         <header className="admin-mobile-header">
@@ -119,6 +123,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <AdminNavigation onNavigate={closeDrawer} />
+            <div className="admin-sidebar-footer">
+              <LogoutButton />
+            </div>
           </div>
         </div>
       ) : null}

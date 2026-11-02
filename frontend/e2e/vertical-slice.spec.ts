@@ -59,6 +59,13 @@ function assertProtectedMutation(request: Request, idempotent = false) {
   if (idempotent) expect(request.headers()["idempotency-key"]).toBeTruthy();
 }
 
+async function logoutAdmin(page: Page) {
+  // На вузькому екрані вихід адміністратора живе у висувній навігації.
+  const drawerTrigger = page.getByRole("button", { name: "Відкрити навігацію" });
+  if (await drawerTrigger.isVisible()) await drawerTrigger.click();
+  await page.getByRole("button", { name: "Вийти", exact: true }).click();
+}
+
 async function loginAsAdmin(page: Page) {
   await page.getByLabel("Робоча електронна пошта").fill("admin@example.com");
   await page.getByLabel("Пароль").fill("correct horse battery staple");
@@ -297,7 +304,7 @@ test("admin invitation, pending setup, activation and active employee home", asy
     page.getByRole("status").filter({ hasText: "Запрошення створено для new@example.com" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Вийти", exact: true }).click();
+  await logoutAdmin(page);
   await page.goto("/invite?token=invitation-safe");
   await expect(page.getByRole("heading", { name: organization.name })).toBeVisible();
   await page.getByLabel("Створіть пароль").fill("strong-password");
@@ -327,7 +334,7 @@ test("admin invitation, pending setup, activation and active employee home", asy
   await dialog.getByRole("button", { name: "Підтвердити активацію" }).click();
   await expect(page.getByRole("status")).toHaveText("Працівника активовано");
 
-  await page.getByRole("button", { name: "Вийти", exact: true }).click();
+  await logoutAdmin(page);
   await page.getByLabel("Робоча електронна пошта").fill("employee@example.com");
   await page.getByLabel("Пароль").fill("strong-password");
   await page.getByRole("button", { name: "Увійти" }).click();

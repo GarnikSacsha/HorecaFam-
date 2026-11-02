@@ -8,7 +8,6 @@ import type {
   AdminRetakeRequirement,
   AdminRetakeRequirementCollection,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { employeeDisplayName, useOrganizationDirectory } from "./useOrganizationDirectory";
 import { StatusPill } from "../ui/States";
@@ -273,12 +272,12 @@ export function AdminAttentionPage() {
       <div className="page-heading-row">
         <div>
           <p className="eyebrow">Робота з помилками</p>
-          <h1 id="attention-title">Потребує уваги та перескладання</h1>
+          <h1 id="attention-title">Потребує уваги</h1>
           <p className="page-description">
-            Окрема робоча черга без рейтингу, покарань і зміни збережених результатів.
+            Хто помилився в критичних питаннях або пропустив перескладання. Збережені результати
+            іспитів тут не змінюються.
           </p>
         </div>
-        <LogoutButton />
       </div>
       {message ? (
         <p className="success-message" role="status" aria-atomic="true">
@@ -348,8 +347,8 @@ export function AdminAttentionPage() {
 
       <section className="queue-section" aria-labelledby="attention-queue-title">
         <h2 id="attention-queue-title">Хто потребує уваги</h2>
-        {!visibleCases.length ? <p className="quiet-note">За цим фільтром кейсів немає.</p> : null}
-        <div className="desktop-table-wrap">
+        {!visibleCases.length ? <p className="quiet-note">Зараз ніхто не потребує уваги.</p> : null}
+        <div className="desktop-table-wrap" hidden={!visibleCases.length}>
           <table className="data-table">
             <thead>
               <tr>
@@ -463,12 +462,17 @@ export function AdminAttentionPage() {
         </section>
       ) : null}
 
-      <section className="bounded-section" aria-labelledby="create-requirement-title">
-        <div>
-          <p className="eyebrow">Окреме рішення адміністратора</p>
-          <h2 id="create-requirement-title">Створити проєкт вимоги</h2>
-          <p>Проєкт ще не видимий працівнику. Дедлайн і активація підтверджуються окремо.</p>
-        </div>
+      <details
+        className="bounded-section create-requirement-disclosure"
+        open={criticalSources.length > 0}
+      >
+        <summary>
+          <span className="eyebrow">Рішення адміністратора</span>
+          <h2 id="create-requirement-title">Призначити перескладання</h2>
+        </summary>
+        <p>
+          Спершу це чернетка: працівник її не бачить, доки ви не підтвердите дедлайн окремою дією.
+        </p>
         <form className="follow-up-form" onSubmit={(event) => void createRequirement(event)}>
           <div className="field-group">
             <label htmlFor="requirement-reason">Причина</label>
@@ -555,7 +559,7 @@ export function AdminAttentionPage() {
             Створити проєкт
           </button>
         </form>
-      </section>
+      </details>
 
       <section className="queue-section" aria-labelledby="retake-queue-title">
         <h2 id="retake-queue-title">Вимоги перескладання</h2>

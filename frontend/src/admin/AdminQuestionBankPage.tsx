@@ -16,7 +16,6 @@ import type {
   TrainingVersionDetail,
   TrainingVersionSummary,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { readinessCodeLabel, readinessStatusLabel } from "./readinessLabels";
 import { useSession } from "../session/SessionContext";
 import { LoadingState, StatusPill } from "../ui/States";
@@ -531,13 +530,12 @@ export function AdminQuestionBankPage() {
     <section className="admin-page question-bank-page" aria-labelledby="question-bank-title">
       <div className="page-heading-row">
         <div>
-          <p className="eyebrow">Контроль джерел</p>
+          <p className="eyebrow">Перевірка знань</p>
           <h1 id="question-bank-title">Банк питань</h1>
           <p className="page-description">
-            Перевіряйте автоматично створені кандидати, їхні джерела та готовність кожного уроку.
+            Питання для практики та іспиту: перевірте нові й подивіться, чи всього вистачає.
           </p>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="question-bank-toolbar">

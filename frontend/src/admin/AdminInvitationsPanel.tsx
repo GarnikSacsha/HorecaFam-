@@ -27,6 +27,7 @@ export function AdminInvitationsPanel({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showClosed, setShowClosed] = useState(false);
   const writeLock = useRef(false);
   const readVersion = useRef(0);
   const keys = useRef(new Map<string, string>());
@@ -108,12 +109,16 @@ export function AdminInvitationsPanel({
     }
   };
 
+  const openItems = items.filter((item) => item.status === "pending" || item.status === "expired");
+  const closedCount = items.length - openItems.length;
+  const visibleItems = showClosed ? items : openItems;
+
   return (
     <section className="dataset-section" aria-labelledby="invitations-title">
       <div className="dataset-header">
         <div>
           <h2 id="invitations-title">Запрошення</h2>
-          <p>Повторне надсилання створює посилання на три дні та скасовує попереднє.</p>
+          <p>Нове посилання діє три дні, попереднє при цьому перестає працювати.</p>
         </div>
         <button
           type="button"
@@ -133,8 +138,11 @@ export function AdminInvitationsPanel({
       )}
       {loading && <p role="status">Завантажуємо запрошення…</p>}
       {!loading && !readError && items.length === 0 && <p>Запрошень ще немає.</p>}
+      {!loading && !readError && items.length > 0 && openItems.length === 0 && !showClosed && (
+        <p>Немає запрошень, які чекають на відповідь.</p>
+      )}
       <ul className="invitation-list">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <li key={item.id}>
             <p style={{ overflowWrap: "anywhere" }}>
               <strong>{item.email}</strong> — {labels[item.status]}
@@ -159,6 +167,18 @@ export function AdminInvitationsPanel({
           </li>
         ))}
       </ul>
+      {closedCount > 0 && (
+        <button
+          type="button"
+          className="button button-quiet"
+          aria-expanded={showClosed}
+          onClick={() => setShowClosed((value) => !value)}
+        >
+          {showClosed
+            ? "Сховати прийняті й відкликані"
+            : `Показати прийняті й відкликані (${closedCount})`}
+        </button>
+      )}
       {cursor && (
         <button
           type="button"

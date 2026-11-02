@@ -9,7 +9,6 @@ import type {
   MenuVersionCollection,
   MenuVersionDetail,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { StatusPill } from "../ui/States";
 import { MenuPreparationEditor } from "../ui/MenuPreparation";
@@ -304,13 +303,12 @@ export function AdminMenuPage() {
     <section className="admin-page menu-workspace" aria-labelledby="menu-title">
       <div className="page-heading-row">
         <div>
-          <p className="eyebrow">Джерело правди</p>
+          <p className="eyebrow">Меню закладу</p>
           <h1 id="menu-title">Меню</h1>
           <p className="page-description">
             Редагуйте чернетку окремо від меню, яке зараз бачить команда.
           </p>
         </div>
-        <LogoutButton />
       </div>
       <div className="menu-toolbar">
         <div className="field-group">

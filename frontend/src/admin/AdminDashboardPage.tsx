@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { DashboardResponse, LocationSummary } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import "./admin-dashboard.css";
 
@@ -71,7 +70,6 @@ export function AdminDashboardPage() {
           <h1 id="dashboard-title">Огляд команди</h1>
           <p className="page-description">Поточні завдання й результати вашого закладу.</p>
         </div>
-        <LogoutButton />
       </div>
       <div className="dashboard-filter">
         <label htmlFor="dashboard-location">Локація</label>

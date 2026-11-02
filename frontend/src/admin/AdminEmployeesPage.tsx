@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 import { createIdempotencyKey } from "../api/client";
 import type { EmployeeListResponse, EmployeeSummary, OrganizationSummary } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { ErrorSummary } from "../ui/ErrorSummary";
 import { StatusPill } from "../ui/States";
@@ -184,48 +183,10 @@ export function AdminEmployeesPage() {
           <p className="eyebrow">{organization?.name ?? "Команда"}</p>
           <h1 id="employees-title">Працівники</h1>
           <p className="page-description">
-            Запрошуйте людей і завершуйте їхнє налаштування перед окремою активацією.
+            Ваша команда, запрошення нових людей і доступ до платформи.
           </p>
         </div>
-        <LogoutButton />
       </div>
-      <section className="bounded-section" aria-labelledby="invite-title">
-        <div>
-          <p className="eyebrow">Новий доступ</p>
-          <h2 id="invite-title">Запросити працівника</h2>
-        </div>
-        <form className="inline-form" onSubmit={(event) => void invite(event)} noValidate>
-          <ErrorSummary errors={inviteErrors} />
-          <div className="field-group">
-            <label htmlFor="email">Електронна пошта нового працівника</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={inviteEmail}
-              onChange={(event) => setInviteEmail(event.target.value)}
-              required
-            />
-          </div>
-          <button className="button button-primary" type="submit" disabled={inviting}>
-            {inviting ? "Створюємо…" : "Надіслати запрошення"}
-          </button>
-        </form>
-        {inviteSuccess ? (
-          <p className="success-message" role="status">
-            {inviteSuccess}
-          </p>
-        ) : null}
-      </section>
-      {organizationId && session && status === "authenticated" && (
-        <AdminInvitationsPanel
-          key={organizationId}
-          client={client}
-          organizationId={organizationId}
-          csrfToken={session.csrf_token}
-          revision={invitationRevision}
-        />
-      )}
       <section className="dataset-section" aria-labelledby="team-list-title">
         <div className="dataset-header">
           <div>
@@ -285,6 +246,43 @@ export function AdminEmployeesPage() {
           </div>
         )}
       </section>
+      <section className="bounded-section" aria-labelledby="invite-title">
+        <div>
+          <p className="eyebrow">Новий доступ</p>
+          <h2 id="invite-title">Запросити працівника</h2>
+        </div>
+        <form className="inline-form" onSubmit={(event) => void invite(event)} noValidate>
+          <ErrorSummary errors={inviteErrors} />
+          <div className="field-group">
+            <label htmlFor="email">Електронна пошта нового працівника</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={inviteEmail}
+              onChange={(event) => setInviteEmail(event.target.value)}
+              required
+            />
+          </div>
+          <button className="button button-primary" type="submit" disabled={inviting}>
+            {inviting ? "Створюємо…" : "Надіслати запрошення"}
+          </button>
+        </form>
+        {inviteSuccess ? (
+          <p className="success-message" role="status">
+            {inviteSuccess}
+          </p>
+        ) : null}
+      </section>
+      {organizationId && session && status === "authenticated" && (
+        <AdminInvitationsPanel
+          key={organizationId}
+          client={client}
+          organizationId={organizationId}
+          csrfToken={session.csrf_token}
+          revision={invitationRevision}
+        />
+      )}
     </section>
   );
 }

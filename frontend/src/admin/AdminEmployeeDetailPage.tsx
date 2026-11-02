@@ -10,7 +10,6 @@ import type {
   LocationSummary,
   OperationalRoleSummary,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorSummary } from "../ui/ErrorSummary";
@@ -276,7 +275,6 @@ export function AdminEmployeeDetailPage() {
           <StatusPill tone={pending ? "warning" : disabled ? "danger" : "success"}>
             {pending ? "Очікує" : disabled ? "Доступ вимкнено" : "Активний"}
           </StatusPill>
-          <LogoutButton />
         </div>
       </div>
       {message ? (

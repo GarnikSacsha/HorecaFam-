@@ -14,7 +14,6 @@ import type {
   TrainingVersionCollection,
   TrainingVersionDetail,
 } from "../api/contracts";
-import { LogoutButton } from "../auth/LogoutButton";
 import { useSession } from "../session/SessionContext";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StatusPill } from "../ui/States";
@@ -549,10 +548,9 @@ export function AdminTrainingPage() {
           <p className="eyebrow">Навчання команди</p>
           <h1 id="training-title">Навчальні матеріали</h1>
           <p className="page-description">
-            Створюйте уроки про меню, перевіряйте готовність і публікуйте одну стабільну версію.
+            Уроки для команди. Редагуйте чернетку й публікуйте, коли все готово.
           </p>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="training-toolbar">

@@ -115,6 +115,9 @@ it("loads additional invitations and keeps terminal invitations non-actionable",
   );
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Ще запрошення" }));
+  const toggle = await screen.findByRole("button", { name: "Показати прийняті й відкликані (1)" });
+  expect(screen.queryByText("accepted@example.com")).not.toBeInTheDocument();
+  await user.click(toggle);
   expect(await screen.findByText("accepted@example.com")).toBeVisible();
   expect(
     screen.queryByRole("button", { name: /Надіслати повторно.*accepted@example.com/ }),
